@@ -228,8 +228,19 @@ export function useHabits() {
     }
   };
 
+  // Calculate overall maximum active streak across user habits
+  const overallStreak = habits.reduce((max, h) => Math.max(max, h.streak), 0);
+
+  // Always write-through cache to LocalStorage for offline support
+  useEffect(() => {
+    if (habits.length > 0) {
+      localStorage.setItem('taktic_habits', JSON.stringify(habits));
+    }
+  }, [habits]);
+
   return {
     habits,
+    overallStreak,
     loading,
     error,
     addHabit,

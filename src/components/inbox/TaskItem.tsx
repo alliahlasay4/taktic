@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Star, Trash2, Clock, Tag, AlertCircle, Pencil } from 'lucide-react';
+import { Check, Star, Trash2, Clock, Pencil, Repeat, Tag as TagIcon } from 'lucide-react';
 import { Task, PriorityLevel, TimeBlockSlot } from '../../types';
 import { soundEngine } from '../../lib/audio';
 
@@ -12,10 +12,22 @@ interface TaskItemProps {
   onUpdateTimeBlock?: (id: string, timeBlock: TimeBlockSlot) => void;
 }
 
-const priorityColors: Record<PriorityLevel, string> = {
-  high: 'bg-[#C06C4C]/15 text-[#C06C4C] border-[#C06C4C]/30',
-  medium: 'bg-[#CFA052]/15 text-[#CFA052] border-[#CFA052]/30',
-  low: 'bg-[#6B8E6E]/15 text-[#6B8E6E] border-[#6B8E6E]/30',
+const priorityConfig: Record<PriorityLevel, { label: string; dot: string; bg: string }> = {
+  high: {
+    label: 'High',
+    dot: 'bg-rose-500',
+    bg: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+  },
+  medium: {
+    label: 'Medium',
+    dot: 'bg-amber-500',
+    bg: 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/20',
+  },
+  low: {
+    label: 'Low',
+    dot: 'bg-emerald-500',
+    bg: 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/20',
+  },
 };
 
 export const TaskItem: React.FC<TaskItemProps> = ({
@@ -24,7 +36,6 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   onToggleTodayFocus,
   onDeleteTask,
   onEditTask,
-  onUpdateTimeBlock,
 }) => {
   const handleCheck = () => {
     if (!task.completed) {
@@ -33,10 +44,12 @@ export const TaskItem: React.FC<TaskItemProps> = ({
     onToggleComplete(task.id);
   };
 
+  const priority = priorityConfig[task.priority] || priorityConfig.medium;
+
   return (
     <div
-      className={`group flex items-start justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 transition-all hover:border-[var(--text-muted)] ${
-        task.completed ? 'opacity-60 bg-[var(--card-hover)]/40' : ''
+      className={`group relative flex items-start justify-between gap-3.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 transition-all duration-200 hover:border-[var(--accent-terracotta)]/40 hover:shadow-xs ${
+        task.completed ? 'opacity-55 bg-[var(--card-hover)]/30' : ''
       }`}
     >
       {/* Checkbox & Details */}
@@ -45,9 +58,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           onClick={handleCheck}
           className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition-all ${
             task.completed
-              ? 'border-[#6B8E6E] bg-[#6B8E6E] text-white shadow-xs'
-              : 'border-[var(--text-muted)] hover:border-[#6B8E6E] hover:bg-[#6B8E6E]/10'
+              ? 'border-[var(--accent-botanical-sage)] bg-[var(--accent-botanical-sage)] text-white shadow-xs'
+              : 'border-[var(--text-muted)]/60 hover:border-[var(--accent-botanical-sage)] hover:bg-[var(--accent-botanical-sage)]/10'
           }`}
+          title={task.completed ? 'Mark as incomplete' : 'Mark as completed'}
         >
           {task.completed && <Check className="h-3.5 w-3.5 stroke-[3]" />}
         </button>
@@ -55,52 +69,53 @@ export const TaskItem: React.FC<TaskItemProps> = ({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <span
-              className={`font-medium text-sm text-[var(--text-primary)] ${
+              className={`font-medium text-xs sm:text-sm text-[var(--text-primary)] leading-snug ${
                 task.completed ? 'line-through text-[var(--text-muted)]' : ''
               }`}
             >
               {task.title}
             </span>
 
-            {/* Priority Badge */}
+            {/* Priority Indicator Pill */}
             <span
-              className={`rounded-md border px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider ${
-                priorityColors[task.priority]
-              }`}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-2 py-0.5 text-[10px] font-semibold ${priority.bg}`}
             >
-              {task.priority}
+              <span className={`h-1.5 w-1.5 rounded-full ${priority.dot}`} />
+              {priority.label}
             </span>
           </div>
 
           {task.description && (
-            <p className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-2">
+            <p className="mt-1 text-xs text-[var(--text-secondary)] line-clamp-2 leading-relaxed">
               {task.description}
             </p>
           )}
 
-          {/* Tags & Time estimation */}
-          <div className="mt-2 flex items-center gap-2 flex-wrap text-[11px] text-[var(--text-muted)]">
+          {/* Meta Details & Tag Chips */}
+          <div className="mt-2.5 flex items-center gap-1.5 flex-wrap text-[11px] text-[var(--text-muted)]">
             {task.estimatedMinutes && (
-              <span className="flex items-center gap-1 font-medium text-[var(--text-secondary)]">
-                <Clock className="h-3 w-3" />
+              <span className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)]">
+                <Clock className="h-3 w-3 text-[var(--accent-terracotta)]" />
                 {task.estimatedMinutes}m
               </span>
             )}
 
             {task.timeBlock && (
-              <span className="rounded-md bg-[var(--card-hover)] px-2 py-0.5 font-medium capitalize text-[var(--text-secondary)]">
-                {task.timeBlock} Block
+              <span className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-medium capitalize text-[var(--text-secondary)]">
+                {task.timeBlock === 'morning' ? '🌅' : task.timeBlock === 'afternoon' ? '☀️' : '🌙'}{' '}
+                {task.timeBlock}
               </span>
             )}
 
             {task.recurring && (
-              <span className="flex items-center gap-1 rounded-md bg-sky-500/15 text-sky-400 border border-sky-500/30 px-1.5 py-0.5 text-[10px] font-semibold capitalize">
-                🔄 {task.recurring}
+              <span className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-botanical-sage)]/10 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/25 px-2 py-0.5 text-[10px] font-semibold capitalize">
+                <Repeat className="h-3 w-3" />
+                {task.recurring}
               </span>
             )}
 
             {task.isSomeday && (
-              <span className="rounded-md bg-purple-500/15 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 text-[10px] font-semibold">
+              <span className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-dusty-mauve)]/15 text-[var(--accent-dusty-mauve)] border border-[var(--accent-dusty-mauve)]/30 px-2 py-0.5 text-[10px] font-semibold">
                 💡 Someday
               </span>
             )}
@@ -108,9 +123,10 @@ export const TaskItem: React.FC<TaskItemProps> = ({
             {task.tags.map((tag) => (
               <span
                 key={tag}
-                className="flex items-center gap-0.5 rounded-md bg-[var(--border-subtle)]/50 px-1.5 py-0.5 text-[10px] font-medium"
+                className="inline-flex items-center gap-0.5 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-secondary)] px-1.5 py-0.5 text-[10px] font-medium"
               >
-                #{tag}
+                <TagIcon className="h-2.5 w-2.5 opacity-60" />
+                {tag}
               </span>
             ))}
           </div>
@@ -118,38 +134,38 @@ export const TaskItem: React.FC<TaskItemProps> = ({
       </div>
 
       {/* Action Controls */}
-      <div className="flex items-center gap-1 shrink-0">
-        {/* Edit Task Button */}
+      <div className="flex items-center gap-0.5 shrink-0 pt-0.5">
+        {/* Edit Button */}
         {onEditTask && (
           <button
             onClick={() => onEditTask(task)}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[#C06C4C]/15 hover:text-[#C06C4C] transition-all"
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] hover:bg-[var(--accent-terracotta)]/15 hover:text-[var(--accent-terracotta)] transition-all"
             title="Edit task details"
           >
-            <Pencil className="h-4 w-4" />
+            <Pencil className="h-3.5 w-3.5" />
           </button>
         )}
 
-        {/* Star for Today's Focus Queue */}
+        {/* Star Button for Today's Focus Queue */}
         <button
           onClick={() => onToggleTodayFocus(task.id)}
-          className={`flex h-8 w-8 items-center justify-center rounded-lg transition-colors ${
+          className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors ${
             task.isTodayFocus
-              ? 'bg-[#CFA052]/20 text-[#CFA052]'
-              : 'text-[var(--text-muted)] hover:bg-[var(--card-hover)] hover:text-[#CFA052]'
+              ? 'bg-[var(--accent-warm-ochre)]/20 text-[var(--accent-warm-ochre)]'
+              : 'text-[var(--text-muted)] hover:bg-[var(--card-hover)] hover:text-[var(--accent-warm-ochre)]'
           }`}
           title={task.isTodayFocus ? 'Remove from Today Focus Queue' : 'Star for Today Focus Queue'}
         >
-          <Star className={`h-4 w-4 ${task.isTodayFocus ? 'fill-[#CFA052]' : ''}`} />
+          <Star className={`h-3.5 w-3.5 ${task.isTodayFocus ? 'fill-[var(--accent-warm-ochre)] text-[var(--accent-warm-ochre)]' : ''}`} />
         </button>
 
-        {/* Delete Task */}
+        {/* Delete Button */}
         <button
           onClick={() => onDeleteTask(task.id)}
-          className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500/15 hover:text-rose-500"
+          className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-rose-500/15 hover:text-rose-600 dark:hover:text-rose-400"
           title="Delete task"
         >
-          <Trash2 className="h-4 w-4" />
+          <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
     </div>

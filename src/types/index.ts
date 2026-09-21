@@ -75,7 +75,50 @@ export interface HeatmapDay {
   level: 0 | 1 | 2 | 3 | 4;
 }
 
-export type ActiveTab = 'dashboard' | 'inbox' | 'focus' | 'habits' | 'circles' | 'analytics';
+export type ActiveTab = 'dashboard' | 'inbox' | 'focus' | 'habits' | 'circles' | 'analytics' | 'profile';
+
+export interface InAppNotification {
+  id: string;
+  title: string;
+  message: string;
+  type: 'timer' | 'habit' | 'streak' | 'circle' | 'system';
+  read: boolean;
+  createdAt: string;
+  actionTab?: ActiveTab;
+}
+
+export interface UserProfile {
+  id: string;
+  fullName: string;
+  username: string;
+  avatarUrl: string;
+  bio?: string;
+  microGoal?: string;
+  statusMessage?: string;
+  timezone?: string;
+  workHoursStart?: string;
+  workHoursEnd?: string;
+  favoriteSoundscape?: string;
+  privacySettings: {
+    showFocusHours: boolean;
+    showMicroGoal: boolean;
+    showActivityFeed: boolean;
+    showStreak: boolean;
+  };
+}
+
+export interface Badge {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  category: 'streak' | 'focus' | 'habit' | 'social';
+  tier: 'bronze' | 'silver' | 'gold' | 'diamond';
+  currentProgress: number;
+  targetProgress: number;
+  isUnlocked: boolean;
+  unlockedAt?: string;
+}
 
 export interface FocusPod {
   id: string;

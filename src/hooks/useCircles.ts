@@ -30,26 +30,51 @@ export function useCircles() {
     localStorage.setItem('taktic_circle_members', JSON.stringify(updated));
   };
 
-  const togglePartner = (memberId: string) => {
-    saveMembers(
-      members.map((m) =>
-        m.id === memberId ? { ...m, isCirclePartner: !m.isCirclePartner } : m
-      )
+  const togglePartner = async (memberId: string) => {
+    const updated = members.map((m) =>
+      m.id === memberId ? { ...m, isCirclePartner: !m.isCirclePartner } : m
     );
+    saveMembers(updated);
+
+    const target = updated.find((m) => m.id === memberId);
+    if (!isDemo && isSupabaseConfigured && user && target) {
+      try {
+        await supabase
+          .from('circle_members')
+          .update({ is_circle_partner: target.isCirclePartner })
+          .eq('id', memberId)
+          .eq('user_id', user.id);
+      } catch (err) {
+        console.error('Error updating partner in DB:', err);
+      }
+    }
   };
 
-  const toggleMute = (memberId: string) => {
-    saveMembers(
-      members.map((m) =>
-        m.id === memberId ? { ...m, isMuted: !m.isMuted } : m
-      )
+  const toggleMute = async (memberId: string) => {
+    const updated = members.map((m) =>
+      m.id === memberId ? { ...m, isMuted: !m.isMuted } : m
     );
+    saveMembers(updated);
+
+    const target = updated.find((m) => m.id === memberId);
+    if (!isDemo && isSupabaseConfigured && user && target) {
+      try {
+        await supabase
+          .from('circle_members')
+          .update({ is_muted: target.isMuted })
+          .eq('id', memberId)
+          .eq('user_id', user.id);
+      } catch (err) {
+        console.error('Error updating mute in DB:', err);
+      }
+    }
   };
 
-  const addMemberByName = (name: string) => {
+  const addMemberByName = async (name: string) => {
     if (!name.trim()) return;
+    const tempId = `user-${Date.now()}`;
     const newMember: CircleMember = {
-      id: `user-${Date.now()}`,
+      id: tempId,
       name: name.trim(),
       avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
       status: 'focusing',
@@ -59,14 +84,56 @@ export function useCircles() {
       isCirclePartner: true,
       isMuted: false,
     };
+
     saveMembers([newMember, ...members]);
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        const { data, error: dbErr } = await supabase
+          .from('circle_members')
+          .insert({
+            user_id: user.id,
+            member_name: newMember.name,
+            member_avatar: newMember.avatar,
+            status: newMember.status,
+            status_text: newMember.statusText,
+            closed_rings_count: newMember.closedRingsCount,
+            streak: newMember.streak,
+            is_circle_partner: newMember.isCirclePartner,
+            is_muted: newMember.isMuted,
+          })
+          .select()
+          .single();
+
+        if (!dbErr && data) {
+          const updatedWithDbId = members.map((m) =>
+            m.id === tempId ? { ...m, id: data.id } : m
+          );
+          saveMembers(updatedWithDbId);
+        }
+      } catch (err) {
+        console.error('Error inserting member to Supabase:', err);
+      }
+    }
   };
 
-  const removeMember = (memberId: string) => {
+  const removeMember = async (memberId: string) => {
     saveMembers(members.filter((m) => m.id !== memberId));
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('circle_members')
+          .delete()
+          .eq('id', memberId)
+          .eq('user_id', user.id);
+      } catch (err) {
+        console.error('Error deleting member from Supabase:', err);
+      }
+    }
   };
 
-  // Fetch feed posts and likes from Supabase
+  // Fetch feed posts, members, and likes from Supabase
   const fetchCirclesData = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -95,6 +162,28 @@ export function useCircles() {
         .select('*');
 
       if (likesErr) throw likesErr;
+
+      // 3. Fetch user's circle members from DB
+      const { data: membersData, error: membersErr } = await supabase
+        .from('circle_members')
+        .select('*')
+        .eq('user_id', user.id);
+
+      if (!membersErr && membersData && membersData.length > 0) {
+        const dbMembers: CircleMember[] = membersData.map((m) => ({
+          id: m.id,
+          name: m.member_name,
+          avatar: m.member_avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+          status: (m.status as CircleMember['status']) || 'focusing',
+          statusText: m.status_text || 'Active in Circle',
+          closedRingsCount: m.closed_rings_count || 0,
+          streak: m.streak || 1,
+          isCirclePartner: m.is_circle_partner ?? true,
+          isMuted: m.is_muted ?? false,
+        }));
+        setMembers(dbMembers);
+        localStorage.setItem('taktic_circle_members', JSON.stringify(dbMembers));
+      }
 
       // 3. Map to CircleFeedPost type
       const mappedPosts: CircleFeedPost[] = (postsData || []).map((p) => {

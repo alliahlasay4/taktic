@@ -1,6 +1,9 @@
-import React from 'react';
-import { Sun, Moon, Flame, Sparkles, Volume2, VolumeX, ShieldCheck, LogOut, User } from 'lucide-react';
+import React, { useState } from 'react';
+import { Flame, Sparkles, Volume2, VolumeX, ShieldCheck, Bell } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import { InAppNotification, ActiveTab } from '../../types';
+import { NotificationCenterDropdown } from './NotificationCenterDropdown';
+import { UserProfileDropdown } from './UserProfileDropdown';
 
 interface NavbarProps {
   darkMode: boolean;
@@ -9,6 +12,13 @@ interface NavbarProps {
   activeSoundscape: string | null;
   onToggleSoundscape: () => void;
   onOpenSummary: () => void;
+  onOpenProfile?: () => void;
+  notifications?: InAppNotification[];
+  unreadCount?: number;
+  onMarkAsRead?: (id: string) => void;
+  onMarkAllAsRead?: () => void;
+  onClearAll?: () => void;
+  onSelectTab?: (tab: ActiveTab) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -18,15 +28,24 @@ export const Navbar: React.FC<NavbarProps> = ({
   activeSoundscape,
   onToggleSoundscape,
   onOpenSummary,
+  onOpenProfile,
+  notifications = [],
+  unreadCount = 0,
+  onMarkAsRead = () => { },
+  onMarkAllAsRead = () => { },
+  onClearAll = () => { },
+  onSelectTab,
 }) => {
-  const { user, isDemo, signOut } = useAuth();
+  const { user, profile, isDemo } = useAuth();
+  const [isNotifOpen, setIsNotifOpen] = useState(false);
+  const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-  const userAvatar = user?.user_metadata?.avatar_url;
+  const userName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
+  const userAvatar = profile?.avatarUrl || user?.user_metadata?.avatar_url;
 
   return (
     <header className="sticky top-0 z-40 border-b border-[var(--border-subtle)] bg-[var(--card-surface)]/80 backdrop-blur-md transition-colors duration-300">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto flex h-16 max-w-[1800px] items-center justify-between px-4 sm:px-6 lg:px-8">
         {/* Brand Logo & Tagline */}
         <div className="flex items-center gap-3">
           <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-md shadow-[#C06C4C]/20">
@@ -54,25 +73,16 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Action Controls */}
-        <div className="flex items-center gap-2 sm:gap-3">
-          {/* Active Soundscape pill */}
-          {activeSoundscape ? (
+        <div className="flex items-center gap-2 sm:gap-3 relative">
+          {/* Active Soundscape Pill (Visible only when audio is active) */}
+          {activeSoundscape && (
             <button
               onClick={onToggleSoundscape}
-              className="flex items-center gap-1.5 rounded-full bg-[#CFA052]/15 px-3 py-1 text-xs font-medium text-[#CFA052] transition-transform hover:scale-105 active:scale-95"
-              title="Stop Ambient Sound"
+              className="flex items-center gap-1.5 rounded-full bg-[#CFA052]/15 border border-[#CFA052]/30 px-3 py-1 text-xs font-medium text-[#CFA052] transition-transform hover:scale-105 active:scale-95 shadow-xs"
+              title="Click to Stop Ambient Audio"
             >
               <Volume2 className="h-3.5 w-3.5 animate-pulse" />
               <span className="hidden md:inline">{activeSoundscape}</span>
-            </button>
-          ) : (
-            <button
-              onClick={onToggleSoundscape}
-              className="flex items-center gap-1.5 rounded-full border border-[var(--border-subtle)] px-2.5 py-1 text-xs text-[var(--text-secondary)] transition-colors hover:bg-[var(--card-hover)]"
-              title="Play Ambient Soundscape"
-            >
-              <VolumeX className="h-3.5 w-3.5" />
-              <span className="hidden md:inline">Ambient Audio</span>
             </button>
           )}
 
@@ -82,27 +92,46 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span>{userStreak} Day Streak</span>
           </div>
 
-          {/* End of Day Reflection Button */}
-          <button
-            onClick={onOpenSummary}
-            className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] transition-all hover:border-[#C87D87] hover:text-[#C87D87]"
-          >
-            <Sparkles className="h-3.5 w-3.5 text-[#C87D87]" />
-            <span className="hidden sm:inline">Daily Recap</span>
-          </button>
+          {/* Notification Center Bell Button */}
+          <div className="relative">
+            <button
+              onClick={() => {
+                setIsNotifOpen(!isNotifOpen);
+                setIsProfileMenuOpen(false);
+              }}
+              className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-secondary)] transition-all hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]"
+              title="Notification Center"
+            >
+              <Bell className="h-4 w-4" />
+              {unreadCount > 0 && (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-black ring-2 ring-[var(--card-surface)] animate-pulse">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </button>
 
-          {/* Theme Toggle */}
-          <button
-            onClick={() => setDarkMode((prev) => !prev)}
-            className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-secondary)] transition-all hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]"
-            title={darkMode ? 'Switch to Light Warm Oat' : 'Switch to Dark Espresso'}
-          >
-            {darkMode ? <Sun className="h-4 w-4 text-[#CFA052]" /> : <Moon className="h-4 w-4 text-[#C06C4C]" />}
-          </button>
+            {/* Notification Dropdown Menu */}
+            <NotificationCenterDropdown
+              isOpen={isNotifOpen}
+              onClose={() => setIsNotifOpen(false)}
+              notifications={notifications}
+              onMarkAsRead={onMarkAsRead}
+              onMarkAllAsRead={onMarkAllAsRead}
+              onClearAll={onClearAll}
+              onSelectTab={onSelectTab}
+            />
+          </div>
 
-          {/* User Profile Pill & Sign Out */}
-          <div className="flex items-center gap-2 border-l border-[var(--border-subtle)] pl-2 sm:pl-3">
-            <div className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-tr from-[#6B8E6E] to-[#C87D87] text-xs font-bold text-white shadow-sm">
+          {/* User Profile Avatar Trigger & Dropdown */}
+          <div className="relative border-l border-[var(--border-subtle)] pl-2 sm:pl-3">
+            <button
+              onClick={() => {
+                setIsProfileMenuOpen(!isProfileMenuOpen);
+                setIsNotifOpen(false);
+              }}
+              className="relative flex h-9 w-9 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-tr from-[#6B8E6E] to-[#C87D87] text-xs font-bold text-white shadow-sm transition-transform hover:scale-105 active:scale-95"
+              title="Account Menu"
+            >
               {userAvatar ? (
                 <img src={userAvatar} alt={userName} className="h-full w-full object-cover" />
               ) : (
@@ -111,19 +140,20 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className="absolute -bottom-0.5 -right-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[var(--card-surface)]">
                 <ShieldCheck className="h-2 w-2 text-white" />
               </span>
-            </div>
-
-            <button
-              onClick={() => signOut()}
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-secondary)] transition-all hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-400"
-              title={`Signed in as ${userName} (${isDemo ? 'Demo Mode' : 'Supabase Auth'}). Click to Sign Out.`}
-            >
-              <LogOut className="h-4 w-4" />
             </button>
+
+            {/* User Profile Dropdown Menu */}
+            <UserProfileDropdown
+              isOpen={isProfileMenuOpen}
+              onClose={() => setIsProfileMenuOpen(false)}
+              darkMode={darkMode}
+              setDarkMode={setDarkMode}
+              onOpenProfile={onOpenProfile}
+              onOpenSummary={onOpenSummary}
+            />
           </div>
         </div>
       </div>
     </header>
   );
 };
-

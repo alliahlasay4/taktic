@@ -9,21 +9,21 @@ import { FocusView } from './components/focus/FocusView';
 import { HabitView } from './components/habits/HabitView';
 import { CirclesView } from './components/circles/CirclesView';
 import { AnalyticsView } from './components/analytics/AnalyticsView';
+import { ProfileView } from './components/ProfileView';
 import { RewardModal } from './components/rewards/RewardModal';
 import { EndOfDaySummary } from './components/rewards/EndOfDaySummary';
+import { OnboardingModal } from './components/onboarding/OnboardingModal';
 
-import {
-  INITIAL_TASKS,
-  INITIAL_CIRCLE_MEMBERS,
-  INITIAL_CIRCLE_FEED,
-  INITIAL_FOCUS_SESSIONS,
-} from './lib/mockData';
-import { Task, CircleMember, CircleFeedPost, FocusSession, ActiveTab, TimeBlockSlot } from './types';
+import { ActiveTab } from './types';
 import { soundEngine } from './lib/audio';
 import { useHabits } from './hooks/useHabits';
 import { useFocusSessions } from './hooks/useFocusSessions';
 import { useTasks } from './hooks/useTasks';
 import { useCircles } from './hooks/useCircles';
+import { useNotifications } from './hooks/useNotifications';
+import { useInAppNotifications } from './hooks/useInAppNotifications';
+import { NotificationToastOverlay } from './components/layout/NotificationToastOverlay';
+import { TimerProvider } from './context/TimerContext';
 
 function MainLayout() {
   // Dark mode state
@@ -44,7 +44,7 @@ function MainLayout() {
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
 
   // Habits State from Custom Hook (Supabase + RLS + Demo mode)
-  const { habits, loading: habitsLoading, error: habitsError, addHabit, toggleHabit, deleteHabit } = useHabits();
+  const { habits, overallStreak, loading: habitsLoading, error: habitsError, addHabit, toggleHabit, deleteHabit } = useHabits();
 
   // Focus Sessions State from Custom Hook (Supabase + RLS + Demo mode)
   const { addFocusSession, totalFocusMinutesToday } = useFocusSessions();
@@ -63,6 +63,18 @@ function MainLayout() {
     rolloverOverdueTasksToToday: handleRolloverOverdueTasks,
   } = useTasks();
 
+  // Notifications Hook
+  const { sendNotification, requestPermission } = useNotifications();
+  const {
+    notifications,
+    toasts,
+    unreadCount,
+    notify,
+    dismissToast,
+    markAsRead,
+    markAllAsRead,
+    clearAll,
+  } = useInAppNotifications();
 
   // Social Circles & Feed State from Custom Hook (Supabase Realtime + RLS)
   const {
@@ -77,7 +89,12 @@ function MainLayout() {
   } = useCircles();
 
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
-  const [userStreak] = useState<number>(14);
+  const userStreak = Math.max(1, overallStreak);
+
+  // Onboarding Modal State
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(() => {
+    return localStorage.getItem('taktic_onboarding_completed') !== 'true';
+  });
 
   // Modals
   const [rewardModal, setRewardModal] = useState<{ open: boolean; title: string; message: string }>({
@@ -92,6 +109,18 @@ function MainLayout() {
     addFocusSession(durationMinutes, taskTitle, 'pomodoro', activeSoundscape || undefined, focusQuality);
 
     const qualityText = focusQuality === 'high_flow' ? ' (High Flow ⚡)' : focusQuality === 'distracted' ? ' (Low Energy 🥱)' : '';
+
+    // Trigger browser & in-app notification
+    sendNotification('Focus Session Completed! 🎯', {
+      body: `Great job! You completed ${durationMinutes} minutes of focus${taskTitle ? ` on ${taskTitle}` : ''}.`,
+    });
+
+    notify(
+      'Deep Focus Complete! 🌾',
+      `Focused for ${durationMinutes} minutes${taskTitle ? ` on "${taskTitle}"` : ''}.`,
+      'timer',
+      'analytics'
+    );
 
     // Broadcast social achievement
     broadcastAchievement(
@@ -108,6 +137,18 @@ function MainLayout() {
         taskTitle ? ` on "${taskTitle}"` : ''
       }${qualityText}.`,
     });
+  };
+
+  const handleToggleHabitWithNotification = (id: string) => {
+    const target = habits.find((h) => h.id === id);
+    if (target) {
+      const today = new Date().toISOString().split('T')[0];
+      const isDone = target.completedDates.includes(today);
+      if (!isDone) {
+        notify('Habit Completed! ✨', `Great work locking in "${target.title}". Keep the streak going!`, 'habit', 'habits');
+      }
+    }
+    toggleHabit(id);
   };
 
   const handleToggleSoundscapeGlobal = () => {
@@ -127,145 +168,183 @@ function MainLayout() {
   const habitsCompletedToday = habits.filter((h) => h.completedDates.includes(todayStr)).length;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)]">
-      {/* Top Navbar Header */}
-      <Navbar
-        darkMode={darkMode}
-        setDarkMode={setDarkMode}
-        userStreak={userStreak}
-        activeSoundscape={activeSoundscape}
-        onToggleSoundscape={handleToggleSoundscapeGlobal}
-        onOpenSummary={() => setIsSummaryOpen(true)}
-      />
+    <TimerProvider onFocusComplete={handleFocusComplete}>
+      <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)]">
+        {/* Top Navbar Header */}
+        <Navbar
+          darkMode={darkMode}
+          setDarkMode={setDarkMode}
+          userStreak={userStreak}
+          activeSoundscape={activeSoundscape}
+          onToggleSoundscape={handleToggleSoundscapeGlobal}
+          onOpenSummary={() => setIsSummaryOpen(true)}
+          onOpenProfile={() => setActiveTab('profile')}
+          notifications={notifications}
+          unreadCount={unreadCount}
+          onMarkAsRead={markAsRead}
+          onMarkAllAsRead={markAllAsRead}
+          onClearAll={clearAll}
+          onSelectTab={setActiveTab}
+        />
 
-      {/* Database Error Banner */}
-      {habitsError && (
-        <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 text-center text-xs text-red-400">
-          ⚠️ {habitsError} (Running in Local Mode)
-        </div>
-      )}
+        {/* Database Error Banner */}
+        {habitsError && (
+          <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 text-center text-xs text-red-400">
+            ⚠️ {habitsError} (Running in Local Mode)
+          </div>
+        )}
 
-      {/* Main Container Layout */}
-      <main className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
-        <div className="flex flex-col lg:flex-row gap-6">
-          {/* Navigation Sidebar */}
-          <Sidebar
-            activeTab={activeTab}
-            setActiveTab={setActiveTab}
-            todayFocusCount={focusTasks.length}
-            inboxCount={tasks.filter((t) => !t.completed).length}
-          />
+        {/* Main Container Layout */}
+        <main className="mx-auto max-w-[1800px] px-4 sm:px-6 lg:px-8 py-6">
+          <div className="flex flex-col lg:flex-row gap-6">
+            {/* Navigation Sidebar */}
+            <Sidebar
+              activeTab={activeTab}
+              setActiveTab={setActiveTab}
+              todayFocusCount={focusTasks.length}
+              inboxCount={tasks.filter((t) => !t.completed).length}
+              totalFocusMinutesToday={totalFocusMinutesToday}
+              members={members}
+              activeSoundscape={activeSoundscape}
+              setActiveSoundscape={setActiveSoundscape}
+              onQuickAddTask={(title) =>
+                handleAddTask({
+                  title,
+                  priority: 'medium',
+                  tags: ['Quick Capture'],
+                  isTodayFocus: true,
+                  timeBlock: 'morning',
+                  estimatedMinutes: 25,
+                })
+              }
+              onFocusComplete={handleFocusComplete}
+            />
 
-          {/* View Content Panel */}
-          <section className="flex-1 min-w-0">
-            {activeTab === 'dashboard' && (
-              <DashboardView
-                tasks={tasks}
-                habits={habits}
-                focusMinutes={totalFocusMinutesToday}
-                userStreak={userStreak}
-                members={members}
-                onToggleComplete={handleToggleCompleteTask}
-                onToggleTodayFocus={handleToggleTodayFocus}
-                onDeleteTask={handleDeleteTask}
-                onToggleHabit={toggleHabit}
-                setActiveTab={setActiveTab}
-                onOpenSummary={() => setIsSummaryOpen(true)}
-              />
-            )}
+            {/* View Content Panel */}
+            <section className="flex-1 min-w-0">
+              {activeTab === 'dashboard' && (
+                <DashboardView
+                  tasks={tasks}
+                  habits={habits}
+                  focusMinutes={totalFocusMinutesToday}
+                  userStreak={userStreak}
+                  members={members}
+                  onToggleComplete={handleToggleCompleteTask}
+                  onToggleTodayFocus={handleToggleTodayFocus}
+                  onDeleteTask={handleDeleteTask}
+                  onToggleHabit={handleToggleHabitWithNotification}
+                  setActiveTab={setActiveTab}
+                  onOpenSummary={() => setIsSummaryOpen(true)}
+                />
+              )}
 
-            {activeTab === 'inbox' && (
-              <InboxView
-                tasks={tasks}
-                onAddTask={handleAddTask}
-                onUpdateTask={handleUpdateTask}
-                onToggleComplete={handleToggleCompleteTask}
-                onToggleTodayFocus={handleToggleTodayFocus}
-                onDeleteTask={handleDeleteTask}
-                onRolloverOverdueTasks={handleRolloverOverdueTasks}
-              />
-            )}
+              {activeTab === 'inbox' && (
+                <InboxView
+                  tasks={tasks}
+                  onAddTask={handleAddTask}
+                  onUpdateTask={handleUpdateTask}
+                  onToggleComplete={handleToggleCompleteTask}
+                  onToggleTodayFocus={handleToggleTodayFocus}
+                  onDeleteTask={handleDeleteTask}
+                  onRolloverOverdueTasks={handleRolloverOverdueTasks}
+                />
+              )}
 
-            {activeTab === 'focus' && (
-              <FocusView
-                tasks={tasks}
-                onFocusComplete={handleFocusComplete}
-                onUpdateTimeBlock={handleUpdateTimeBlock}
-                activeSoundscape={activeSoundscape}
-                setActiveSoundscape={setActiveSoundscape}
-                totalFocusMinutesToday={totalFocusMinutesToday}
-              />
-            )}
+              {activeTab === 'focus' && (
+                <FocusView
+                  tasks={tasks}
+                  onFocusComplete={handleFocusComplete}
+                  onUpdateTimeBlock={handleUpdateTimeBlock}
+                  activeSoundscape={activeSoundscape}
+                  setActiveSoundscape={setActiveSoundscape}
+                  totalFocusMinutesToday={totalFocusMinutesToday}
+                />
+              )}
 
-            {activeTab === 'habits' && (
-              <div>
-                {habitsLoading && habits.length === 0 ? (
-                  <div className="flex items-center justify-center p-12 text-sm text-[var(--text-secondary)]">
-                    <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent mr-3" />
-                    Loading your habit routines...
-                  </div>
-                ) : (
-                  <HabitView
-                    habits={habits}
-                    tasksCompleted={tasksCompletedToday}
-                    totalTasks={Math.max(1, focusTasks.length)}
-                    focusMinutes={totalFocusMinutesToday}
-                    targetFocusMinutes={100}
-                    onToggleHabit={toggleHabit}
-                    onAddHabit={addHabit}
-                    onDeleteHabit={deleteHabit}
-                  />
-                )}
-              </div>
-            )}
+              {activeTab === 'habits' && (
+                <div>
+                  {habitsLoading && habits.length === 0 ? (
+                    <div className="flex items-center justify-center p-12 text-sm text-[var(--text-secondary)]">
+                      <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent mr-3" />
+                      Loading your habit routines...
+                    </div>
+                  ) : (
+                    <HabitView
+                      habits={habits}
+                      tasksCompleted={tasksCompletedToday}
+                      totalTasks={Math.max(1, focusTasks.length)}
+                      focusMinutes={totalFocusMinutesToday}
+                      targetFocusMinutes={100}
+                      onToggleHabit={handleToggleHabitWithNotification}
+                      onAddHabit={addHabit}
+                      onDeleteHabit={deleteHabit}
+                    />
+                  )}
+                </div>
+              )}
 
-            {activeTab === 'circles' && (
-              <CirclesView
-                members={members}
-                feedPosts={feedPosts}
-                userStreak={userStreak}
-                onToggleLike={toggleLikePost}
-                onBroadcastAchievement={broadcastAchievement}
-                onTogglePartner={togglePartner}
-                onToggleMute={toggleMute}
-                onAddMemberByName={addMemberByName}
-                onRemoveMember={removeMember}
-              />
-            )}
+              {activeTab === 'circles' && (
+                <CirclesView
+                  members={members}
+                  feedPosts={feedPosts}
+                  userStreak={userStreak}
+                  onToggleLike={toggleLikePost}
+                  onBroadcastAchievement={broadcastAchievement}
+                  onTogglePartner={togglePartner}
+                  onToggleMute={toggleMute}
+                  onAddMemberByName={addMemberByName}
+                  onRemoveMember={removeMember}
+                />
+              )}
 
-            {activeTab === 'analytics' && (
-              <AnalyticsView
-                tasksCompleted={tasksCompletedToday}
-                totalTasks={tasks.length}
-                focusMinutes={totalFocusMinutesToday}
-                userStreak={userStreak}
-              />
-            )}
-          </section>
-        </div>
-      </main>
+              {activeTab === 'analytics' && (
+                <AnalyticsView
+                  tasksCompleted={tasksCompletedToday}
+                  totalTasks={tasks.length}
+                  focusMinutes={totalFocusMinutesToday}
+                  userStreak={userStreak}
+                />
+              )}
 
-      {/* Confetti & Reward Modal */}
-      <RewardModal
-        isOpen={rewardModal.open}
-        onClose={() => setRewardModal((prev) => ({ ...prev, open: false }))}
-        title={rewardModal.title}
-        message={rewardModal.message}
-        streakCount={userStreak}
-      />
+              {activeTab === 'profile' && <ProfileView />}
+            </section>
+          </div>
+        </main>
 
-      {/* End of Day Reflection Summary Modal */}
-      <EndOfDaySummary
-        isOpen={isSummaryOpen}
-        onClose={() => setIsSummaryOpen(false)}
-        tasksCompleted={tasksCompletedToday}
-        totalTasks={Math.max(1, tasks.length)}
-        habitsCompleted={habitsCompletedToday}
-        totalHabits={habits.length}
-        focusMinutes={totalFocusMinutesToday}
-        userStreak={userStreak}
-      />
-    </div>
+        {/* Confetti & Reward Modal */}
+        <RewardModal
+          isOpen={rewardModal.open}
+          onClose={() => setRewardModal((prev) => ({ ...prev, open: false }))}
+          title={rewardModal.title}
+          message={rewardModal.message}
+          streakCount={userStreak}
+        />
+
+        {/* End of Day Reflection Summary Modal */}
+        <EndOfDaySummary
+          isOpen={isSummaryOpen}
+          onClose={() => setIsSummaryOpen(false)}
+          tasksCompleted={tasksCompletedToday}
+          totalTasks={Math.max(1, tasks.length)}
+          habitsCompleted={habitsCompletedToday}
+          totalHabits={habits.length}
+          focusMinutes={totalFocusMinutesToday}
+          userStreak={userStreak}
+        />
+
+        {/* First-time Onboarding Wizard */}
+        <OnboardingModal
+          isOpen={isOnboardingOpen}
+          onComplete={() => setIsOnboardingOpen(false)}
+          onAddHabit={addHabit}
+          onAddTask={handleAddTask}
+          requestNotificationPermission={requestPermission}
+        />
+
+        {/* Real-time Floating Toast Overlay */}
+        <NotificationToastOverlay toasts={toasts} onDismiss={dismissToast} />
+      </div>
+    </TimerProvider>
   );
 }
 

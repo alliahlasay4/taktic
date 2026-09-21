@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, Sparkles, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
 import { Task } from '../../types';
 
 interface InboxCalendarCardProps {
@@ -18,9 +18,7 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
   const year = currentDate.getFullYear();
   const month = currentDate.getMonth();
 
-  // First day of current month (0 = Sun, 1 = Mon, ...)
   const firstDayOfMonth = new Date(year, month, 1).getDay();
-  // Total days in current month
   const daysInMonth = new Date(year, month + 1, 0).getDate();
 
   const monthNames = [
@@ -43,7 +41,6 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
     onSelectDate(todayStr);
   };
 
-  // Helper to format date key YYYY-MM-DD
   const formatDateKey = (dayNum: number) => {
     const m = String(month + 1).padStart(2, '0');
     const d = String(dayNum).padStart(2, '0');
@@ -52,7 +49,6 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
 
   const todayStr = new Date().toISOString().split('T')[0];
 
-  // Helper to check if task matches a specific date key (YYYY-MM-DD)
   const getTasksForDate = (dateKey: string) => {
     const isTodayKey = dateKey === todayStr;
     const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
@@ -71,7 +67,6 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
     });
   };
 
-  // Calculate stats
   const todayTasksCount = tasks.filter(
     (t) => !t.completed && (t.dueDate?.toLowerCase() === 'today' || t.dueDate === todayStr || t.isTodayFocus)
   ).length;
@@ -84,31 +79,28 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
 
   const totalScheduled = tasks.filter((t) => !t.completed && t.dueDate).length;
 
-  // Build calendar days array
   const calendarCells = [];
-  // Padding cells for previous month
   for (let i = 0; i < firstDayOfMonth; i++) {
     calendarCells.push(null);
   }
-  // Days of the month
   for (let d = 1; d <= daysInMonth; d++) {
     calendarCells.push(d);
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs flex flex-col justify-between space-y-4">
+    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 shadow-xs flex flex-col justify-between space-y-5 transition-colors duration-300">
       {/* Card Header & Controls */}
-      <div>
+      <div className="space-y-4">
         <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-400">
-              <Calendar className="h-4 w-4" />
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/30">
+              <Calendar className="h-4.5 w-4.5" />
             </div>
             <div>
-              <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
+              <h3 className="font-heading font-bold text-base text-[var(--text-primary)]">
                 {monthNames[month]} {year}
               </h3>
-              <p className="text-[10px] text-[var(--text-secondary)]">Task Schedule Overview</p>
+              <p className="text-[11px] text-[var(--text-secondary)]"> Schedule Overview</p>
             </div>
           </div>
 
@@ -116,21 +108,21 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
           <div className="flex items-center gap-1">
             <button
               onClick={goToToday}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] px-2 py-1 text-[10px] font-semibold text-emerald-400 hover:border-emerald-500/40 transition"
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] px-2.5 py-1 text-[11px] font-bold text-[var(--accent-botanical-sage)] hover:border-[var(--accent-botanical-sage)]/50 transition"
               title="Jump to Today"
             >
               Today
             </button>
             <button
               onClick={prevMonth}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] p-1 text-[var(--text-secondary)] hover:text-white transition"
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
               title="Previous Month"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
             <button
               onClick={nextMonth}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] p-1 text-[var(--text-secondary)] hover:text-white transition"
+              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
               title="Next Month"
             >
               <ChevronRight className="h-4 w-4" />
@@ -139,7 +131,7 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
         </div>
 
         {/* Day of Week Labels */}
-        <div className="grid grid-cols-7 gap-1 text-center text-[10px] font-semibold text-[var(--text-muted)] mb-1">
+        <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider font-heading">
           {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
             <div key={day} className="py-1">
               {day}
@@ -148,10 +140,10 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
         </div>
 
         {/* Calendar Grid */}
-        <div className="grid grid-cols-7 gap-1">
+        <div className="grid grid-cols-7 gap-1.5">
           {calendarCells.map((dayNum, idx) => {
             if (dayNum === null) {
-              return <div key={`pad-${idx}`} className="h-8 rounded-lg" />;
+              return <div key={`pad-${idx}`} className="h-10 rounded-xl" />;
             }
 
             const dateKey = formatDateKey(dayNum);
@@ -165,34 +157,31 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
                 key={dateKey}
                 onClick={() => {
                   if (isSelected) {
-                    onSelectDate(null); // Toggle off filter
+                    onSelectDate(null);
                   } else {
                     onSelectDate(dateKey);
                   }
                 }}
-                className={`relative flex flex-col items-center justify-center h-8 rounded-xl text-xs font-semibold transition group ${
-                  isSelected
-                    ? 'bg-emerald-500 text-black shadow-md shadow-emerald-500/20 scale-105 font-bold z-10'
-                    : isToday
-                    ? 'border-2 border-emerald-500/60 bg-emerald-950/20 text-emerald-400 font-bold'
-                    : 'bg-[var(--bg-main)]/60 text-[var(--text-primary)] hover:border-gray-700 hover:bg-[var(--card-hover)]'
-                }`}
+                className={`relative flex flex-col items-center justify-center h-10 rounded-xl text-xs font-semibold transition group ${isSelected
+                  ? 'bg-[var(--accent-botanical-sage)] text-white shadow-xs font-bold z-10 scale-105'
+                  : isToday
+                    ? 'border-2 border-[var(--accent-botanical-sage)]/60 bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] font-bold'
+                    : 'bg-[var(--bg-main)]/60 text-[var(--text-primary)] hover:border-[var(--border-subtle)] hover:bg-[var(--card-hover)]'
+                  }`}
               >
-                <span>{dayNum}</span>
+                <span className="leading-none">{dayNum}</span>
 
-                {/* Task Count Badge / Dot */}
+                {/* Subtle Dot Indicator */}
                 {taskCount > 0 && (
                   <span
-                    className={`absolute -bottom-0.5 flex h-3.5 min-w-[14px] items-center justify-center rounded-full px-1 text-[8px] font-bold ${
-                      isSelected
-                        ? 'bg-black text-emerald-400'
+                    className={`mt-1 h-1.5 w-1.5 rounded-full transition-all ${isSelected
+                        ? 'bg-white'
                         : isToday
-                        ? 'bg-emerald-500 text-black'
-                        : 'bg-emerald-500/30 text-emerald-400 border border-emerald-500/40'
-                    }`}
-                  >
-                    {taskCount}
-                  </span>
+                          ? 'bg-[var(--accent-botanical-sage)]'
+                          : 'bg-[var(--accent-botanical-sage)]'
+                      }`}
+                    title={`${taskCount} task(s) scheduled`}
+                  />
                 )}
               </button>
             );
@@ -200,29 +189,62 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
         </div>
       </div>
 
+      {/* Selected Date Tasks Preview */}
+      {selectedDate && (
+        <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
+          <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-primary)]">
+            <span className="flex items-center gap-1.5">
+              <Calendar className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)]" />
+              Tasks for {selectedDate === todayStr ? 'Today' : selectedDate}
+            </span>
+            <span className="text-[11px] font-mono text-[var(--accent-botanical-sage)] bg-[var(--accent-botanical-sage)]/15 px-2 py-0.5 rounded-md">
+              {getTasksForDate(selectedDate).length} scheduled
+            </span>
+          </div>
+
+          {getTasksForDate(selectedDate).length === 0 ? (
+            <p className="text-[11px] text-[var(--text-muted)] italic">No tasks scheduled for this date.</p>
+          ) : (
+            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
+              {getTasksForDate(selectedDate).map((t) => (
+                <div
+                  key={t.id}
+                  className="flex items-center justify-between p-2 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)]"
+                >
+                  <span className="truncate font-medium">{t.title}</span>
+                  <span className="text-[10px] font-mono text-[var(--accent-terracotta)] shrink-0 ml-2">
+                    {t.estimatedMinutes ? `${t.estimatedMinutes}m` : ''}
+                  </span>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Quick Schedule Statistics */}
       <div className="pt-3 border-t border-[var(--border-subtle)] grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2">
-          <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1">
-            <Clock className="h-3 w-3 text-emerald-400" /> Due Today
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2.5">
+          <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1 font-semibold">
+            <Clock className="h-3 w-3 text-[var(--accent-botanical-sage)]" /> Due Today
           </p>
-          <p className="font-heading font-bold text-sm text-emerald-400 mt-0.5">{todayTasksCount}</p>
+          <p className="font-heading font-bold text-sm text-[var(--accent-botanical-sage)] mt-0.5">{todayTasksCount}</p>
         </div>
 
-        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2">
-          <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1">
-            <AlertCircle className="h-3 w-3 text-amber-400" /> Overdue
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2.5">
+          <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1 font-semibold">
+            <AlertCircle className="h-3 w-3 text-[#9E7328] dark:text-[#E0AF5E]" /> Overdue
           </p>
-          <p className={`font-heading font-bold text-sm mt-0.5 ${overdueCount > 0 ? 'text-amber-400' : 'text-[var(--text-muted)]'}`}>
+          <p className={`font-heading font-bold text-sm mt-0.5 ${overdueCount > 0 ? 'text-[#9E7328] dark:text-[#E0AF5E]' : 'text-[var(--text-muted)]'}`}>
             {overdueCount}
           </p>
         </div>
 
-        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2">
-          <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1">
-            <CheckCircle2 className="h-3 w-3 text-teal-400" /> Total Scheduled
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2.5">
+          <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1 font-semibold">
+            <CheckCircle2 className="h-3 w-3 text-[var(--accent-terracotta)]" /> Scheduled
           </p>
-          <p className="font-heading font-bold text-sm text-teal-400 mt-0.5">{totalScheduled}</p>
+          <p className="font-heading font-bold text-sm text-[var(--accent-terracotta)] mt-0.5">{totalScheduled}</p>
         </div>
       </div>
     </div>

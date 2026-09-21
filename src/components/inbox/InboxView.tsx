@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { Plus, Search, Filter, Inbox, Tag as TagIcon, X, Pencil, Calendar as CalendarIcon, Zap, RefreshCw, Sparkles, FolderArchive, ArrowUpDown } from 'lucide-react';
+import { Plus, Search, Inbox, Tag as TagIcon, X, Pencil, Calendar as CalendarIcon, Zap, RefreshCw, Sparkles, FolderArchive } from 'lucide-react';
 import { Task, PriorityLevel, TimeBlockSlot } from '../../types';
 import { TaskItem } from './TaskItem';
 import { FocusQueue } from './FocusQueue';
 import { InboxCalendarCard } from './InboxCalendarCard';
+import { EditTaskModal } from './EditTaskModal';
 
 interface InboxViewProps {
   tasks: Task[];
@@ -31,6 +32,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
   const [showCompleted, setShowCompleted] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
 
   // Ideal UX Feature States
   const [activeInboxTab, setActiveInboxTab] = useState<'active' | 'someday'>('active');
@@ -58,9 +60,9 @@ export const InboxView: React.FC<InboxViewProps> = ({
   // Calculate Overdue Tasks
   const overdueTasks = tasks.filter((t) => {
     if (t.completed || !t.dueDate) return false;
-    const lower = t.dueDate.trim().toLowerCase();
-    if (lower === 'today' || lower === 'tomorrow') return false;
-    return t.dueDate < todayStr;
+    const due = new Date(t.dueDate);
+    const today = new Date(todayStr);
+    return due < today;
   });
 
   // Calculate tab counts
@@ -216,16 +218,6 @@ export const InboxView: React.FC<InboxViewProps> = ({
 
   return (
     <div className="space-y-6">
-      {/* Today's Focus Queue Section */}
-      <FocusQueue
-        tasks={tasks}
-        onToggleComplete={onToggleComplete}
-        onToggleTodayFocus={onToggleTodayFocus}
-        onDeleteTask={onDeleteTask}
-        onEditTask={handleStartEditTask}
-        onOpenNewTaskModal={handleOpenCreateModal}
-      />
-
       {/* Main 2-Column Desktop Grid Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
         {/* Left Column: Mini-Calendar Card (4 cols) */}
@@ -237,245 +229,273 @@ export const InboxView: React.FC<InboxViewProps> = ({
           />
         </div>
 
-        {/* Right Column: Master Backlog Inbox (8 cols) */}
-        <div className="lg:col-span-8 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#C87D87]/20 text-[#C87D87]">
-                <Inbox className="h-4 w-4" />
+        {/* Right Column: Today's Focus Queue + Master Backlog Inbox (8 cols stacked) */}
+        <div className="lg:col-span-8 space-y-6">
+          {/* Today's Focus Queue Section */}
+          <FocusQueue
+            tasks={tasks}
+            onToggleComplete={onToggleComplete}
+            onToggleTodayFocus={onToggleTodayFocus}
+            onDeleteTask={onDeleteTask}
+            onEditTask={handleStartEditTask}
+            onOpenNewTaskModal={handleOpenCreateModal}
+          />
+
+          {/* Master Backlog Inbox Card */}
+          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 shadow-xs space-y-4 transition-colors duration-300">
+            {/* Header & Main Actions */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
+              <div className="flex items-center gap-3">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] border border-[var(--accent-terracotta)]/30">
+                  <Inbox className="h-4.5 w-4.5" />
+                </div>
+                <div>
+                  <h2 className="font-heading font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
+                    Master Backlog Inbox
+                    <span className="rounded-full bg-[var(--accent-terracotta)]/15 px-2 py-0.5 text-[11px] font-bold text-[var(--accent-terracotta)]">
+                      {sortedTasks.length}
+                    </span>
+                  </h2>
+                </div>
               </div>
-              <div>
-                <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
-                  Master Backlog Inbox
-                </h2>
-                <p className="text-xs text-[var(--text-secondary)]">
-                  All outstanding tactical tasks ({sortedTasks.length} items)
+
+              <div className="flex items-center gap-2">
+                {/* Bucket Tabs */}
+                <div className="flex items-center gap-1 bg-[var(--bg-main)] p-1 rounded-xl border border-[var(--border-subtle)]">
+                  <button
+                    onClick={() => setActiveInboxTab('active')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                      activeInboxTab === 'active'
+                        ? 'bg-[var(--accent-terracotta)] text-white shadow-xs'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <Zap className="h-3.5 w-3.5" />
+                    <span>Active</span>
+                    <span className="ml-1 text-[10px] opacity-80">({activeCount})</span>
+                  </button>
+
+                  <button
+                    onClick={() => setActiveInboxTab('someday')}
+                    className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${
+                      activeInboxTab === 'someday'
+                        ? 'bg-[var(--accent-dusty-mauve)] text-white shadow-xs'
+                        : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    <FolderArchive className="h-3.5 w-3.5" />
+                    <span>Someday</span>
+                    <span className="ml-1 text-[10px] opacity-80">({somedayCount})</span>
+                  </button>
+                </div>
+
+                <button
+                  onClick={handleOpenCreateModal}
+                  className="flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-3.5 py-1.5 text-xs font-semibold shadow-xs transition-all shrink-0"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>New Task</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Add Bar & Filters in a clean control panel */}
+            <div className="space-y-3 bg-[var(--bg-main)]/50 p-3.5 rounded-xl border border-[var(--border-subtle)]">
+              {/* Quick Add Bar */}
+              <form onSubmit={handleQuickAddSubmit}>
+                <div className="relative flex items-center">
+                  <Sparkles className="absolute left-3.5 h-4 w-4 text-[var(--accent-terracotta)] shrink-0" />
+                  <input
+                    type="text"
+                    value={quickAddTitle}
+                    onChange={(e) => setQuickAddTitle(e.target.value)}
+                    placeholder="Quick add task title..."
+                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] pl-10 pr-24 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] transition-colors shadow-2xs"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!quickAddTitle.trim()}
+                    className="absolute right-1.5 rounded-lg bg-[var(--accent-terracotta)] hover:opacity-90 px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-40 transition shadow-2xs"
+                  >
+                    Add Task
+                  </button>
+                </div>
+              </form>
+
+              {/* Search & Filter Controls Toolbar */}
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-2.5">
+                {/* Search Box */}
+                <div className="relative w-full sm:w-56 shrink-0">
+                  <Search className="absolute left-3 top-2.5 h-3.5 w-3.5 text-[var(--text-muted)]" />
+                  <input
+                    type="text"
+                    placeholder="Filter by keyword..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--card-surface)] pl-8.5 pr-7 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)]"
+                  />
+                  {searchQuery && (
+                    <button
+                      onClick={() => setSearchQuery('')}
+                      className="absolute right-2 top-2 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
+
+                {/* Dropdown Filters & Toggles */}
+                <div className="flex items-center gap-2 w-full sm:w-auto flex-wrap justify-end">
+                  {/* Priority Filter */}
+                  <select
+                    value={selectedPriority}
+                    onChange={(e) => setSelectedPriority(e.target.value as PriorityLevel | 'all')}
+                    aria-label="Filter by priority"
+                    className="rounded-lg border border-[var(--border-subtle)] bg-[var(--card-surface)] px-2.5 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none"
+                  >
+                    <option value="all">All Priorities</option>
+                    <option value="high">🔥 High</option>
+                    <option value="medium">⚡ Medium</option>
+                    <option value="low">🌱 Low</option>
+                  </select>
+
+                  {/* Smart Sort */}
+                  <select
+                    value={sortMode}
+                    onChange={(e) => setSortMode(e.target.value as any)}
+                    aria-label="Smart Sort order"
+                    className="rounded-lg border border-[var(--border-subtle)] bg-[var(--card-surface)] px-2.5 py-1.5 text-xs text-[var(--text-primary)] focus:outline-none font-medium"
+                  >
+                    <option value="recent">Sort: Default</option>
+                    <option value="quick_wins">Sort: Quick Wins</option>
+                    <option value="priority">Sort: Priority</option>
+                    <option value="due_date">Sort: Due Date</option>
+                  </select>
+
+                  {/* Hide/Show Completed Toggle */}
+                  <button
+                    onClick={() => setShowCompleted(!showCompleted)}
+                    className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-colors ${
+                      showCompleted
+                        ? 'border-[var(--border-subtle)] bg-[var(--card-hover)] text-[var(--text-primary)]'
+                        : 'border-[var(--border-subtle)] text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    {showCompleted ? 'Hide Done' : 'Show Done'}
+                  </button>
+                </div>
+              </div>
+
+              {/* Tag Chips */}
+              {allTags.length > 0 && (
+                <div className="flex items-center gap-1.5 flex-wrap pt-2 border-t border-[var(--border-subtle)]/60">
+                  <span className="text-[11px] font-semibold text-[var(--text-muted)] mr-0.5 flex items-center gap-1">
+                    <TagIcon className="h-3 w-3" /> Tags:
+                  </span>
+                  <button
+                    onClick={() => setSelectedTag(null)}
+                    className={`rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                      selectedTag === null
+                        ? 'bg-[var(--accent-terracotta)] text-white font-semibold'
+                        : 'bg-[var(--card-surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                  >
+                    All
+                  </button>
+                  {allTags.map((tag) => (
+                    <button
+                      key={tag}
+                      onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
+                      className={`rounded-md px-2 py-0.5 text-[11px] font-medium transition-colors ${
+                        selectedTag === tag
+                          ? 'bg-[var(--accent-terracotta)] text-white font-semibold'
+                          : 'bg-[var(--card-surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                      }`}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Banners (Overdue & Date Filter) */}
+            {overdueTasks.length > 0 && (
+              <div className="flex items-center justify-between rounded-xl border border-[var(--accent-warm-ochre)]/30 bg-[var(--accent-warm-ochre)]/10 p-2.5 px-3.5 text-xs text-[#9E7328] dark:text-[#E0AF5E]">
+                <div className="flex items-center gap-2 font-medium">
+                  <RefreshCw className="h-3.5 w-3.5 text-[var(--accent-warm-ochre)] shrink-0" />
+                  <span>
+                    <strong>{overdueTasks.length} task(s)</strong> are overdue from past dates!
+                  </span>
+                </div>
+                <button
+                  onClick={onRolloverOverdueTasks}
+                  className="flex items-center gap-1 rounded-lg bg-[var(--accent-warm-ochre)] text-slate-950 hover:opacity-90 px-2.5 py-0.5 text-[11px] font-bold transition"
+                >
+                  <Zap className="h-3 w-3" />
+                  Rollover All
+                </button>
+              </div>
+            )}
+
+            {selectedCalendarDate && (
+              <div className="flex items-center justify-between rounded-xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--accent-botanical-sage)]/10 p-2.5 px-3.5 text-xs text-[var(--accent-botanical-sage)]">
+                <span className="flex items-center gap-2 font-medium">
+                  <CalendarIcon className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)]" />
+                  Filtered by Date: <strong>{selectedCalendarDate}</strong>
+                </span>
+                <button
+                  onClick={() => setSelectedCalendarDate(null)}
+                  className="rounded-lg bg-[var(--accent-botanical-sage)]/20 border border-[var(--accent-botanical-sage)]/40 px-2.5 py-0.5 text-[11px] font-bold text-[var(--accent-botanical-sage)] hover:bg-[var(--accent-botanical-sage)]/30 transition"
+                >
+                  Show All Tasks
+                </button>
+              </div>
+            )}
+
+            {/* Task List */}
+            {sortedTasks.length === 0 ? (
+              <div className="py-12 flex flex-col items-center justify-center text-center space-y-2 rounded-xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-main)]/30">
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-[var(--card-hover)] text-[var(--text-muted)]">
+                  <Inbox className="h-5 w-5" />
+                </div>
+                <p className="text-xs font-semibold text-[var(--text-primary)]">No tasks in this view</p>
+                <p className="text-[11px] text-[var(--text-muted)] max-w-xs">
+                  Your backlog is empty or all tasks are filtered out. Quick add a task above to get started!
                 </p>
               </div>
-            </div>
-
-            <button
-              onClick={handleOpenCreateModal}
-              className="flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#C06C4C] to-[#C87D87] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-[#C06C4C]/20 transition-all hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" />
-              New Task
-            </button>
-          </div>
-
-          {/* Ideal UX Solution #3: Active Inbox vs. Someday / Later Buckets */}
-          <div className="flex items-center gap-2 mb-4 border-b border-[var(--border-subtle)] pb-3">
-            <button
-              onClick={() => setActiveInboxTab('active')}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                activeInboxTab === 'active'
-                  ? 'bg-gradient-to-r from-[#C06C4C] to-[#C87D87] text-white shadow-xs'
-                  : 'bg-[var(--card-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              <Zap className="h-3.5 w-3.5" />
-              Active Daily Inbox
-              <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                activeInboxTab === 'active' ? 'bg-white/20 text-white' : 'bg-[var(--border-subtle)] text-[var(--text-muted)]'
-              }`}>
-                {activeCount}
-              </span>
-            </button>
-
-            <button
-              onClick={() => setActiveInboxTab('someday')}
-              className={`flex items-center gap-2 rounded-xl px-3.5 py-1.5 text-xs font-semibold transition-all ${
-                activeInboxTab === 'someday'
-                  ? 'bg-purple-600 text-white shadow-xs'
-                  : 'bg-[var(--card-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-            >
-              <FolderArchive className="h-3.5 w-3.5 text-purple-300" />
-              Someday / Later Ideas
-              <span className={`rounded-full px-1.5 py-0.2 text-[10px] ${
-                activeInboxTab === 'someday' ? 'bg-white/20 text-white' : 'bg-[var(--border-subtle)] text-[var(--text-muted)]'
-              }`}>
-                {somedayCount}
-              </span>
-            </button>
-          </div>
-
-          {/* Ideal UX Solution #1: 2-Second Inline Quick-Add Input */}
-          <form onSubmit={handleQuickAddSubmit} className="mb-4">
-            <div className="relative flex items-center">
-              <Sparkles className="absolute left-3.5 h-4 w-4 text-[#C06C4C]" />
-              <input
-                type="text"
-                value={quickAddTitle}
-                onChange={(e) => setQuickAddTitle(e.target.value)}
-                placeholder="⚡ 2-Second Quick Add: Type task title & press Enter..."
-                className="w-full rounded-xl border border-[#C06C4C]/40 bg-[var(--bg-main)] pl-10 pr-24 py-2.5 text-xs font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] shadow-xs focus:outline-none focus:ring-2 focus:ring-[#C06C4C]/60"
-              />
-              <button
-                type="submit"
-                disabled={!quickAddTitle.trim()}
-                className="absolute right-2 rounded-lg bg-[#C06C4C] px-3 py-1 text-[11px] font-semibold text-white disabled:opacity-40 transition"
-              >
-                Quick Add
-              </button>
-            </div>
-          </form>
-
-          {/* Ideal UX Solution #2: 1-Click Rollover Overdue Banner */}
-          {overdueTasks.length > 0 && (
-            <div className="mb-4 flex items-center justify-between rounded-xl border border-amber-500/40 bg-amber-950/30 p-3 px-4 text-xs text-amber-300 shadow-xs">
-              <div className="flex items-center gap-2.5 font-medium">
-                <RefreshCw className="h-4 w-4 text-amber-400 animate-spin-slow" />
-                <span>
-                  <strong>{overdueTasks.length} task(s)</strong> are overdue from past dates!
-                </span>
+            ) : (
+              <div className="space-y-2.5">
+                {sortedTasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggleComplete={onToggleComplete}
+                    onToggleTodayFocus={onToggleTodayFocus}
+                    onDeleteTask={onDeleteTask}
+                    onEditTask={handleStartEditTask}
+                  />
+                ))}
               </div>
-              <button
-                onClick={onRolloverOverdueTasks}
-                className="flex items-center gap-1.5 rounded-lg bg-amber-500 text-slate-950 px-3 py-1 text-[11px] font-bold shadow-xs hover:bg-amber-400 transition"
-              >
-                <Zap className="h-3.5 w-3.5" />
-                Rollover All to Today
-              </button>
-            </div>
-          )}
-
-          {/* Active Date Filter Banner */}
-          {selectedCalendarDate && (
-            <div className="mb-4 flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-950/20 p-2.5 px-3.5 text-xs text-emerald-300">
-              <span className="flex items-center gap-2 font-medium">
-                <CalendarIcon className="h-4 w-4 text-emerald-400" />
-                Filtered by Date: <strong>{selectedCalendarDate}</strong>
-              </span>
-              <button
-                onClick={() => setSelectedCalendarDate(null)}
-                className="rounded-lg bg-emerald-500/20 border border-emerald-500/40 px-2.5 py-0.5 text-[11px] font-bold text-emerald-400 hover:bg-emerald-500/30 transition"
-              >
-                Show All Tasks
-              </button>
-            </div>
-          )}
-
-          {/* Filter & Search Bar */}
-          <div className="flex flex-col md:flex-row items-center gap-3 mb-4">
-            {/* Search input */}
-            <div className="relative flex-1 w-full">
-              <Search className="absolute left-3 top-2.5 h-4 w-4 text-[var(--text-muted)]" />
-              <input
-                type="text"
-                placeholder="Search tasks, descriptions, tags..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] pl-9 pr-4 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#C06C4C]/40"
-              />
-            </div>
-
-            {/* Ideal UX Solution #5: Smart Sort Selector */}
-            <div className="relative w-full md:w-auto">
-              <select
-                value={sortMode}
-                onChange={(e) => setSortMode(e.target.value as any)}
-                aria-label="Smart Sort order"
-                className="w-full md:w-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[#C06C4C]/40 font-medium"
-              >
-                <option value="recent">🎯 Sort: Default Order</option>
-                <option value="quick_wins">⚡ Sort: Quick Wins First (Shortest)</option>
-                <option value="priority">🔥 Sort: Priority First (High → Low)</option>
-                <option value="due_date">📅 Sort: Due Date (Earliest)</option>
-              </select>
-            </div>
-
-            {/* Priority filter */}
-            <select
-              value={selectedPriority}
-              onChange={(e) => setSelectedPriority(e.target.value as PriorityLevel | 'all')}
-              aria-label="Filter by priority"
-              className="w-full md:w-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[#C06C4C]/40"
-            >
-              <option value="all">All Priorities</option>
-              <option value="high">High Priority</option>
-              <option value="medium">Medium Priority</option>
-              <option value="low">Low Priority</option>
-            </select>
-
-            {/* Toggle completed filter */}
-            <button
-              onClick={() => setShowCompleted(!showCompleted)}
-              className={`w-full md:w-auto rounded-xl border px-3 py-2 text-xs font-medium transition-colors ${showCompleted
-                ? 'border-[var(--border-subtle)] bg-[var(--card-hover)] text-[var(--text-primary)]'
-                : 'border-[var(--border-subtle)] text-[var(--text-muted)]'
-                }`}
-            >
-              {showCompleted ? 'Hide Completed' : 'Show Completed'}
-            </button>
+            )}
           </div>
-
-          {/* Tag Pills Filter */}
-          {allTags.length > 0 && (
-            <div className="flex items-center gap-1.5 flex-wrap mb-4 pb-2 border-b border-[var(--border-subtle)]">
-              <span className="text-[11px] font-semibold text-[var(--text-muted)] mr-1 flex items-center gap-1">
-                <TagIcon className="h-3 w-3" /> Tags:
-              </span>
-              <button
-                onClick={() => setSelectedTag(null)}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${selectedTag === null
-                  ? 'bg-[#C06C4C] text-white'
-                  : 'bg-[var(--card-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-              >
-                All
-              </button>
-              {allTags.map((tag) => (
-                <button
-                  key={tag}
-                  onClick={() => setSelectedTag(selectedTag === tag ? null : tag)}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-colors ${selectedTag === tag
-                    ? 'bg-[#C06C4C] text-white'
-                    : 'bg-[var(--card-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
-                >
-                  #{tag}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {/* Task List */}
-          {sortedTasks.length === 0 ? (
-            <div className="py-12 text-center text-xs text-[var(--text-muted)]">
-              No matching tasks found for this view.
-            </div>
-          ) : (
-            <div className="space-y-2.5">
-              {sortedTasks.map((task) => (
-                <TaskItem
-                  key={task.id}
-                  task={task}
-                  onToggleComplete={onToggleComplete}
-                  onToggleTodayFocus={onToggleTodayFocus}
-                  onDeleteTask={onDeleteTask}
-                  onEditTask={handleStartEditTask}
-                />
-              ))}
-            </div>
-          )}
-        </div>
       </div>
+    </div>
 
       {/* Modal for Creating or Editing Task */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
-          <div className="w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 shadow-2xl">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-heading font-bold text-lg text-[var(--text-primary)] flex items-center gap-2">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
+          <div className="w-full max-w-md rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)]">
+              <h3 className="font-heading font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
                 {editingTaskId ? (
                   <>
-                    <Pencil className="h-5 w-5 text-[#C06C4C]" />
+                    <Pencil className="h-4 w-4 text-[var(--accent-terracotta)]" />
                     <span>Edit Tactical Task</span>
                   </>
                 ) : (
                   <>
-                    <Plus className="h-5 w-5 text-[#C06C4C]" />
+                    <Plus className="h-4 w-4 text-[var(--accent-terracotta)]" />
                     <span>Create New Tactical Task</span>
                   </>
                 )}
@@ -485,7 +505,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                   setIsModalOpen(false);
                   setEditingTaskId(null);
                 }}
-                className="rounded-lg p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                className="rounded-lg p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
               >
                 <X className="h-5 w-5" />
               </button>
@@ -502,7 +522,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                   placeholder="e.g. Audit design token accessibility"
                   value={newTitle}
                   onChange={(e) => setNewTitle(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[#C06C4C]/40"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)]"
                 />
               </div>
 
@@ -515,7 +535,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                   placeholder="Additional context or acceptance criteria..."
                   value={newDesc}
                   onChange={(e) => setNewDesc(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[#C06C4C]/40"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)] resize-none"
                 />
               </div>
 
@@ -567,7 +587,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                         setNewIsTodayFocus(true);
                       }
                     }}
-                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:ring-2 focus:ring-[#C06C4C]/40"
+                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)]"
                   />
                 </div>
 
@@ -587,7 +607,6 @@ export const InboxView: React.FC<InboxViewProps> = ({
                 </div>
               </div>
 
-              {/* Ideal UX Solution #4: Recurring Routine Tasks */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
@@ -619,21 +638,19 @@ export const InboxView: React.FC<InboxViewProps> = ({
                 </div>
               </div>
 
-              {/* Ideal UX Solution #3: Someday / Later Toggle */}
               <div className="flex items-center gap-2 pt-1">
                 <input
                   type="checkbox"
                   id="isSomeday"
                   checked={newIsSomeday}
                   onChange={(e) => setNewIsSomeday(e.target.checked)}
-                  className="rounded border-[var(--border-subtle)] text-purple-500 focus:ring-purple-500"
+                  className="rounded border-[var(--border-subtle)] accent-[var(--accent-dusty-mauve)]"
                 />
                 <label htmlFor="isSomeday" className="text-xs font-medium text-[var(--text-primary)] cursor-pointer">
                   Mark as Someday / Backlog Idea 💡
                 </label>
               </div>
 
-              {/* Today's Focus Queue Checkbox (Disabled when scheduled for a non-today date) */}
               {(() => {
                 const isDateToday = !newDueDate || newDueDate === todayStr;
                 return (
@@ -645,7 +662,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                         checked={isDateToday && newIsTodayFocus}
                         disabled={!isDateToday}
                         onChange={(e) => setNewIsTodayFocus(e.target.checked)}
-                        className="rounded border-[var(--border-subtle)] text-[#C06C4C] focus:ring-[#C06C4C] disabled:opacity-40 disabled:cursor-not-allowed"
+                        className="rounded border-[var(--border-subtle)] accent-[var(--accent-terracotta)] disabled:opacity-40 disabled:cursor-not-allowed"
                       />
                       <label
                         htmlFor="isTodayFocus"
@@ -672,7 +689,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-gradient-to-r from-[#C06C4C] to-[#C87D87] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-[#C06C4C]/20 hover:opacity-90"
+                  className="rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-4 py-2 text-xs font-semibold shadow-xs"
                 >
                   {editingTaskId ? 'Update Task' : 'Save Task'}
                 </button>
@@ -681,8 +698,19 @@ export const InboxView: React.FC<InboxViewProps> = ({
           </div>
         </div>
       )}
+
+      {/* Edit Task Modal */}
+      <EditTaskModal
+        isOpen={Boolean(taskToEdit)}
+        task={taskToEdit}
+        onClose={() => setTaskToEdit(null)}
+        onSave={(id, updatedFields) => {
+          if (onUpdateTask) {
+            onUpdateTask(id, updatedFields);
+          }
+          setTaskToEdit(null);
+        }}
+      />
     </div>
   );
 };
-
-

@@ -1,19 +1,16 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Play, Pause, RotateCcw, CheckCircle2, Sparkles, Sliders, Zap, Smile, Frown, X } from 'lucide-react';
+import { Play, Pause, RotateCcw, CheckCircle2, Sparkles, Zap, Smile, Frown, X, Coffee } from 'lucide-react';
 import { formatTime } from '../../lib/utils';
-import { soundEngine } from '../../lib/audio';
 import { Task } from '../../types';
+import { useTimer, TimerMode, PresetOption } from '../../context/TimerContext';
 
 interface PomodoroTimerProps {
   selectedTask?: Task | null;
-  onFocusComplete: (durationMinutes: number, taskTitle?: string, focusQuality?: 'high_flow' | 'moderate' | 'distracted') => void;
-  activeSoundscape: string | null;
-  setActiveSoundscape: (sound: string | null) => void;
+  onFocusComplete?: (durationMinutes: number, taskTitle?: string, focusQuality?: 'high_flow' | 'moderate' | 'distracted') => void;
+  activeSoundscape?: string | null;
+  setActiveSoundscape?: (sound: string | null) => void;
 }
-
-type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak' | 'stopwatch';
-type PresetOption = 25 | 50 | 90 | 'custom';
 
 const BREAK_GUIDANCE_TIPS = [
   'Hydration Check: Drink a glass of clean water to rehydrate your mind.',
@@ -24,40 +21,36 @@ const BREAK_GUIDANCE_TIPS = [
 
 export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
   selectedTask,
-  onFocusComplete,
-  activeSoundscape,
-  setActiveSoundscape,
 }) => {
-  const [mode, setMode] = useState<TimerMode>('pomodoro');
-  const [preset, setPreset] = useState<PresetOption>(25);
-  const [customMinutesInput, setCustomMinutesInput] = useState<number>(45);
-  const [autoStartBreak, setAutoStartBreak] = useState<boolean>(false);
+  const {
+    mode,
+    preset,
+    customMinutesInput,
+    timeLeft,
+    totalDuration,
+    isRunning,
+    autoStartBreak,
+    showRatingModal,
+    pendingSessionData,
+    toggleTimer,
+    resetTimer,
+    setMode,
+    setPreset,
+    setCustomMinutesInput,
+    setAutoStartBreak,
+    setSelectedTask,
+    submitSessionComplete,
+  } = useTimer();
 
-  // Calculate current mode duration in seconds
-  const getDurationSeconds = (): number => {
-    if (mode === 'shortBreak') return 5 * 60;
-    if (mode === 'longBreak') return 15 * 60;
-    if (mode === 'stopwatch') return 0;
-    if (preset === 'custom') return Math.max(1, customMinutesInput) * 60;
-    return preset * 60;
-  };
-
-  const totalDuration = getDurationSeconds();
-  const [timeLeft, setTimeLeft] = useState<number>(totalDuration);
-  const [isRunning, setIsRunning] = useState<boolean>(false);
-  const intervalRef = useRef<NodeJS.Timeout | null>(null);
-
-  // Energy Check-in Rating Modal State
-  const [showRatingModal, setShowRatingModal] = useState(false);
-  const [pendingSessionData, setPendingSessionData] = useState<{ mins: number; title?: string } | null>(null);
+  // Sync selected task from props if passed
+  useEffect(() => {
+    if (selectedTask !== undefined) {
+      setSelectedTask(selectedTask);
+    }
+  }, [selectedTask, setSelectedTask]);
 
   // Break guidance rotating index
   const [breakTipIndex, setBreakTipIndex] = useState(0);
-
-  useEffect(() => {
-    setTimeLeft(getDurationSeconds());
-    setIsRunning(false);
-  }, [mode, preset, customMinutesInput]);
 
   // Rotate break tips
   useEffect(() => {
@@ -69,233 +62,184 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     }
   }, [mode]);
 
-  useEffect(() => {
-    if (isRunning) {
-      intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (mode === 'stopwatch') {
-            return prev + 1;
-          }
-          if (prev <= 1) {
-            clearInterval(intervalRef.current!);
-            setIsRunning(false);
-            soundEngine.playTimerCompleteSound();
-
-            const elapsedMins = Math.max(1, Math.round(totalDuration / 60));
-
-            // Prompt energy check-in modal
-            setPendingSessionData({ mins: elapsedMins, title: selectedTask?.title });
-            setShowRatingModal(true);
-
-            // Auto-start break flow if enabled
-            if (mode === 'pomodoro' && autoStartBreak) {
-              setTimeout(() => {
-                setMode('shortBreak');
-                setIsRunning(true);
-              }, 1000);
-            }
-
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
-    } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    }
-
-    return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
-    };
-  }, [isRunning, mode, totalDuration, selectedTask, autoStartBreak]);
-
-  const handleTogglePlay = () => {
-    if (!isRunning && activeSoundscape) {
-      soundEngine.playSoundscape(activeSoundscape);
-    }
-    setIsRunning(!isRunning);
-  };
-
-  const handleReset = () => {
-    setIsRunning(false);
-    setTimeLeft(getDurationSeconds());
-  };
-
-  const handleManualCompleteLog = () => {
-    const elapsedMins = mode === 'stopwatch'
-      ? Math.max(1, Math.round(timeLeft / 60))
-      : Math.max(1, Math.round((totalDuration - timeLeft) / 60) || 1);
-
-    soundEngine.playTimerCompleteSound();
-    setPendingSessionData({ mins: elapsedMins, title: selectedTask?.title });
-    setShowRatingModal(true);
-  };
-
+  // Handle rating confirmation
   const handleConfirmEnergyRating = (quality: 'high_flow' | 'moderate' | 'distracted') => {
-    if (pendingSessionData) {
-      onFocusComplete(pendingSessionData.mins, pendingSessionData.title, quality);
-    }
-    setShowRatingModal(false);
-    setPendingSessionData(null);
+    submitSessionComplete(quality);
   };
 
-  // Progress percentage for SVG ring
-  const progressPct =
-    mode === 'stopwatch'
-      ? Math.min(100, (timeLeft / 3600) * 100)
-      : Math.max(0, ((totalDuration - timeLeft) / totalDuration) * 100);
+  // Progress Calculation
+  const progressPercent = mode === 'stopwatch'
+    ? 100
+    : totalDuration > 0
+      ? Math.max(0, Math.min(100, ((totalDuration - timeLeft) / totalDuration) * 100))
+      : 0;
 
-  const center = 120;
-  const radius = 95;
-  const circumference = 2 * Math.PI * radius;
-  const strokeDashoffset = circumference - (circumference * progressPct) / 100;
+  const strokeDashoffset = 283 - (283 * progressPercent) / 100;
 
   return (
-    <div className="flex flex-col items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-8 shadow-md relative">
-      {/* Mode Selector Tabs */}
-      <div className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-1 mb-4 flex-wrap justify-center">
-        {(['pomodoro', 'shortBreak', 'longBreak', 'stopwatch'] as TimerMode[]).map((m) => (
+    <div className="flex flex-col items-center justify-center p-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-xs transition-colors duration-300 relative overflow-hidden">
+      {/* Top Mode Segmented Selector */}
+      <div className="flex items-center justify-center gap-1.5 p-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] mb-6 w-full max-w-sm">
+        {(
+          [
+            { id: 'pomodoro', label: 'Pomodoro' },
+            { id: 'shortBreak', label: 'Short Break' },
+            { id: 'longBreak', label: 'Long Break' },
+            { id: 'stopwatch', label: 'Stopwatch' },
+          ] as const
+        ).map((tab) => (
           <button
-            key={m}
-            onClick={() => setMode(m)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold capitalize transition-all ${
-              mode === m
-                ? 'bg-gradient-to-r from-[#CFA052] to-[#C06C4C] text-white shadow-xs'
-                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            key={tab.id}
+            onClick={() => setMode(tab.id as TimerMode)}
+            className={`flex-1 py-1.5 px-2 rounded-lg text-xs font-semibold transition-all ${
+              mode === tab.id
+                ? 'bg-gradient-to-r from-[var(--accent-terracotta)] to-[var(--accent-dusty-rose)] text-white shadow-xs'
+                : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
             }`}
           >
-            {m === 'pomodoro'
-              ? 'Focus Mode'
-              : m === 'shortBreak'
-              ? '5m Rest'
-              : m === 'longBreak'
-              ? '15m Rest'
-              : 'Stopwatch'}
+            {tab.label}
           </button>
         ))}
       </div>
 
-      {/* Focus Duration Presets (Only visible in Pomodoro focus mode) */}
+      {/* Mode Specific Status Pill */}
+      <div className="mb-4">
+        {mode === 'pomodoro' && (
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-[var(--accent-terracotta)]/30 bg-[var(--accent-terracotta)]/10 px-3 py-1 text-xs font-semibold text-[var(--accent-terracotta)]">
+            <Zap className="h-3.5 w-3.5" />
+            <span>Deep Focus Mode</span>
+          </div>
+        )}
+        {mode === 'shortBreak' && (
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-teal-500/30 bg-teal-500/10 px-3 py-1 text-xs font-semibold text-teal-400">
+            <Coffee className="h-3.5 w-3.5" />
+            <span>Short Break (5m)</span>
+          </div>
+        )}
+        {mode === 'longBreak' && (
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/30 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-400">
+            <Coffee className="h-3.5 w-3.5" />
+            <span>Long Break (15m)</span>
+          </div>
+        )}
+        {mode === 'stopwatch' && (
+          <div className="inline-flex items-center gap-1.5 rounded-full border border-amber-500/30 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-400">
+            <Sparkles className="h-3.5 w-3.5" />
+            <span>Open Stopwatch Flow</span>
+          </div>
+        )}
+      </div>
+
+      {/* Preset Duration Chips (Only in Pomodoro Mode) */}
       {mode === 'pomodoro' && (
-        <div className="flex items-center gap-2 mb-4">
-          <span className="text-[11px] font-semibold text-[var(--text-muted)]">Presets:</span>
-          {([25, 50, 90] as number[]).map((mins) => (
+        <div className="flex items-center justify-center gap-2 mb-6">
+          {([25, 50, 90, 'custom'] as const).map((p) => (
             <button
-              key={mins}
-              onClick={() => setPreset(mins as PresetOption)}
-              className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
-                preset === mins
-                  ? 'bg-[#CFA052] text-white shadow-xs'
-                  : 'bg-[var(--card-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              key={p}
+              onClick={() => setPreset(p as PresetOption)}
+              className={`rounded-xl px-3 py-1 text-xs font-semibold border transition-all ${
+                preset === p
+                  ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)]'
+                  : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
               }`}
             >
-              {mins}m
+              {p === 'custom' ? 'Custom' : `${p}m`}
             </button>
           ))}
-          <button
-            onClick={() => setPreset('custom')}
-            className={`rounded-lg px-2.5 py-1 text-[11px] font-bold transition-all ${
-              preset === 'custom'
-                ? 'bg-[#CFA052] text-white shadow-xs'
-                : 'bg-[var(--card-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-          >
-            Custom
-          </button>
-
-          {preset === 'custom' && (
-            <input
-              type="number"
-              min="1"
-              max="180"
-              value={customMinutesInput}
-              onChange={(e) => setCustomMinutesInput(Number(e.target.value))}
-              className="w-14 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] px-2 py-0.5 text-[11px] text-[var(--text-primary)] text-center font-bold focus:outline-none"
-            />
-          )}
         </div>
       )}
 
-      {/* Selected Task Indicator */}
+      {/* Custom Duration Input Box */}
+      {mode === 'pomodoro' && preset === 'custom' && (
+        <div className="mb-6 flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-1.5 text-xs text-[var(--text-primary)]">
+          <label className="font-medium text-[var(--text-secondary)]">Minutes:</label>
+          <input
+            type="number"
+            min={1}
+            max={360}
+            value={customMinutesInput}
+            onChange={(e) => setCustomMinutesInput(Number(e.target.value))}
+            className="w-16 rounded-lg border border-[var(--border-subtle)] bg-[var(--card-surface)] px-2 py-1 text-center font-mono font-bold focus:border-[var(--accent-terracotta)] focus:outline-none"
+          />
+        </div>
+      )}
+
+      {/* Active Task Badge */}
       {selectedTask && (
-        <div className="mb-4 flex items-center gap-2 rounded-full border border-[#CFA052]/30 bg-[#CFA052]/10 px-4 py-1.5 text-xs font-semibold text-[#CFA052]">
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>Focusing on: {selectedTask.title}</span>
+        <div className="mb-5 flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/80 px-3.5 py-2 text-xs font-medium text-[var(--text-primary)] shadow-xs max-w-sm">
+          <CheckCircle2 className="h-4 w-4 text-[var(--accent-terracotta)] shrink-0" />
+          <span className="truncate">Focusing on: <strong className="font-semibold">{selectedTask.title}</strong></span>
         </div>
       )}
 
-      {/* Circular Timer SVG Display */}
-      <div className="relative flex items-center justify-center mb-6">
-        <svg width="240" height="240" className="rotate-[-90deg]">
+      {/* Oversized Circular Progress Countdown Ring */}
+      <div className="relative my-4 flex items-center justify-center">
+        <svg className="h-64 w-64 transform -rotate-90" viewBox="0 0 100 100">
           <circle
-            cx={center}
-            cy={center}
-            r={radius}
-            stroke="var(--border-subtle)"
-            strokeWidth="12"
-            fill="transparent"
-            className="opacity-40"
+            cx="50"
+            cy="50"
+            r="45"
+            className="stroke-[var(--border-subtle)]/40 fill-none"
+            strokeWidth="4"
           />
           <motion.circle
-            cx={center}
-            cy={center}
-            r={radius}
-            stroke="var(--ring-focus)"
-            strokeWidth="12"
-            fill="transparent"
-            strokeDasharray={circumference}
+            cx="50"
+            cy="50"
+            r="45"
+            className="stroke-[var(--accent-terracotta)] fill-none"
+            strokeWidth="4"
+            strokeDasharray="283"
+            strokeDashoffset={strokeDashoffset}
+            strokeLinecap="round"
+            initial={false}
             animate={{ strokeDashoffset }}
             transition={{ duration: 0.5, ease: 'linear' }}
-            strokeLinecap="round"
           />
         </svg>
 
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          <span className="font-heading text-4xl sm:text-5xl font-bold tracking-tight text-[var(--text-primary)]">
+        {/* Big Display Clock Inside Ring */}
+        <div className="absolute flex flex-col items-center justify-center text-center">
+          <span className="font-mono text-5xl font-extrabold tracking-tight text-[var(--text-primary)]">
             {formatTime(timeLeft)}
           </span>
-          <span className="mt-1 text-xs font-medium text-[var(--text-secondary)] uppercase tracking-wider">
-            {mode === 'stopwatch' ? 'Elapsed Time' : isRunning ? 'In Deep Focus' : 'Ready'}
+          <span className="mt-1 text-xs uppercase tracking-widest text-[var(--text-muted)] font-semibold font-heading">
+            {isRunning ? 'Session Active' : 'Paused'}
           </span>
         </div>
       </div>
 
-      {/* Text-Only Active Break Guidance (No Emojis as requested) */}
+      {/* Break Guidance Box */}
       {(mode === 'shortBreak' || mode === 'longBreak') && (
-        <div className="mb-6 w-full rounded-xl border border-sky-500/30 bg-sky-950/20 p-3 text-center text-xs text-sky-200">
-          <p className="font-semibold text-sky-400 mb-0.5">Active Break Tip:</p>
-          <p className="italic font-medium">{BREAK_GUIDANCE_TIPS[breakTipIndex]}</p>
+        <div className="my-3 w-full max-w-sm rounded-xl border border-teal-500/30 bg-teal-500/10 p-3 text-center text-xs text-teal-300">
+          <p className="font-semibold">{BREAK_GUIDANCE_TIPS[breakTipIndex]}</p>
         </div>
       )}
 
-      {/* Timer Controls */}
-      <div className="flex items-center gap-4 mb-5">
+      {/* Primary Action Buttons */}
+      <div className="mt-6 flex items-center gap-4">
         <button
-          onClick={handleReset}
-          className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] transition-all hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]"
+          onClick={toggleTimer}
+          className={`flex items-center gap-2 rounded-2xl px-8 py-3.5 text-sm font-bold transition-all shadow-md ${
+            isRunning
+              ? 'bg-[#CFA052]/20 text-[#CFA052] border border-[#CFA052]/30 hover:bg-[#CFA052]/30'
+              : 'bg-gradient-to-r from-[var(--accent-terracotta)] to-[var(--accent-dusty-rose)] text-white hover:opacity-90 shadow-[var(--accent-terracotta)]/20'
+          }`}
+        >
+          {isRunning ? <Pause className="h-5 w-5" /> : <Play className="h-5 w-5" />}
+          <span>{isRunning ? 'Pause' : 'Start Focus'}</span>
+        </button>
+
+        <button
+          onClick={resetTimer}
+          className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition-all"
           title="Reset Timer"
         >
-          <RotateCcw className="h-4 w-4" />
-        </button>
-
-        <button
-          onClick={handleTogglePlay}
-          className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#CFA052] to-[#C06C4C] text-white shadow-lg shadow-[#CFA052]/30 transition-transform hover:scale-105 active:scale-95"
-        >
-          {isRunning ? <Pause className="h-6 w-6 fill-white" /> : <Play className="h-6 w-6 fill-white ml-0.5" />}
-        </button>
-
-        <button
-          onClick={handleManualCompleteLog}
-          className="flex h-11 w-11 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] text-[#6B8E6E] transition-all hover:bg-[#6B8E6E]/15"
-          title="Log Completed Session & Rating"
-        >
-          <CheckCircle2 className="h-4 w-4" />
+          <RotateCcw className="h-5 w-5" />
         </button>
       </div>
 
       {/* Auto-Start Break Switch */}
-      <div className="flex items-center gap-2 border-t border-[var(--border-subtle)] pt-3.5 w-full justify-center text-xs text-[var(--text-secondary)]">
+      <div className="flex items-center gap-2 border-t border-[var(--border-subtle)] pt-4 mt-6 w-full justify-center text-xs text-[var(--text-secondary)]">
         <input
           type="checkbox"
           id="autoStartBreak"
@@ -310,11 +254,11 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
 
       {/* Post-Session Energy & Quality Rating Modal */}
       {showRatingModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4 animate-in fade-in">
           <div className="w-full max-w-sm rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 shadow-2xl text-center">
             <div className="flex items-center justify-between mb-3">
               <h4 className="font-heading font-bold text-base text-[var(--text-primary)]">
-                Session Complete!
+                Session Complete! 🎉
               </h4>
               <button
                 onClick={() => handleConfirmEnergyRating('moderate')}
@@ -331,35 +275,35 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
             <div className="space-y-2.5">
               <button
                 onClick={() => handleConfirmEnergyRating('high_flow')}
-                className="w-full flex items-center justify-between rounded-xl border border-emerald-500/40 bg-emerald-950/20 p-3 text-xs font-bold text-emerald-300 hover:bg-emerald-500/20 transition"
+                className="w-full flex items-center justify-between rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/20 transition"
               >
                 <span className="flex items-center gap-2">
-                  <Zap className="h-4 w-4 text-emerald-400" />
+                  <Zap className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                   High Flow State
                 </span>
-                <span className="text-[10px] font-normal text-emerald-400/80">Deep focus</span>
+                <span className="text-[10px] font-normal text-emerald-600 dark:text-emerald-400">Deep focus</span>
               </button>
 
               <button
                 onClick={() => handleConfirmEnergyRating('moderate')}
-                className="w-full flex items-center justify-between rounded-xl border border-amber-500/40 bg-amber-950/20 p-3 text-xs font-bold text-amber-300 hover:bg-amber-500/20 transition"
+                className="w-full flex items-center justify-between rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-xs font-bold text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition"
               >
                 <span className="flex items-center gap-2">
-                  <Smile className="h-4 w-4 text-amber-400" />
+                  <Smile className="h-4 w-4 text-amber-600 dark:text-amber-400" />
                   Moderate Focus
                 </span>
-                <span className="text-[10px] font-normal text-amber-400/80">Normal pace</span>
+                <span className="text-[10px] font-normal text-amber-600 dark:text-amber-400">Normal pace</span>
               </button>
 
               <button
                 onClick={() => handleConfirmEnergyRating('distracted')}
-                className="w-full flex items-center justify-between rounded-xl border border-rose-500/40 bg-rose-950/20 p-3 text-xs font-bold text-rose-300 hover:bg-rose-500/20 transition"
+                className="w-full flex items-center justify-between rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs font-bold text-rose-700 dark:text-rose-300 hover:bg-rose-500/20 transition"
               >
                 <span className="flex items-center gap-2">
-                  <Frown className="h-4 w-4 text-rose-400" />
+                  <Frown className="h-4 w-4 text-rose-600 dark:text-rose-400" />
                   Distracted
                 </span>
-                <span className="text-[10px] font-normal text-rose-400/80">Frequent breaks</span>
+                <span className="text-[10px] font-normal text-rose-600 dark:text-rose-400">Frequent breaks</span>
               </button>
             </div>
           </div>
@@ -368,5 +312,3 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     </div>
   );
 };
-
-

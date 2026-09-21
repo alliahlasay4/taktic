@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, AlertCircle, Plus, CheckCircle } from 'lucide-react';
+import { Star, AlertCircle, Plus } from 'lucide-react';
 import { Task } from '../../types';
 import { TaskItem } from './TaskItem';
 
@@ -25,11 +25,11 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
   const isOptimal = focusTasks.length >= 3 && focusTasks.length <= 5;
 
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs">
+    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs transition-colors duration-300">
       <div className="flex items-center justify-between mb-4">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#CFA052]/20 text-[#CFA052]">
-            <Star className="h-4 w-4 fill-[#CFA052]" />
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] border border-[var(--accent-warm-ochre)]/30">
+            <Star className="h-4 w-4 fill-[var(--accent-warm-ochre)] text-[var(--accent-warm-ochre)]" />
           </div>
           <div>
             <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
@@ -43,12 +43,12 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
 
         {/* Counter Badge */}
         <div
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${
+          className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${
             isOverlimit
-              ? 'bg-rose-500/20 text-rose-500'
+              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
               : isOptimal
-              ? 'bg-[#6B8E6E]/20 text-[#6B8E6E]'
-              : 'bg-[var(--border-subtle)] text-[var(--text-secondary)]'
+              ? 'bg-[var(--accent-botanical-sage)]/15 text-[#4D6C4F] dark:text-[#7B9E7E] border border-[var(--accent-botanical-sage)]/30'
+              : 'bg-[var(--card-hover)] text-[var(--text-secondary)] border-[var(--border-subtle)]'
           }`}
         >
           <span>{focusTasks.length} / 5 Max</span>
@@ -57,7 +57,7 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
 
       {/* Constraint Warning Banner */}
       {isOverlimit && (
-        <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-500">
+        <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-400 font-medium">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>
             <strong>Overload Warning:</strong> You have selected {focusTasks.length} focus tasks. Research shows focusing on 3–5 items maximizes output and clarity.
@@ -67,9 +67,9 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
 
       {/* Focus Tasks List */}
       {focusTasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border-subtle)] p-8 text-center">
+        <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-[var(--border-subtle)] p-8 text-center bg-[var(--bg-main)]/50">
           <Star className="h-8 w-8 text-[var(--text-muted)] mb-2" />
-          <p className="text-sm font-medium text-[var(--text-primary)]">
+          <p className="text-sm font-semibold text-[var(--text-primary)]">
             No focus tasks queued for today
           </p>
           <p className="text-xs text-[var(--text-secondary)] mt-1 mb-4">
@@ -77,7 +77,7 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
           </p>
           <button
             onClick={onOpenNewTaskModal}
-            className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-[#C06C4C] to-[#C87D87] px-4 py-2 text-xs font-semibold text-white shadow-md shadow-[#C06C4C]/20 transition-all hover:opacity-90"
+            className="flex items-center gap-2 rounded-xl bg-[var(--accent-terracotta)] hover:opacity-90 px-4 py-2 text-xs font-semibold text-white shadow-xs transition-all"
           >
             <Plus className="h-4 w-4" />
             Add Priority Task
@@ -100,4 +100,3 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
     </div>
   );
 };
-

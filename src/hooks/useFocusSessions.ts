@@ -57,12 +57,12 @@ export function useFocusSessions() {
     fetchFocusSessions();
   }, [fetchFocusSessions]);
 
-  // Persist to LocalStorage in Demo Mode
+  // Always persist write-through cache to LocalStorage for offline support
   useEffect(() => {
-    if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
+    if (focusSessions.length > 0) {
       localStorage.setItem('taktic_focus_sessions', JSON.stringify(focusSessions));
     }
-  }, [focusSessions, isDemo, user]);
+  }, [focusSessions]);
 
   // Log a new completed Focus Session (Optimistic UI)
   const addFocusSession = async (

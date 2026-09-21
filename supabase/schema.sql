@@ -11,7 +11,24 @@ CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users(id) ON DELETE CASCADE PRIMARY KEY,
   email TEXT NOT NULL,
   full_name TEXT,
+  username TEXT,
   avatar_url TEXT,
+  bio TEXT,
+  micro_goal TEXT,
+  status_message TEXT,
+  timezone TEXT,
+  work_hours_start TEXT,
+  work_hours_end TEXT,
+  favorite_soundscape TEXT,
+  privacy_settings JSONB DEFAULT '{
+    "showFocusHours": true,
+    "showMicroGoal": true,
+    "showActivityFeed": true,
+    "showStreak": true
+  }'::jsonb,
+  current_streak INT DEFAULT 0,
+  longest_streak INT DEFAULT 0,
+  onboarding_completed BOOLEAN DEFAULT false,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
@@ -114,6 +131,7 @@ CREATE TABLE IF NOT EXISTS public.focus_sessions (
   task_title TEXT,
   mode TEXT DEFAULT 'pomodoro' NOT NULL,
   soundscape TEXT,
+  focus_quality TEXT DEFAULT 'high_flow',
   completed_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 

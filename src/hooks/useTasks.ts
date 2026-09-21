@@ -63,12 +63,12 @@ export function useTasks() {
     fetchTasks();
   }, [fetchTasks]);
 
-  // Persist to LocalStorage in Demo Mode
+  // Always write-through cache to LocalStorage for offline support
   useEffect(() => {
-    if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
+    if (tasks.length > 0) {
       localStorage.setItem('taktic_tasks', JSON.stringify(tasks));
     }
-  }, [tasks, isDemo, user]);
+  }, [tasks]);
 
   // Helper to ensure clean date formatting for Postgres
   const formatDueDateForDb = (dateStr?: string) => {

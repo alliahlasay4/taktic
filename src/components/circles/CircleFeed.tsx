@@ -48,15 +48,15 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
   const getPostBadge = (type: CircleFeedPost['type']) => {
     switch (type) {
       case 'ring_closed':
-        return { icon: Trophy, label: 'Ring Closed', bg: 'bg-amber-500/15 text-amber-400 border-amber-500/30', tag: '#FocusRings' };
+        return { icon: Trophy, label: 'Ring Closed', bg: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30', tag: '#FocusRings' };
       case 'streak_milestone':
-        return { icon: Flame, label: 'Streak Milestone', bg: 'bg-orange-500/15 text-orange-400 border-orange-500/30', tag: '#Consistency' };
+        return { icon: Flame, label: 'Streak Milestone', bg: 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30', tag: '#Consistency' };
       case 'focus_marathon':
-        return { icon: Zap, label: 'Focus Sprint', bg: 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30', tag: '#DeepWork' };
+        return { icon: Zap, label: 'Focus Sprint', bg: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30', tag: '#DeepWork' };
       case 'habit_mastered':
-        return { icon: Target, label: 'Habit Mastered', bg: 'bg-teal-500/15 text-teal-400 border-teal-500/30', tag: '#Routine' };
+        return { icon: Target, label: 'Habit Mastered', bg: 'bg-teal-500/15 text-teal-700 dark:text-teal-400 border border-teal-500/30', tag: '#Routine' };
       default:
-        return { icon: Sparkles, label: 'Milestone', bg: 'bg-indigo-500/15 text-indigo-400 border-indigo-500/30', tag: '#Achievement' };
+        return { icon: Sparkles, label: 'Milestone', bg: 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-400 border border-indigo-500/30', tag: '#Achievement' };
     }
   };
 
@@ -69,7 +69,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
             <h2 className="font-heading font-bold text-lg text-[var(--text-primary)]">
               Privacy-First Social Circle Feed
             </h2>
-            <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-400">
+            <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
               <ShieldCheck className="h-3 w-3" /> End-to-End Privacy Active
             </span>
           </div>
@@ -81,7 +81,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
         <div className="flex items-center gap-2 shrink-0">
           <button
             onClick={() => setIsManagerOpen(true)}
-            className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-hover)] px-3.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:border-emerald-500/40 hover:text-emerald-400 transition active:scale-95"
+            className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-hover)] px-3.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:border-emerald-500/40 hover:text-emerald-700 dark:hover:text-emerald-400 transition active:scale-95"
             title="Manage Circle Members & Mute Feed Updates"
           >
             <Settings className="h-3.5 w-3.5" />
@@ -91,7 +91,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
           {onBroadcastAchievement && (
             <button
               onClick={() => setIsShareOpen(true)}
-              className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 px-4 py-2 text-xs font-semibold text-black shadow-md shadow-emerald-500/20 hover:from-emerald-400 hover:to-teal-400 transition active:scale-95 shrink-0"
+              className="flex items-center gap-2 rounded-xl bg-[var(--accent-botanical-sage)] px-4 py-2 text-xs font-semibold text-white shadow-md hover:brightness-110 transition active:scale-95 shrink-0"
             >
               <Plus className="h-4 w-4" />
               <span>Broadcast Milestone</span>
@@ -117,8 +117,8 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
             onClick={() => setActiveFilter(tab.id as typeof activeFilter)}
             className={`rounded-xl px-3 py-1.5 text-xs font-medium transition ${
               activeFilter === tab.id
-                ? 'bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 font-semibold shadow-xs'
-                : 'border border-transparent text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-white'
+                ? 'bg-emerald-500/15 border border-emerald-500/40 text-emerald-700 dark:text-emerald-400 font-semibold shadow-xs'
+                : 'border border-transparent text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]'
             }`}
           >
             {tab.label}
@@ -137,12 +137,12 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
             return (
               <div key={post.id} className="relative group">
                 {/* Timeline Icon Node */}
-                <div className={`absolute -left-[23px] top-1.5 flex h-7 w-7 items-center justify-center rounded-full border border-gray-800 bg-[var(--bg-main)] ${badge.bg} shadow-md`}>
+                <div className={`absolute -left-[23px] top-1.5 flex h-7 w-7 items-center justify-center rounded-full border border-[var(--border-subtle)] bg-[var(--bg-main)] ${badge.bg} shadow-md`}>
                   <BadgeIcon className="h-3.5 w-3.5" />
                 </div>
 
                 {/* Timeline Stream Card */}
-                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/80 p-4.5 transition-all hover:border-emerald-500/40 hover:bg-[var(--bg-main)] shadow-xs">
+                <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/80 p-4.5 transition-all hover:border-[var(--accent-botanical-sage)]/40 hover:bg-[var(--bg-main)] shadow-xs">
                   {/* Card Header: User & Badges */}
                   <div className="flex items-start justify-between gap-3 mb-3">
                     <div className="flex items-center gap-3">
@@ -163,7 +163,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
                           <span className="rounded-full bg-[var(--card-hover)] px-2 py-0.5 text-[9px] font-mono text-[var(--text-muted)]">
                             {badge.tag}
                           </span>
-                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-medium text-emerald-400">
+                          <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 px-2 py-0.5 text-[9px] font-medium text-emerald-700 dark:text-emerald-400">
                             <Lock className="h-2.5 w-2.5" /> Masked Task Title
                           </span>
                         </div>
@@ -173,7 +173,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
 
                   {/* Post Content */}
                   <div className="ml-13 mb-3">
-                    <h3 className="font-heading font-bold text-sm text-[var(--text-primary)] group-hover:text-emerald-400 transition">
+                    <h3 className="font-heading font-bold text-sm text-[var(--text-primary)] group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition">
                       {post.title}
                     </h3>
                     <p className="mt-1 text-xs text-[var(--text-secondary)] leading-relaxed">
@@ -192,8 +192,8 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
                             onClick={() => handleToggleCheer(post.id, emoji)}
                             className={`flex items-center gap-1 rounded-xl border px-2.5 py-1 text-xs font-semibold transition active:scale-95 ${
                               isSelected
-                                ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-400 scale-105 shadow-xs'
-                                : 'border-[var(--border-subtle)] bg-[var(--card-surface)] text-gray-400 hover:border-gray-700 hover:scale-110'
+                                ? 'border-emerald-500/40 bg-emerald-500/20 text-emerald-700 dark:text-emerald-400 scale-105 shadow-xs'
+                                : 'border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-muted)] hover:border-[var(--border-subtle)] hover:scale-110'
                             }`}
                             title={`Cheer with ${emoji}`}
                           >
@@ -222,7 +222,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
           })
         ) : (
           <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-subtle)] p-8 text-center">
-            <Sparkles className="h-8 w-8 text-gray-500 mb-2" />
+            <Sparkles className="h-8 w-8 text-[var(--text-muted)] mb-2" />
             <p className="text-xs font-bold text-[var(--text-primary)]">No activity in this category yet</p>
             <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
               Be the first to broadcast a milestone to your social circle!

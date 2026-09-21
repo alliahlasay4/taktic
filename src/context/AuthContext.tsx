@@ -1,6 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { fetchUserProfileFromSupabase, saveUserProfileToSupabase } from '../lib/profileSupabase';
+import { UserProfile } from '../types';
 
 export interface DemoUser {
   id: string;
@@ -14,6 +16,7 @@ export interface DemoUser {
 interface AuthContextType {
   user: User | DemoUser | null;
   session: Session | null;
+  profile: UserProfile;
   isDemo: boolean;
   loading: boolean;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
@@ -21,9 +24,30 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   loginAsDemo: () => void;
   signOut: () => Promise<void>;
+  updateProfile: (updates: Partial<UserProfile>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+const DEFAULT_PROFILE: UserProfile = {
+  id: 'demo-user-123',
+  fullName: 'Portfolio Reviewer',
+  username: '@reviewer',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  bio: 'Productivity enthusiast building deep work habits with Taktic.',
+  microGoal: 'Complete 3 pomodoros before 2 PM',
+  statusMessage: 'In Deep Flow Mode ⚡',
+  timezone: 'GMT+8 (Asia/Manila)',
+  workHoursStart: '09:00',
+  workHoursEnd: '17:00',
+  favoriteSoundscape: 'Gentle Rain',
+  privacySettings: {
+    showFocusHours: true,
+    showMicroGoal: true,
+    showActivityFeed: true,
+    showStreak: true,
+  },
+};
 
 const DEMO_USER: DemoUser = {
   id: 'demo-user-123',
@@ -42,6 +66,61 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   });
   const [loading, setLoading] = useState<boolean>(true);
 
+  const [profile, setProfile] = useState<UserProfile>(() => {
+    const saved = localStorage.getItem('taktic_user_profile');
+    if (saved) {
+      try {
+        return { ...DEFAULT_PROFILE, ...JSON.parse(saved) };
+      } catch (e) {
+        console.error('Error parsing saved profile:', e);
+      }
+    }
+    return DEFAULT_PROFILE;
+  });
+
+  const updateProfile = (updates: Partial<UserProfile>) => {
+    setProfile((prev) => {
+      const updated = {
+        ...prev,
+        ...updates,
+        privacySettings: updates.privacySettings
+          ? { ...prev.privacySettings, ...updates.privacySettings }
+          : prev.privacySettings,
+      };
+      localStorage.setItem('taktic_user_profile', JSON.stringify(updated));
+
+      // Asynchronously sync profile changes to Supabase table if logged in
+      if (!isDemo && isSupabaseConfigured && updated.id && updated.id !== 'demo-user-123') {
+        saveUserProfileToSupabase(updated);
+      }
+
+      return updated;
+    });
+  };
+
+  const syncSupabaseProfile = async (currentSession: Session | null) => {
+    if (!currentSession?.user) return;
+    const userId = currentSession.user.id;
+
+    const dbProfile = await fetchUserProfileFromSupabase(userId);
+    if (dbProfile) {
+      setProfile(dbProfile);
+      localStorage.setItem('taktic_user_profile', JSON.stringify(dbProfile));
+    } else {
+      // Initialize initial profile state for new session
+      setProfile((prev) => {
+        const initialProfile: UserProfile = {
+          ...prev,
+          id: userId,
+          fullName: currentSession.user.user_metadata?.full_name || prev.fullName,
+          avatarUrl: currentSession.user.user_metadata?.avatar_url || prev.avatarUrl,
+        };
+        saveUserProfileToSupabase(initialProfile);
+        return initialProfile;
+      });
+    }
+  };
+
   useEffect(() => {
     if (isDemo) {
       setUser(DEMO_USER);
@@ -58,6 +137,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        syncSupabaseProfile(session);
+      }
       setLoading(false);
     });
 
@@ -65,6 +147,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
+      if (session?.user) {
+        syncSupabaseProfile(session);
+      }
       setLoading(false);
     });
 
@@ -143,6 +228,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       value={{
         user,
         session,
+        profile,
         isDemo,
         loading,
         signInWithEmail,
@@ -150,6 +236,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signInWithGoogle,
         loginAsDemo,
         signOut,
+        updateProfile,
       }}
     >
       {children}

@@ -161,7 +161,7 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
           <div className="flex items-center justify-between text-xs font-semibold mb-1">
             <div className="flex items-center gap-2 text-[#6B8E6E] dark:text-[#7B9E7E]">
               <CheckCircle className="h-4 w-4" />
-              <span>Tasks Completed (Sage)</span>
+              <span>Tasks Completed</span>
             </div>
             <span className="text-[var(--text-primary)]">
               {tasksCompleted}/{totalTasks} ({taskPct}%)
@@ -181,7 +181,7 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
           <div className="flex items-center justify-between text-xs font-semibold mb-1">
             <div className="flex items-center gap-2 text-[#C87D87] dark:text-[#D88E98]">
               <Flame className="h-4 w-4" />
-              <span>Habits Maintained (Dusty Rose)</span>
+              <span>Habits Maintained</span>
             </div>
             <span className="text-[var(--text-primary)]">
               {habitsCompleted}/{totalHabits} ({habitPct}%)
@@ -201,7 +201,7 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
           <div className="flex items-center justify-between text-xs font-semibold mb-1">
             <div className="flex items-center gap-2 text-[#CFA052] dark:text-[#E0AF5E]">
               <Clock className="h-4 w-4" />
-              <span>Focus Logged (Warm Ochre)</span>
+              <span>Focus Logged </span>
             </div>
             <span className="text-[var(--text-primary)]">
               {focusMinutes}/{targetFocusMinutes}m ({focusPct}%)
