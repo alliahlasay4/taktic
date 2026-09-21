@@ -1,0 +1,95 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --bg-main: #FAF7F2;
+    --card-surface: #FFFFFF;
+    --card-hover: #F4EFE6;
+    --border-subtle: #E7DFD5;
+    --text-primary: #2D2623;
+    --text-secondary: #786E65;
+    --text-muted: #9E9388;
+    
+    /* Accents */
+    --accent-dusty-rose: #C87D87;
+    --accent-terracotta: #C06C4C;
+    --accent-warm-ochre: #CFA052;
+    --accent-botanical-sage: #6B8E6E;
+    --accent-dusty-mauve: #B08B9E;
+    
+    --ring-tasks: #6B8E6E;
+    --ring-habits: #C87D87;
+    --ring-focus: #CFA052;
+  }
+
+  .dark {
+    --bg-main: #1C1917;
+    --card-surface: #282421;
+    --card-hover: #322D29;
+    --border-subtle: #3D3631;
+    --text-primary: #F5F0EB;
+    --text-secondary: #A89F95;
+    --text-muted: #73695F;
+    
+    /* Accents */
+    --accent-dusty-rose: #D88E98;
+    --accent-terracotta: #D47B5A;
+    --accent-warm-ochre: #E0AF5E;
+    --accent-botanical-sage: #7B9E7E;
+    --accent-dusty-mauve: #BF9AAB;
+
+    --ring-tasks: #7B9E7E;
+    --ring-habits: #D88E98;
+    --ring-focus: #E0AF5E;
+  }
+}
+
+body {
+  font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--bg-main);
+  color: var(--text-primary);
+  transition: background-color 0.3s ease, color 0.3s ease;
+  overflow-x: hidden;
+}
+
+h1, h2, h3, h4, h5, h6, .font-heading {
+  font-family: 'Outfit', sans-serif;
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--border-subtle);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--text-muted);
+}
+
+/* Glow effects */
+.glow-rose {
+  box-shadow: 0 0 25px -5px rgba(200, 125, 135, 0.3);
+}
+
+.glow-ochre {
+  box-shadow: 0 0 25px -5px rgba(207, 160, 82, 0.3);
+}
+
+.glow-sage {
+  box-shadow: 0 0 25px -5px rgba(107, 142, 110, 0.3);
+}
+
+.glass-card {
+  background: var(--card-surface);
+  border: 1px solid var(--border-subtle);
+  backdrop-filter: blur(12px);
+}
