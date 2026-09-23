@@ -1,7 +1,8 @@
 import React from 'react';
-import { Flame, Check, ShieldCheck, Trash2, Sun, Sunset, Moon, Shield } from 'lucide-react';
+import { Flame, Check, Trash2, Sun, Sunrise, Moon, Shield, BarChart2 } from 'lucide-react';
 import { Habit } from '../../types';
 import { soundEngine } from '../../lib/audio';
+import { IconRenderer } from '../common/IconRenderer';
 
 interface HabitItemProps {
   habit: Habit;
@@ -30,26 +31,39 @@ export const HabitItem: React.FC<HabitItemProps> = ({ habit, onToggleHabit, onDe
     onToggleHabit(habit.id);
   };
 
-  const timeOfDayLabel =
-    habit.timeOfDay === 'afternoon'
-      ? '☀️ Afternoon'
-      : habit.timeOfDay === 'evening'
-      ? '🌙 Evening'
-      : '🌅 Morning';
+  const getTimeOfDayConfig = (timeOfDay?: 'morning' | 'afternoon' | 'evening') => {
+    switch (timeOfDay) {
+      case 'afternoon':
+        return { label: 'Afternoon', icon: Sun, color: 'bg-amber-500/15 border-amber-500/30 text-amber-500 dark:text-amber-300' };
+      case 'evening':
+        return { label: 'Evening', icon: Moon, color: 'bg-indigo-500/15 border-indigo-500/30 text-indigo-500 dark:text-indigo-300' };
+      default:
+        return { label: 'Morning', icon: Sunrise, color: 'bg-sky-500/15 border-sky-500/30 text-sky-500 dark:text-sky-300' };
+    }
+  };
+
+  const timeOfDayConfig = getTimeOfDayConfig(habit.timeOfDay);
+  const TimeIcon = timeOfDayConfig.icon;
 
   return (
-    <div className="group flex items-center justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 transition-all hover:border-[var(--text-muted)]">
+    <div className="group flex items-center justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 transition-all hover:border-[var(--text-muted)] hover:shadow-2xs">
       {/* Icon & Details */}
-      <div className="flex items-center gap-3 flex-1 min-w-0">
+      <div className="flex items-center gap-3.5 flex-1 min-w-0">
         <button
+          type="button"
           onClick={handleCheck}
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-xl transition-all ${
+          aria-label={isCompletedToday ? `Mark ${habit.title} incomplete` : `Mark ${habit.title} completed`}
+          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg transition-all ${
             isCompletedToday
-              ? 'bg-[#C87D87]/20 border-2 border-[#C87D87] shadow-xs'
-              : 'bg-[var(--bg-main)] border border-[var(--border-subtle)] hover:bg-[var(--card-hover)]'
+              ? 'bg-[var(--accent-terracotta)]/20 border-2 border-[var(--accent-terracotta)] shadow-xs text-[var(--accent-terracotta)]'
+              : 'bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]'
           }`}
         >
-          {isCompletedToday ? <Check className="h-5 w-5 text-[#C87D87] stroke-[3]" /> : habit.icon}
+          {isCompletedToday ? (
+            <Check className="h-5 w-5 text-[var(--accent-terracotta)] stroke-[3]" />
+          ) : (
+            <IconRenderer name={habit.icon || habit.category} className="h-5 w-5" />
+          )}
         </button>
 
         <div className="flex-1 min-w-0">
@@ -62,12 +76,13 @@ export const HabitItem: React.FC<HabitItemProps> = ({ habit, onToggleHabit, onDe
               {habit.title}
             </span>
 
-            <span className="rounded-md bg-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)] capitalize">
+            <span className="rounded-md bg-[var(--border-subtle)]/60 px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)] capitalize">
               {habit.category}
             </span>
 
-            <span className="rounded-md bg-sky-500/15 border border-sky-500/30 px-2 py-0.5 text-[10px] font-semibold text-sky-300">
-              {timeOfDayLabel}
+            <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold ${timeOfDayConfig.color}`}>
+              <TimeIcon className="h-3 w-3" strokeWidth={1.5} aria-hidden="true" />
+              <span>{timeOfDayConfig.label}</span>
             </span>
           </div>
 
@@ -77,14 +92,15 @@ export const HabitItem: React.FC<HabitItemProps> = ({ habit, onToggleHabit, onDe
               {habit.streak} Day Streak
             </span>
 
-            <span className="text-[11px] font-medium text-[var(--text-muted)]">
-              📊 {completedThisWeek}/{targetWeekly} this week
+            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--text-muted)]">
+              <BarChart2 className="h-3 w-3 text-[var(--text-muted)]" strokeWidth={1.5} />
+              <span>{completedThisWeek}/{targetWeekly} this week</span>
             </span>
 
             {/* Monthly 3-Streak Freeze Shield Badge */}
-            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-              <Shield className="h-3 w-3 text-emerald-400" />
-              {habit.freezeShieldsRemaining ?? 3}/3 Freeze Shields
+            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
+              <Shield className="h-3 w-3 text-emerald-500 dark:text-emerald-400" />
+              <span>{habit.freezeShieldsRemaining ?? 3}/3 Freeze Shields</span>
             </span>
           </div>
         </div>
@@ -92,13 +108,14 @@ export const HabitItem: React.FC<HabitItemProps> = ({ habit, onToggleHabit, onDe
 
       {/* Delete button */}
       <button
+        type="button"
         onClick={() => onDeleteHabit(habit.id)}
         className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500/15 hover:text-rose-500"
         title="Delete Habit"
+        aria-label={`Delete ${habit.title}`}
       >
         <Trash2 className="h-4 w-4" />
       </button>
     </div>
   );
 };
-

@@ -1,5 +1,29 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Users, Flame, Plus, KeyRound, Copy, Check, MessageSquare, Edit3, LogOut, Lock, Coffee, Zap, Shield, Bell, X, EyeOff, Eye, ChevronDown, ChevronUp, Sparkles, Calendar } from 'lucide-react';
+import {
+  Users,
+  Flame,
+  Plus,
+  KeyRound,
+  Copy,
+  Check,
+  Edit3,
+  LogOut,
+  Lock,
+  Coffee,
+  Zap,
+  Shield,
+  Bell,
+  X,
+  Sparkles,
+  Trophy,
+  AlertCircle,
+  FastForward,
+  Heart,
+  Medal,
+  UserPlus,
+  Target,
+  ArrowRight,
+} from 'lucide-react';
 import { CircleMember, FocusPod } from '../../types';
 import { formatTime } from '../../lib/utils';
 import { CreateRoomModal } from './CreateRoomModal';
@@ -42,9 +66,7 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
   isHost,
   floatingEmojis,
   messages,
-  soloInvisibleMode = false,
   focusPods = [],
-  onToggleSoloInvisibleMode,
   onCreatePod,
   onRenewPodLease,
   onDeletePod,
@@ -61,7 +83,8 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
   const [isJoinOpen, setIsJoinOpen] = useState(false);
   const [isCreatePodOpen, setIsCreatePodOpen] = useState(false);
   const [selectedAsyncPod, setSelectedAsyncPod] = useState<FocusPod | null>(null);
-  const [showInactivePods, setShowInactivePods] = useState(false);
+  const [podFilter, setPodFilter] = useState<'all' | 'active' | 'idle'>('all');
+  const [quickCodeInput, setQuickCodeInput] = useState('');
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(roomName);
@@ -93,13 +116,13 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
         setIsChatOpen(false);
       }
       setAutoCloseAlert(
-        '⚡ Break Time Ended (0s)! Synchronous Focus Sprint started — Break Lounge Chat closed automatically.'
+        'Break Time Ended (0s)! Synchronous Focus Sprint started — Break Lounge Chat closed automatically.'
       );
       soundEngine.playTimerCompleteSound();
 
       const alertTimer = setTimeout(() => {
         setAutoCloseAlert(null);
-      }, 7500);
+      }, 6000);
       return () => clearTimeout(alertTimer);
     }
     prevBreakActiveRef.current = isBreakActive;
@@ -114,98 +137,173 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
 
   const handleSaveNameEdit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (editedName.trim()) {
-      onUpdateRoomDetails(editedName.trim());
-      setIsEditingName(false);
-    }
+    if (!editedName.trim()) return;
+    onUpdateRoomDetails(editedName.trim());
+    setIsEditingName(false);
   };
 
   const handleOpenChatClick = () => {
-    if (!isBreakActive) {
-      setLockWarning('Focus sprint in progress ⚡ Break Lounge opens during 5-minute break.');
-      setTimeout(() => setLockWarning(null), 3000);
+    if (isLockdownMode && !isBreakActive) {
+      setLockWarning('Lockdown sprint active! Chat is silenced until the next break interval.');
+      setTimeout(() => setLockWarning(null), 4000);
       return;
     }
     setIsChatOpen(true);
   };
 
-  // Active vs Inactive Pods filtering (Safeguard 3)
+  const handleQuickJoinSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!quickCodeInput.trim()) return;
+    onJoinRoom(quickCodeInput.trim().toUpperCase());
+    setQuickCodeInput('');
+  };
+
   const activePods = focusPods.filter((p) => (p.activeMembersCount || 0) > 0);
   const inactivePods = focusPods.filter((p) => (p.activeMembersCount || 0) === 0);
 
-  // If user is not currently in an active room -> Render Co-Working Lobby
+  const displayedPods =
+    podFilter === 'active'
+      ? activePods
+      : podFilter === 'idle'
+      ? inactivePods
+      : focusPods;
+
+  const renderReactionIcon = (reactionKey: string) => {
+    const key = (reactionKey || '').toLowerCase();
+    switch (key) {
+      case 'flame':
+      case 'streak':
+        return <Flame className="h-4 w-4 text-[var(--accent-terracotta)] fill-[var(--accent-terracotta)] shrink-0" />;
+      case 'zap':
+      case 'sprint':
+        return <Zap className="h-4 w-4 text-[var(--accent-warm-ochre)] fill-[var(--accent-warm-ochre)] shrink-0" />;
+      case 'sparkles':
+      case 'focus':
+        return <Sparkles className="h-4 w-4 text-amber-400 fill-amber-400 shrink-0" />;
+      case 'heart':
+      case 'cheer':
+        return <Heart className="h-4 w-4 text-[var(--accent-dusty-rose)] fill-[var(--accent-dusty-rose)] shrink-0" />;
+      case 'coffee':
+      case 'break':
+        return <Coffee className="h-4 w-4 text-amber-600 shrink-0" />;
+      case 'trophy':
+      case 'achieve':
+        return <Trophy className="h-4 w-4 text-[var(--accent-warm-ochre)] fill-[var(--accent-warm-ochre)] shrink-0" />;
+      default:
+        return <Sparkles className="h-4 w-4 text-[var(--accent-warm-ochre)] shrink-0" />;
+    }
+  };
+
+  // ==========================================
+  // STATE 1: LOBBY STATE (NOT IN ACTIVE ROOM)
+  // ==========================================
   if (!activeRoomCode) {
     return (
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 shadow-xs space-y-6">
-        {/* Lobby Header & Solo Invisible Mode Control */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-5 border-b border-[var(--border-subtle)]">
-          <div className="flex items-center gap-3">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 shrink-0">
-              <Users className="h-6 w-6" />
-            </div>
-            <div>
-              <h2 className="font-heading font-bold text-lg text-[var(--text-primary)]">
-                Silent Co-Working & Permanent Focus Pods
-              </h2>
-              <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
-                Co-work silently in standing team pods or temporary private rooms with invite codes.
+      <div className="space-y-6">
+        {/* Quick Launch & Instant Join Action Card */}
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs">
+          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+            {/* Direct Code Join Form */}
+            <div className="flex-1 max-w-lg">
+              <div className="flex items-center gap-2 mb-1.5">
+                <KeyRound className="h-4 w-4 text-[var(--accent-terracotta)]" />
+                <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
+                  Join a Focus Room or Standing Pod
+                </h3>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] mb-3">
+                Enter an invite code (e.g. <span className="font-mono font-semibold text-[var(--text-primary)]">TK-8492</span> or <span className="font-mono font-semibold text-[var(--text-primary)]">POD-102</span>) to jump right into a silent session.
               </p>
+
+              <form onSubmit={handleQuickJoinSubmit} className="flex items-center gap-2">
+                <input
+                  type="text"
+                  placeholder="Enter 6-digit room code..."
+                  value={quickCodeInput}
+                  onChange={(e) => setQuickCodeInput(e.target.value)}
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3.5 py-2 text-xs font-mono text-[var(--text-primary)] uppercase placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none min-h-[42px]"
+                />
+                <button
+                  type="submit"
+                  disabled={!quickCodeInput.trim()}
+                  className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-40 shrink-0 shadow-xs min-h-[42px] active:scale-95"
+                >
+                  <span>Join</span>
+                  <ArrowRight className="h-3.5 w-3.5" />
+                </button>
+              </form>
+            </div>
+
+            {/* Quick Create Buttons */}
+            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 pt-4 lg:pt-0 border-t lg:border-t-0 border-[var(--border-subtle)]">
+              {onCreatePod && (
+                <button
+                  type="button"
+                  onClick={() => setIsCreatePodOpen(true)}
+                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition active:scale-95 min-h-[42px]"
+                >
+                  <Plus className="h-4 w-4" />
+                  <span>Create Standing Pod</span>
+                </button>
+              )}
+
+              <button
+                type="button"
+                onClick={() => setIsCreateOpen(true)}
+                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] hover:border-[var(--accent-terracotta)]/40 px-4 py-2.5 text-xs font-semibold text-[var(--text-primary)] transition active:scale-95 min-h-[42px]"
+              >
+                <Zap className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
+                <span>Quick Room</span>
+              </button>
             </div>
           </div>
-
-          {/* Solo Invisible Mode Toggle (Safeguard 1) */}
-          {onToggleSoloInvisibleMode && (
-            <button
-              onClick={onToggleSoloInvisibleMode}
-              className={`flex items-center gap-2 rounded-xl border px-3.5 py-2 text-xs font-semibold transition active:scale-95 shrink-0 ${
-                soloInvisibleMode
-                  ? 'border-indigo-500/50 bg-indigo-500/20 text-indigo-700 dark:text-indigo-300 shadow-md shadow-indigo-500/10'
-                  : 'border-[var(--border-subtle)] bg-[var(--card-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-              }`}
-              title="Work solo without broadcasting live presence or appearing active in standing pods"
-            >
-              {soloInvisibleMode ? (
-                <>
-                  <EyeOff className="h-4 w-4 text-indigo-700 dark:text-indigo-400" />
-                  <span>Solo Invisible Mode (ON)</span>
-                </>
-              ) : (
-                <>
-                  <Eye className="h-4 w-4 text-[var(--text-muted)]" />
-                  <span>Ghost Mode (OFF)</span>
-                </>
-              )}
-            </button>
-          )}
         </div>
 
-        {/* Section 1: Permanent Focus Pods (Standing Rooms) */}
-        <div>
-          <div className="flex items-center justify-between mb-3">
-            <div className="flex items-center gap-2">
-              <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
-                🏠 Permanent Focus Pods
-              </h3>
-              <span className="rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                {activePods.length} Active Now
-              </span>
+        {/* Standing Focus Pods Section */}
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-5">
+          {/* Section Header with Segmented Filter Pills */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--border-subtle)]">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)] shrink-0">
+                <Users className="h-4 w-4" />
+              </div>
+              <div>
+                <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
+                  Standing Team Pods
+                </h3>
+                <p className="text-[11px] text-[var(--text-secondary)]">
+                  Recurring co-working spaces reserved for your circle squads
+                </p>
+              </div>
             </div>
 
-            {onCreatePod && (
-              <button
-                onClick={() => setIsCreatePodOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-botanical-sage)] px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:brightness-110 transition active:scale-95"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Create Focus Pod</span>
-              </button>
-            )}
+            {/* Filter Pills */}
+            <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)] self-start sm:self-auto">
+              {[
+                { id: 'all' as const, label: `All (${focusPods.length})` },
+                { id: 'active' as const, label: `Active (${activePods.length})` },
+                { id: 'idle' as const, label: `Idle (${inactivePods.length})` },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setPodFilter(tab.id)}
+                  className={`px-3 py-1 text-[11px] font-semibold rounded-lg transition ${
+                    podFilter === tab.id
+                      ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs font-bold'
+                      : 'text-[var(--text-muted)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
 
-          {/* Active Pods Grid */}
-          {activePods.length > 0 ? (
+          {/* Pods Grid */}
+          {displayedPods.length > 0 ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {activePods.map((pod) => (
+              {displayedPods.map((pod) => (
                 <FocusPodCard
                   key={pod.id}
                   pod={pod}
@@ -217,66 +315,74 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
               ))}
             </div>
           ) : (
-            <div className="rounded-xl border border-dashed border-[var(--border-subtle)] p-5 text-center text-xs text-[var(--text-secondary)]">
-              <Sparkles className="h-5 w-5 text-[var(--text-muted)] mx-auto mb-1" />
-              <span>No standing pod sprints currently active. Start a pod or join a quick room below!</span>
-            </div>
-          )}
-
-          {/* Inactive Pods Accordion (Safeguard 3: Avoid Ghost Town Clutter) */}
-          {inactivePods.length > 0 && (
-            <div className="mt-3">
-              <button
-                onClick={() => setShowInactivePods(!showInactivePods)}
-                className="flex items-center gap-1.5 text-xs font-semibold text-[var(--text-muted)] hover:text-emerald-700 dark:hover:text-emerald-400 transition"
-              >
-                {showInactivePods ? <ChevronUp className="h-3.5 w-3.5" /> : <ChevronDown className="h-3.5 w-3.5" />}
-                <span>{showInactivePods ? 'Hide' : 'Show'} Idle Pods ({inactivePods.length})</span>
-              </button>
-
-              {showInactivePods && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-3">
-                  {inactivePods.map((pod) => (
-                    <FocusPodCard
-                      key={pod.id}
-                      pod={pod}
-                      onJoinPod={(p) => onJoinRoom(`POD-${p.id.slice(-4)}`)}
-                      onRenewLease={onRenewPodLease || (() => {})}
-                      onDeletePod={onDeletePod}
-                      onOpenAsyncBoard={(p) => setSelectedAsyncPod(p)}
-                    />
-                  ))}
-                </div>
+            <div className="rounded-2xl border border-dashed border-[var(--border-subtle)] p-8 text-center space-y-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] mx-auto">
+                <Sparkles className="h-6 w-6" />
+              </div>
+              <div className="max-w-sm mx-auto">
+                <p className="font-heading font-bold text-sm text-[var(--text-primary)]">
+                  {podFilter === 'active'
+                    ? 'No Active Pods Right Now'
+                    : podFilter === 'idle'
+                    ? 'No Idle Pods'
+                    : 'No Standing Pods Created'}
+                </p>
+                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                  {podFilter === 'active'
+                    ? 'None of your standing pods have active members focusing. Launch a pod session or join a quick room!'
+                    : 'Create a standing pod to give your team or circle partners a permanent co-working link with a 30-day lease.'}
+                </p>
+              </div>
+              {onCreatePod && podFilter !== 'idle' && (
+                <button
+                  type="button"
+                  onClick={() => setIsCreatePodOpen(true)}
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2 text-xs font-bold text-white shadow-xs transition active:scale-95"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  <span>Create Focus Pod</span>
+                </button>
               )}
             </div>
           )}
         </div>
 
-        {/* Section 2: Quick Single-Session Rooms */}
-        <div className="pt-4 border-t border-[var(--border-subtle)]">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
-              ⚡ Quick Single-Session Rooms
-            </h3>
-            <span className="text-[11px] text-[var(--text-secondary)]">Temporary 6-digit code entry</span>
+        {/* Live Active Co-Workers Overview */}
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs">
+          <div className="flex items-center justify-between gap-2 mb-4">
+            <div className="flex items-center gap-2">
+              <Shield className="h-4 w-4 text-[var(--accent-botanical-sage)]" />
+              <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
+                Live Co-Worker Presence
+              </h3>
+            </div>
+            <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--accent-botanical-sage)] bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2.5 py-0.5 rounded-full">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-botanical-sage)] animate-ping" />
+              {members.filter((m) => m.status === 'focusing').length} Focusing Live
+            </span>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3">
-            <button
-              onClick={() => setIsCreateOpen(true)}
-              className="flex items-center gap-2 rounded-xl bg-[var(--accent-botanical-sage)] px-4 py-2.5 text-xs font-semibold text-white shadow-md hover:brightness-110 transition active:scale-95"
-            >
-              <Plus className="h-4 w-4" />
-              <span>Create Quick Room</span>
-            </button>
-
-            <button
-              onClick={() => setIsJoinOpen(true)}
-              className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-hover)] px-4 py-2.5 text-xs font-semibold text-[var(--text-primary)] hover:border-[var(--accent-botanical-sage)]/40 transition active:scale-95"
-            >
-              <KeyRound className="h-4 w-4 text-emerald-700 dark:text-emerald-400" />
-              <span>Join Room with Code</span>
-            </button>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            {members.slice(0, 4).map((member) => (
+              <div
+                key={member.id}
+                className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-main)]/60 border border-[var(--border-subtle)]"
+              >
+                <img
+                  src={member.avatar}
+                  alt={member.name}
+                  className="h-10 w-10 rounded-xl object-cover ring-1 ring-[var(--border-subtle)] shrink-0"
+                />
+                <div className="min-w-0 flex-1">
+                  <p className="font-bold text-xs text-[var(--text-primary)] truncate">{member.name}</p>
+                  <p className="text-[10px] text-[var(--text-secondary)] truncate">{member.statusText || 'Focusing'}</p>
+                  <div className="flex items-center gap-1 mt-0.5 text-[10px] font-semibold text-[var(--accent-terracotta)]">
+                    <Flame className="h-3 w-3 fill-[var(--accent-terracotta)]" />
+                    <span>{member.streak}d Streak</span>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 
@@ -312,170 +418,180 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
     );
   }
 
-  // Active Room State
+  // ==========================================
+  // STATE 2: INSIDE AN ACTIVE CO-WORKING ROOM
+  // ==========================================
   return (
-    <div className="relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs space-y-5">
-      {/* Floating Emoji Reactions Overlay */}
-      <div className="absolute top-12 right-12 z-20 pointer-events-none flex flex-col gap-2">
+    <div className="relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-5">
+      {/* Floating Reaction Overlay */}
+      <div className="absolute top-8 right-8 z-20 pointer-events-none flex flex-col gap-2">
         {floatingEmojis.map((item) => (
           <div
             key={item.id}
-            className="animate-bounce flex items-center gap-1.5 rounded-full bg-black/80 backdrop-blur-md border border-emerald-500/30 px-3 py-1 text-sm font-bold text-white shadow-xl"
+            className="animate-bounce flex items-center gap-2 rounded-full bg-[var(--card-surface)]/95 backdrop-blur-md border border-[var(--border-subtle)] px-3.5 py-1.5 shadow-xl transition-all"
           >
-            <span>{item.emoji}</span>
-            <span className="text-[10px] text-emerald-700 dark:text-emerald-400">{item.userName}</span>
+            {renderReactionIcon(item.emoji)}
+            <span className="text-xs font-bold text-[var(--text-primary)]">{item.userName}</span>
           </div>
         ))}
       </div>
 
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
-        <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
-            <Shield className="h-5 w-5" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              {isEditingName ? (
-                <form onSubmit={handleSaveNameEdit} className="flex items-center gap-1.5">
-                  <input
-                    type="text"
-                    value={editedName}
-                    onChange={(e) => setEditedName(e.target.value)}
-                    className="rounded-lg border border-[var(--accent-botanical-sage)] bg-[var(--bg-main)] px-2 py-1 text-xs text-[var(--text-primary)] focus:outline-none"
-                    autoFocus
-                  />
-                  <button type="submit" className="rounded-lg bg-[var(--accent-botanical-sage)] px-2.5 py-1 text-xs font-semibold text-white">
-                    Save
-                  </button>
-                </form>
-              ) : (
-                <div className="flex items-center gap-2">
-                  <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
-                    {roomName}
-                  </h2>
-                  {isHost && (
-                    <button
-                      onClick={() => setIsEditingName(true)}
-                      className="text-[var(--text-muted)] hover:text-emerald-700 dark:hover:text-emerald-400 transition"
-                      title="Edit Room Name (Host Admin Control)"
-                    >
-                      <Edit3 className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              )}
-
-              <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400 animate-ping" />
-                {members.length + 1} Online
-              </span>
-
-              {/* Synchronous Lockdown Mode Badge / Control */}
-              {isHost ? (
-                <button
-                  onClick={() => setIsLockdownMode(!isLockdownMode)}
-                  className={`flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-[10px] font-bold transition active:scale-95 ${
-                    isLockdownMode
-                      ? 'border-red-500/50 bg-red-500/20 text-red-700 dark:text-red-300'
-                      : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                  title="Toggle Lockdown Sprint (Silences all chat & alerts)"
-                >
-                  <Lock className="h-3 w-3" />
-                  <span>{isLockdownMode ? 'Lockdown ON' : 'Enable Lockdown'}</span>
-                </button>
-              ) : (
-                isLockdownMode && (
-                  <span className="flex items-center gap-1 rounded-full bg-red-500/20 border border-red-500/30 px-2 py-0.5 text-[10px] font-bold text-red-700 dark:text-red-300">
-                    <Lock className="h-3 w-3" /> Lockdown Active
-                  </span>
-                )
-              )}
+      {/* Modern Room Header */}
+      <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-5 border-b border-[var(--border-subtle)]">
+        {/* Room Details & Badges */}
+        <div className="space-y-2">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] shrink-0">
+              <Shield className="h-4.5 w-4.5" />
             </div>
 
-            {/* Room Code & Leave Room */}
-            <div className="mt-1 flex items-center gap-2">
-              <div className="flex items-center gap-1.5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-2.5 py-0.5 text-xs">
-                <span className="text-[10px] text-[var(--text-muted)] uppercase font-semibold">Room Code:</span>
-                <span className="font-mono font-bold text-emerald-700 dark:text-emerald-400">{activeRoomCode}</span>
+            {/* Editable Room Name */}
+            {isEditingName ? (
+              <form onSubmit={handleSaveNameEdit} className="flex items-center gap-1.5">
+                <input
+                  type="text"
+                  value={editedName}
+                  onChange={(e) => setEditedName(e.target.value)}
+                  className="rounded-lg border border-[var(--accent-terracotta)] bg-[var(--bg-main)] px-2.5 py-1 text-sm font-bold text-[var(--text-primary)] focus:outline-none"
+                  autoFocus
+                />
                 <button
-                  onClick={handleCopyCode}
-                  className="ml-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
-                  title="Copy Invite Code"
+                  type="submit"
+                  className="rounded-lg bg-[var(--accent-terracotta)] px-3 py-1 text-xs font-bold text-white shadow-xs"
                 >
-                  {codeCopied ? <Check className="h-3 w-3 text-emerald-700 dark:text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                  Save
                 </button>
+              </form>
+            ) : (
+              <div className="flex items-center gap-2">
+                <h2 className="font-heading font-bold text-lg text-[var(--text-primary)]">
+                  {roomName}
+                </h2>
+                {isHost && (
+                  <button
+                    onClick={() => setIsEditingName(true)}
+                    className="text-[var(--text-muted)] hover:text-[var(--accent-terracotta)] transition p-1"
+                    title="Edit Room Name (Host Control)"
+                  >
+                    <Edit3 className="h-3.5 w-3.5" />
+                  </button>
+                )}
               </div>
+            )}
 
-              {/* Leave Room Action */}
+            {/* Online Badge */}
+            <span className="flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-botanical-sage)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-botanical-sage)] animate-ping" />
+              {members.length + 1} Co-Working
+            </span>
+
+            {/* Lockdown Indicator / Host Toggle */}
+            {isHost ? (
               <button
-                onClick={onLeaveRoom}
-                className="flex items-center gap-1 rounded-lg border border-red-500/30 bg-red-500/10 px-2.5 py-0.5 text-[11px] font-medium text-red-500 hover:bg-red-500/20 transition"
+                type="button"
+                onClick={() => setIsLockdownMode(!isLockdownMode)}
+                className={`flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[10px] font-bold transition active:scale-95 ${
+                  isLockdownMode
+                    ? 'border-red-500/50 bg-red-500/15 text-red-700 dark:text-red-300'
+                    : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                }`}
+                title="Toggle Lockdown Sprint (Silences chat until break interval)"
               >
-                <LogOut className="h-3 w-3" />
-                <span>Leave Room</span>
+                <Lock className="h-3 w-3" />
+                <span>{isLockdownMode ? 'Lockdown ON' : 'Lockdown'}</span>
+              </button>
+            ) : (
+              isLockdownMode && (
+                <span className="flex items-center gap-1 rounded-full bg-red-500/15 border border-red-500/30 px-2.5 py-0.5 text-[10px] font-bold text-red-600 dark:text-red-300">
+                  <Lock className="h-3 w-3" /> Lockdown Active
+                </span>
+              )
+            )}
+          </div>
+
+          {/* Room Code & Leave Room Row */}
+          <div className="flex items-center gap-2 text-xs">
+            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-2.5 py-1">
+              <span className="text-[10px] text-[var(--text-muted)] font-semibold uppercase">Code:</span>
+              <span className="font-mono font-bold text-[var(--accent-terracotta)]">{activeRoomCode}</span>
+              <button
+                type="button"
+                onClick={handleCopyCode}
+                className="ml-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
+                title="Copy Room Invite Code"
+              >
+                {codeCopied ? <Check className="h-3 w-3 text-emerald-500" /> : <Copy className="h-3 w-3" />}
               </button>
             </div>
+
+            <button
+              type="button"
+              onClick={onLeaveRoom}
+              className="flex items-center gap-1 rounded-xl border border-red-500/30 bg-red-500/10 px-2.5 py-1 text-xs font-semibold text-red-500 hover:bg-red-500/20 transition active:scale-95"
+            >
+              <LogOut className="h-3 w-3" />
+              <span>Leave Room</span>
+            </button>
           </div>
         </div>
 
-        {/* Action Buttons & Timer */}
-        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-          {/* Synchronous Sprint Timer */}
-          <div className="text-right mr-1">
-            <div className="flex items-center gap-1.5 justify-end">
-              <p className="text-[9px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                {isBreakActive ? '☕ Break Interval' : '⚡ Synchronous Sprint'}
+        {/* Synchronous Sprint Countdown & Lounge Chat Trigger */}
+        <div className="flex items-center gap-3">
+          {/* Sprint Timer Pill */}
+          <div className="flex items-center gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-4 py-2">
+            <div className="text-right">
+              <div className="flex items-center gap-1 justify-end text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
+                {isBreakActive ? (
+                  <>
+                    <Coffee className="h-3 w-3 text-amber-500" />
+                    <span className="text-amber-600 dark:text-amber-400">Break Interval</span>
+                  </>
+                ) : (
+                  <>
+                    <Zap className="h-3 w-3 text-[var(--accent-terracotta)]" />
+                    <span>Focus Sprint</span>
+                  </>
+                )}
+              </div>
+              <p
+                className={`font-heading font-bold text-xl leading-none mt-0.5 ${
+                  isBreakActive ? 'text-amber-600 dark:text-amber-400' : 'text-[var(--accent-terracotta)]'
+                }`}
+              >
+                {formatTime(roomSeconds)}
               </p>
-              {!isBreakActive ? (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setRoomSeconds(5);
-                  }}
-                  className="rounded bg-amber-500/20 px-1.5 py-0.5 text-[9px] font-bold text-amber-700 dark:text-amber-400 hover:bg-amber-500/30 transition"
-                  title="Test Mode: Fast-forward to Break in 5s"
-                >
-                  ⏩ Skip to Break (5s)
-                </button>
-              ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsChatOpen(true);
-                    setRoomSeconds(4);
-                  }}
-                  className="rounded bg-red-500/20 px-1.5 py-0.5 text-[9px] font-bold text-red-500 hover:bg-red-500/30 transition"
-                  title="Test Mode: Fast-forward break to 0s (trigger auto-close)"
-                >
-                  ⏩ End Break (4s)
-                </button>
-              )}
             </div>
-            <p className={`font-heading font-bold text-lg ${isBreakActive ? 'text-amber-600 dark:text-amber-400' : 'text-[#B08B9E]'}`}>
-              {formatTime(roomSeconds)}
-            </p>
+
+            {/* Test Skip / Fast-Forward */}
+            <button
+              type="button"
+              onClick={() => setRoomSeconds(isBreakActive ? 4 : 5)}
+              className="p-1 rounded-lg hover:bg-[var(--card-hover)] text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
+              title={isBreakActive ? 'Fast-forward break to 0s' : 'Fast-forward sprint to break'}
+            >
+              <FastForward className="h-3.5 w-3.5" />
+            </button>
           </div>
 
-          {/* Break Chat Drawer Trigger (Locked during active sprint or lockdown) */}
+          {/* Break Lounge / Chat Button */}
           <button
+            type="button"
             onClick={handleOpenChatClick}
             disabled={isLockdownMode && !isBreakActive}
-            className={`relative flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition ${
+            className={`flex items-center gap-2 rounded-2xl px-4 py-2.5 text-xs font-bold transition active:scale-95 min-h-[44px] ${
               isBreakActive
-                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/20 animate-pulse cursor-pointer font-bold'
-                : 'border border-[var(--border-subtle)] text-[var(--text-muted)] bg-[var(--bg-main)] hover:border-[var(--border-subtle)]'
+                ? 'bg-amber-500 text-black shadow-md shadow-amber-500/25 animate-pulse font-bold'
+                : 'border border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
             }`}
           >
             {isBreakActive ? (
-              <Coffee className="h-3.5 w-3.5" />
+              <Coffee className="h-4 w-4" />
             ) : (
-              <Lock className="h-3.5 w-3.5 text-amber-500" />
+              <Lock className="h-4 w-4 text-amber-500" />
             )}
-            <span className="hidden md:inline">Break Lounge</span>
+            <span>Break Lounge</span>
             {isBreakActive && messages.length > 0 && (
-              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-botanical-sage)] text-[9px] font-bold text-white">
+              <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--accent-terracotta)] text-[9px] font-bold text-white">
                 {messages.length}
               </span>
             )}
@@ -483,89 +599,109 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
         </div>
       </div>
 
-      {/* Text-Only Break Wellness Guidance Bar (Strictly Zero Emojis) */}
+      {/* Break Wellness Guidance Alert */}
       {isBreakActive && (
-        <div className="rounded-xl border border-emerald-500/30 bg-emerald-500/10 p-3 text-center text-xs font-semibold text-emerald-800 dark:text-emerald-200 tracking-wide shadow-xs">
-          Break interval active. Stand up, stretch your shoulders, take deep breaths, and hydrate before the next sprint.
+        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-center text-xs font-semibold text-amber-800 dark:text-amber-300 shadow-xs flex items-center justify-center gap-2">
+          <Coffee className="h-4 w-4 text-amber-500 shrink-0" />
+          <span>Break interval active. Stand up, stretch your shoulders, take deep breaths, and hydrate before the next sprint.</span>
         </div>
       )}
 
-      {/* Auto-Close Reason Alert Banner */}
+      {/* Auto-Close Alert */}
       {autoCloseAlert && (
-        <div className="flex items-center justify-between rounded-xl border border-amber-500/50 bg-amber-500/10 p-3.5 shadow-xl backdrop-blur-md animate-in fade-in slide-in-from-top-3 duration-300">
+        <div className="flex items-center justify-between rounded-xl border border-amber-500/40 bg-amber-500/10 p-3.5 shadow-md animate-in fade-in duration-200">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/20 text-amber-700 dark:text-amber-400 shrink-0">
-              <Bell className="h-5 w-5 animate-bounce" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+              <Bell className="h-4 w-4" />
             </div>
             <div>
-              <p className="font-heading font-bold text-xs text-amber-800 dark:text-amber-300 uppercase tracking-wider">
-                Chat Closed — Sprint Started
+              <p className="font-heading font-bold text-xs text-amber-800 dark:text-amber-300">
+                Sprint Started — Lounge Chat Closed
               </p>
-              <p className="text-xs text-[var(--text-primary)] font-medium mt-0.5">
-                {autoCloseAlert}
-              </p>
+              <p className="text-xs text-[var(--text-primary)] mt-0.5">{autoCloseAlert}</p>
             </div>
           </div>
           <button
+            type="button"
             onClick={() => setAutoCloseAlert(null)}
-            className="ml-3 rounded-lg p-1 text-amber-700 dark:text-amber-400 hover:bg-amber-500/20 transition"
-            title="Dismiss"
+            className="p-1 rounded-lg text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition"
           >
             <X className="h-4 w-4" />
           </button>
         </div>
       )}
 
-      {/* Chat Lock Warning Alert */}
+      {/* Lock Warning */}
       {lockWarning && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-center text-xs font-medium text-amber-700 dark:text-amber-400">
-          ⚠️ {lockWarning}
+        <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          <span>{lockWarning}</span>
         </div>
       )}
 
-      {/* Floating Emoji Reaction Bar */}
-      <div className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/60 px-3 py-2">
-        <span className="text-xs font-semibold text-[var(--text-muted)] mr-1 flex items-center gap-1">
-          <Zap className="h-3.5 w-3.5 text-amber-500" /> Silent Emoji Cheers:
+      {/* Silent Cheer Reactions Ribbon */}
+      <div className="flex items-center justify-between gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3 flex-wrap">
+        <span className="text-xs font-semibold text-[var(--text-muted)] flex items-center gap-1.5">
+          <Zap className="h-3.5 w-3.5 text-[var(--accent-warm-ochre)]" />
+          <span>Silent Cheers:</span>
         </span>
-        {['🔥', '👏', '💪', '☕', '🙌', '✨'].map((emoji) => (
-          <button
-            key={emoji}
-            onClick={() => onSendEmoji(emoji)}
-            disabled={isLockdownMode}
-            className="flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-sm hover:scale-125 hover:border-[var(--accent-botanical-sage)]/50 transition active:scale-95 disabled:opacity-50"
-            title={isLockdownMode ? 'Reactions disabled during Lockdown Sprint' : `Send ${emoji} cheer`}
-          >
-            {emoji}
-          </button>
-        ))}
+
+        <div className="flex items-center gap-2 flex-wrap">
+          {[
+            { id: 'flame', icon: Flame, label: 'Streak' },
+            { id: 'zap', icon: Zap, label: 'Sprint' },
+            { id: 'sparkles', icon: Sparkles, label: 'Focus' },
+            { id: 'heart', icon: Heart, label: 'Cheer' },
+            { id: 'coffee', icon: Coffee, label: 'Break' },
+            { id: 'trophy', icon: Trophy, label: 'Achieve' },
+          ].map((item) => {
+            const Icon = item.icon;
+            return (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => onSendEmoji(item.id)}
+                disabled={isLockdownMode}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-secondary)] hover:text-[var(--accent-terracotta)] hover:border-[var(--accent-terracotta)]/40 transition active:scale-95 disabled:opacity-40 min-h-[36px]"
+                title={isLockdownMode ? 'Reactions disabled during Lockdown' : `Send ${item.label} cheer`}
+                aria-label={`Send ${item.label} cheer`}
+              >
+                <Icon className="h-4 w-4" strokeWidth={1.5} />
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Circle Members Live Grid with Micro-Goal Pinning */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        {/* Current User Card with Micro-Goal Pin */}
-        <div className="flex flex-col justify-between rounded-xl border-2 border-[var(--accent-botanical-sage)]/50 bg-[var(--accent-botanical-sage)]/10 p-3.5 shadow-xs space-y-2">
+      {/* Co-Workers Presence & Micro-Goal Intentions Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
+        {/* Current User Card */}
+        <div className="flex flex-col justify-between rounded-2xl border-2 border-[var(--accent-terracotta)]/40 bg-[var(--accent-terracotta)]/5 p-4 shadow-xs space-y-3">
           <div>
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2.5">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-botanical-sage)] text-xs font-bold text-white shadow-xs">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-terracotta)] text-xs font-bold text-white shadow-xs">
                   You
                 </div>
                 <div>
-                  <p className="font-semibold text-xs text-[var(--text-primary)]">You {isHost ? '(Host)' : ''}</p>
-                  <p className="text-[10px] font-medium text-emerald-700 dark:text-emerald-400">Focusing in Room</p>
+                  <p className="font-bold text-xs text-[var(--text-primary)]">You {isHost ? '(Host)' : ''}</p>
+                  <p className="text-[10px] font-semibold text-[var(--accent-terracotta)]">Active in Sprint</p>
                 </div>
               </div>
-              <span className="flex h-2 w-2 rounded-full bg-[var(--accent-botanical-sage)]" />
+              <span className="flex h-2 w-2 rounded-full bg-[var(--accent-botanical-sage)] animate-ping" />
             </div>
 
-            {/* Pinned Micro-Goal Intention */}
-            <div className="mt-2 rounded-lg bg-[var(--card-surface)] border border-[var(--border-subtle)] p-2 text-xs">
-              <div className="flex items-center justify-between text-[10px] font-bold text-emerald-700 dark:text-emerald-400 mb-1">
-                <span>🎯 Pinned Micro-Goal:</span>
+            {/* Pinned Micro-Goal */}
+            <div className="rounded-xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-2.5 text-xs">
+              <div className="flex items-center justify-between text-[10px] font-bold text-[var(--accent-terracotta)] mb-1">
+                <span className="flex items-center gap-1">
+                  <Target className="h-3 w-3" /> Pinned Micro-Goal:
+                </span>
                 <button
+                  type="button"
                   onClick={() => setIsEditingGoal(!isEditingGoal)}
                   className="text-[var(--text-muted)] hover:text-[var(--text-primary)] transition"
+                  aria-label="Edit Micro-Goal"
                 >
                   <Edit3 className="h-3 w-3" />
                 </button>
@@ -577,13 +713,14 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
                     type="text"
                     value={userMicroGoal}
                     onChange={(e) => setUserMicroGoal(e.target.value)}
-                    className="w-full rounded bg-[var(--surface-sunken)] border border-[var(--accent-botanical-sage)]/50 px-2 py-1 text-[11px] text-[var(--text-primary)] focus:outline-none"
+                    className="w-full rounded-lg bg-[var(--surface-sunken)] border border-[var(--accent-terracotta)] px-2 py-1 text-[11px] text-[var(--text-primary)] focus:outline-none"
                     placeholder="Set micro-goal..."
                     autoFocus
                   />
                   <button
+                    type="button"
                     onClick={() => setIsEditingGoal(false)}
-                    className="rounded bg-[var(--accent-botanical-sage)] px-2 py-1 text-[10px] font-bold text-white"
+                    className="rounded-lg bg-[var(--accent-terracotta)] px-2.5 py-1 text-[10px] font-bold text-white"
                   >
                     Save
                   </button>
@@ -596,18 +733,18 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
             </div>
           </div>
 
-          <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] text-[var(--text-secondary)]">
-            <span className="flex items-center gap-1 font-semibold text-[#C06C4C]">
-              <Flame className="h-3 w-3 fill-[#C06C4C]" />
+          <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px]">
+            <span className="flex items-center gap-1 font-semibold text-[var(--accent-terracotta)]">
+              <Flame className="h-3.5 w-3.5 fill-[var(--accent-terracotta)]" />
               {userStreak}d Streak
             </span>
-            <span className="rounded-full bg-emerald-500/15 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-400">
+            <span className="rounded-full bg-[var(--accent-botanical-sage)]/15 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-botanical-sage)]">
               Connected
             </span>
           </div>
         </div>
 
-        {/* Other Co-workers Cards */}
+        {/* Peer Co-Worker Cards */}
         {members.map((member, idx) => {
           const isPartner = member.isCirclePartner !== false;
           const sampleGoals = [
@@ -621,10 +758,10 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
           return (
             <div
               key={member.id}
-              className="flex flex-col justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-3.5 transition-all hover:border-[var(--accent-botanical-sage)]/40 space-y-2"
+              className="flex flex-col justify-between rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/60 p-4 transition-all hover:border-[var(--accent-dusty-rose)]/40 space-y-3 shadow-xs"
             >
               <div>
-                <div className="flex items-start justify-between mb-2">
+                <div className="flex items-start justify-between mb-2.5">
                   <div className="flex items-center gap-2.5">
                     <img
                       src={member.avatar}
@@ -632,26 +769,28 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
                       className="h-9 w-9 rounded-xl object-cover ring-1 ring-[var(--border-subtle)]"
                     />
                     <div>
-                      <p className="font-semibold text-xs text-[var(--text-primary)]">{member.name}</p>
+                      <p className="font-bold text-xs text-[var(--text-primary)]">{member.name}</p>
                       <p className="text-[10px] text-[var(--text-secondary)] truncate max-w-[110px]">
-                        {member.statusText}
+                        {member.statusText || 'Focusing'}
                       </p>
                     </div>
                   </div>
                   <span
                     className={`h-2 w-2 rounded-full ${
                       member.status === 'focusing'
-                        ? 'bg-[var(--accent-botanical-sage)]'
+                        ? 'bg-[var(--accent-botanical-sage)] animate-ping'
                         : member.status === 'completed_day'
-                        ? 'bg-[#CFA052]'
+                        ? 'bg-[var(--accent-warm-ochre)]'
                         : 'bg-amber-400'
                     }`}
                   />
                 </div>
 
                 {/* Member Pinned Micro-Goal */}
-                <div className="mt-2 rounded-lg bg-[var(--card-surface)] border border-[var(--border-subtle)] p-2 text-xs">
-                  <span className="text-[10px] font-bold text-[var(--text-muted)] block mb-0.5">🎯 Pinned Task:</span>
+                <div className="rounded-xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-2.5 text-xs">
+                  <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--text-muted)] mb-0.5">
+                    <Target className="h-3 w-3" /> Pinned Task:
+                  </span>
                   <p className="text-[11px] text-[var(--text-primary)] font-medium truncate">
                     {memberGoal}
                   </p>
@@ -659,29 +798,35 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
               </div>
 
               {/* Action Bar */}
-              <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] text-[var(--text-secondary)] gap-1">
-                <span className="flex items-center gap-1 font-semibold text-[#C06C4C]">
-                  <Flame className="h-3 w-3 fill-[#C06C4C]" />
+              <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-[11px] gap-1">
+                <span className="flex items-center gap-1 font-semibold text-[var(--accent-terracotta)]">
+                  <Flame className="h-3.5 w-3.5 fill-[var(--accent-terracotta)]" />
                   {member.streak}d Streak
                 </span>
 
-                {onTogglePartner ? (
+                {onTogglePartner && (
                   <button
                     type="button"
                     onClick={() => onTogglePartner(member.id)}
-                    className={`rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${
+                    className={`flex items-center gap-1 rounded-lg px-2 py-0.5 text-[10px] font-bold transition ${
                       isPartner
-                        ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25'
-                        : 'bg-indigo-500/15 text-indigo-700 dark:text-indigo-300 border border-indigo-500/30 hover:bg-indigo-500/25'
+                        ? 'bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)] border border-[var(--accent-dusty-rose)]/30 hover:bg-[var(--accent-dusty-rose)]/25'
+                        : 'bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] border border-[var(--accent-terracotta)]/30 hover:bg-[var(--accent-terracotta)]/25'
                     }`}
-                    title={isPartner ? 'In your Social Circle (Click to remove)' : 'Click to add co-worker to your Social Circle'}
+                    title={isPartner ? 'In Circle (Click to remove)' : 'Add to Circle'}
                   >
-                    {isPartner ? '✓ In Circle' : '➕ Add to Circle'}
+                    {isPartner ? (
+                      <>
+                        <Check className="h-3 w-3" />
+                        <span>In Circle</span>
+                      </>
+                    ) : (
+                      <>
+                        <UserPlus className="h-3 w-3" />
+                        <span>Add</span>
+                      </>
+                    )}
                   </button>
-                ) : (
-                  <span className="rounded-full bg-[#6B8E6E]/15 px-2 py-0.5 text-[10px] font-bold text-[#6B8E6E]">
-                    {member.closedRingsCount}/3 Rings
-                  </span>
                 )}
               </div>
             </div>
@@ -689,31 +834,39 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
         })}
       </div>
 
-      {/* Room Focus Duration Leaderboard Card */}
-      <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-4 space-y-3">
+      {/* Room Focus Duration Podium Leaderboard */}
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-4 sm:p-5 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-[#CFA052]" />
+            <Trophy className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
             <h3 className="font-heading font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
-              Room Focus Duration Leaderboard
+              Session Focus Leaderboard
             </h3>
           </div>
-          <span className="text-[10px] font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-2.5 py-0.5 rounded-full">
-            Live Room Sprints
+          <span className="text-[10px] font-bold text-[var(--accent-warm-ochre)] bg-[var(--accent-warm-ochre)]/15 border border-[var(--accent-warm-ochre)]/30 px-2.5 py-0.5 rounded-full">
+            Live Sprint Momentum
           </span>
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs">
-          <div className="flex items-center justify-between rounded-lg bg-[var(--card-surface)] border border-[#CFA052]/40 p-2.5">
-            <span className="font-bold text-[#CFA052]">🥇 1st: You</span>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 text-xs">
+          <div className="flex items-center justify-between rounded-xl bg-[var(--card-surface)] border border-[var(--accent-warm-ochre)]/40 p-3 shadow-xs">
+            <span className="flex items-center gap-1.5 font-bold text-[var(--accent-warm-ochre)]">
+              <Trophy className="h-4 w-4" /> 1st: You
+            </span>
             <span className="font-mono font-bold text-[var(--text-primary)]">125 mins</span>
           </div>
-          <div className="flex items-center justify-between rounded-lg bg-[var(--card-surface)] border border-gray-700 p-2.5">
-            <span className="font-bold text-gray-300">🥈 2nd: Alex Chen</span>
+
+          <div className="flex items-center justify-between rounded-xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-3 shadow-xs">
+            <span className="flex items-center gap-1.5 font-bold text-[var(--text-secondary)]">
+              <Medal className="h-4 w-4 text-[var(--text-muted)]" /> 2nd: Alex Chen
+            </span>
             <span className="font-mono font-bold text-[var(--text-primary)]">90 mins</span>
           </div>
-          <div className="flex items-center justify-between rounded-lg bg-[var(--card-surface)] border border-gray-700 p-2.5">
-            <span className="font-bold text-gray-400">🥉 3rd: Sarah Lin</span>
+
+          <div className="flex items-center justify-between rounded-xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-3 shadow-xs">
+            <span className="flex items-center gap-1.5 font-bold text-[var(--accent-terracotta)]">
+              <Medal className="h-4 w-4 text-[var(--accent-terracotta)]" /> 3rd: Sarah Lin
+            </span>
             <span className="font-mono font-bold text-[var(--text-primary)]">75 mins</span>
           </div>
         </div>
@@ -744,4 +897,3 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
     </div>
   );
 };
-

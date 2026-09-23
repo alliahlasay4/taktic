@@ -26,7 +26,7 @@ export const AsyncPodBoardDrawer: React.FC<AsyncPodBoardDrawerProps> = ({
           <div>
             <div className="flex items-center justify-between border-b border-[var(--border-subtle)] pb-4 mb-5">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-700 dark:text-emerald-400">
+                <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)]">
                   <History className="h-5 w-5" />
                 </div>
                 <div>
@@ -48,8 +48,8 @@ export const AsyncPodBoardDrawer: React.FC<AsyncPodBoardDrawerProps> = ({
             </div>
 
             {/* Subheader Notice */}
-            <div className="mb-5 rounded-xl border border-indigo-500/30 bg-indigo-500/10 p-3 flex items-start gap-2 text-[11px] text-indigo-800 dark:text-indigo-200">
-              <Zap className="h-4 w-4 text-indigo-700 dark:text-indigo-400 shrink-0 mt-0.5" />
+            <div className="mb-5 rounded-xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--accent-botanical-sage)]/10 p-3 flex items-start gap-2 text-[11px] text-[var(--text-primary)]">
+              <Zap className="h-4 w-4 text-[var(--accent-botanical-sage)] shrink-0 mt-0.5" />
               <span>
                 <strong>Asynchronous Rhythm:</strong> Stay connected with your pod partners even when focusing at different hours of the day.
               </span>
@@ -61,11 +61,11 @@ export const AsyncPodBoardDrawer: React.FC<AsyncPodBoardDrawerProps> = ({
                 logs.map((log) => (
                   <div
                     key={log.id}
-                    className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3.5 transition hover:border-[var(--accent-botanical-sage)]/40"
+                    className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3.5 transition hover:border-[var(--accent-terracotta)]/40"
                   >
                     <div className="flex items-center justify-between mb-1.5">
                       <span className="font-semibold text-xs text-[var(--text-primary)] flex items-center gap-1.5">
-                        <CheckCircle className="h-3.5 w-3.5 text-emerald-700 dark:text-emerald-400" />
+                        <CheckCircle className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)]" />
                         {log.userName}
                       </span>
                       <span className="text-[10px] text-[var(--text-muted)] flex items-center gap-1">
@@ -74,7 +74,7 @@ export const AsyncPodBoardDrawer: React.FC<AsyncPodBoardDrawerProps> = ({
                       </span>
                     </div>
 
-                    <p className="text-xs text-emerald-700 dark:text-emerald-400 font-medium">
+                    <p className="text-xs text-[var(--accent-botanical-sage)] font-medium">
                       Finished {log.durationMinutes}m Focus Sprint
                     </p>
                     {log.taskTitle && (
@@ -97,7 +97,7 @@ export const AsyncPodBoardDrawer: React.FC<AsyncPodBoardDrawerProps> = ({
           <div className="pt-4 border-t border-[var(--border-subtle)]">
             <button
               onClick={onClose}
-              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--card-hover)] py-2.5 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--surface-sunken)] transition"
+              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--card-hover)] py-2.5 text-xs font-semibold text-[var(--text-primary)] hover:border-[var(--accent-terracotta)]/40 hover:text-[var(--accent-terracotta)] transition"
             >
               Close Activity Board
             </button>

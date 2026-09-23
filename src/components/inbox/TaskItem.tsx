@@ -1,5 +1,5 @@
 import React from 'react';
-import { Check, Star, Trash2, Clock, Pencil, Repeat, Tag as TagIcon } from 'lucide-react';
+import { Check, Star, Trash2, Clock, Pencil, Repeat, Tag as TagIcon, Sunrise, Sun, Moon, Lightbulb, Archive } from 'lucide-react';
 import { Task, PriorityLevel, TimeBlockSlot } from '../../types';
 import { soundEngine } from '../../lib/audio';
 
@@ -8,6 +8,7 @@ interface TaskItemProps {
   onToggleComplete: (id: string) => void;
   onToggleTodayFocus: (id: string) => void;
   onDeleteTask: (id: string) => void;
+  onArchiveTask?: (id: string) => void;
   onEditTask?: (task: Task) => void;
   onUpdateTimeBlock?: (id: string, timeBlock: TimeBlockSlot) => void;
 }
@@ -35,6 +36,7 @@ export const TaskItem: React.FC<TaskItemProps> = ({
   onToggleComplete,
   onToggleTodayFocus,
   onDeleteTask,
+  onArchiveTask,
   onEditTask,
 }) => {
   const handleCheck = () => {
@@ -102,21 +104,28 @@ export const TaskItem: React.FC<TaskItemProps> = ({
 
             {task.timeBlock && (
               <span className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-medium capitalize text-[var(--text-secondary)]">
-                {task.timeBlock === 'morning' ? '🌅' : task.timeBlock === 'afternoon' ? '☀️' : '🌙'}{' '}
+                {task.timeBlock === 'morning' ? (
+                  <Sunrise className="h-3 w-3 text-amber-500" strokeWidth={1.5} aria-hidden="true" />
+                ) : task.timeBlock === 'afternoon' ? (
+                  <Sun className="h-3 w-3 text-amber-600" strokeWidth={1.5} aria-hidden="true" />
+                ) : (
+                  <Moon className="h-3 w-3 text-indigo-400" strokeWidth={1.5} aria-hidden="true" />
+                )}{' '}
                 {task.timeBlock}
               </span>
             )}
 
             {task.recurring && (
               <span className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-botanical-sage)]/10 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/25 px-2 py-0.5 text-[10px] font-semibold capitalize">
-                <Repeat className="h-3 w-3" />
+                <Repeat className="h-3 w-3" strokeWidth={1.5} aria-hidden="true" />
                 {task.recurring}
               </span>
             )}
 
             {task.isSomeday && (
               <span className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-dusty-mauve)]/15 text-[var(--accent-dusty-mauve)] border border-[var(--accent-dusty-mauve)]/30 px-2 py-0.5 text-[10px] font-semibold">
-                💡 Someday
+                <Lightbulb className="h-3 w-3 text-[var(--accent-dusty-mauve)]" strokeWidth={1.5} aria-hidden="true" />
+                Someday
               </span>
             )}
 
@@ -158,6 +167,19 @@ export const TaskItem: React.FC<TaskItemProps> = ({
         >
           <Star className={`h-3.5 w-3.5 ${task.isTodayFocus ? 'fill-[var(--accent-warm-ochre)] text-[var(--accent-warm-ochre)]' : ''}`} />
         </button>
+
+        {/* Archive Button (prominent if completed, hoverable if active) */}
+        {onArchiveTask && (
+          <button
+            onClick={() => onArchiveTask(task.id)}
+            className={`flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] transition-all hover:bg-[var(--accent-terracotta)]/15 hover:text-[var(--accent-terracotta)] ${
+              task.completed ? 'opacity-100' : 'opacity-70 sm:opacity-0 sm:group-hover:opacity-100'
+            }`}
+            title="Archive task to History"
+          >
+            <Archive className="h-3.5 w-3.5" />
+          </button>
+        )}
 
         {/* Delete Button */}
         <button

@@ -167,10 +167,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {isSignUp && (
             <div>
-              <label className="block text-xs font-medium text-gray-400 mb-1">Full Name</label>
+              <label htmlFor="auth-full-name" className="block text-xs font-medium text-gray-400 mb-1">Full Name</label>
               <div className="relative">
                 <User className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
                 <input
+                  id="auth-full-name"
+                  name="fullName"
                   type="text"
                   placeholder="Alex Rivera"
                   value={fullName}
@@ -183,10 +185,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen }) => {
           )}
 
           <div>
-            <label className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
+            <label htmlFor="auth-email-address" className="block text-xs font-medium text-gray-400 mb-1">Email Address</label>
             <div className="relative">
               <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
               <input
+                id="auth-email-address"
+                name="email"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
@@ -200,7 +204,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen }) => {
           {!isResetPassword && (
             <div>
               <div className="flex items-center justify-between mb-1">
-                <label className="block text-xs font-medium text-gray-400">Password</label>
+                <label htmlFor="auth-password" className="block text-xs font-medium text-gray-400">Password</label>
                 {!isSignUp && (
                   <button
                     type="button"
@@ -218,6 +222,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen }) => {
               <div className="relative">
                 <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-500" />
                 <input
+                  id="auth-password"
+                  name="password"
                   type="password"
                   placeholder="••••••••"
                   value={password}

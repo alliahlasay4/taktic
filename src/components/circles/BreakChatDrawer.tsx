@@ -99,7 +99,7 @@ export const BreakChatDrawer: React.FC<BreakChatDrawerProps> = ({
             </span>
           </div>
           <span className={`font-mono text-sm font-bold ${
-            isClosingSoon ? 'text-red-500 scale-110' : isBreakActive ? 'text-amber-700 dark:text-amber-400' : 'text-emerald-700 dark:text-emerald-400'
+            isClosingSoon ? 'text-red-500 scale-110' : isBreakActive ? 'text-amber-700 dark:text-amber-400' : 'text-[var(--accent-dusty-rose)]'
           }`}>
             {roomSeconds !== undefined ? formatTime(roomSeconds) : '--:--'}
           </span>
@@ -118,7 +118,7 @@ export const BreakChatDrawer: React.FC<BreakChatDrawerProps> = ({
           messages.map((msg) => (
             <div key={msg.id} className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3 transition hover:border-[var(--border-subtle)]">
               <div className="flex items-center justify-between mb-1">
-                <span className="font-semibold text-xs text-emerald-700 dark:text-emerald-400">{msg.userName}</span>
+                <span className="font-semibold text-xs text-[var(--accent-dusty-rose)]">{msg.userName}</span>
                 <span className="text-[9px] text-[var(--text-muted)]">{msg.timestamp}</span>
               </div>
               <p className="text-xs text-[var(--text-primary)] leading-relaxed">{msg.content}</p>
@@ -140,12 +140,12 @@ export const BreakChatDrawer: React.FC<BreakChatDrawerProps> = ({
           placeholder={isBreakActive ? 'Share a break note...' : 'Chat active during break...'}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          className="flex-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] py-2 px-3 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-botanical-sage)] focus:outline-none transition"
+          className="flex-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] py-2 px-3 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none transition"
         />
         <button
           type="submit"
           disabled={!inputText.trim()}
-          className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--accent-botanical-sage)] text-white hover:brightness-110 transition disabled:opacity-40 shadow-md"
+          className="flex h-8 w-8 items-center justify-center rounded-xl bg-[var(--accent-terracotta)] text-white hover:brightness-110 transition disabled:opacity-40 shadow-md"
         >
           <Send className="h-3.5 w-3.5" />
         </button>

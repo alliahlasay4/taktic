@@ -46,10 +46,10 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
   const strokeDashoffset3 = c3 - (c3 * focusPct) / 100;
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between gap-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 shadow-xs">
+    <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-6 shadow-xs w-full max-w-full overflow-hidden">
       {/* SVG Concentric Rings */}
-      <div className="relative flex items-center justify-center">
-        <svg width="220" height="220" className="rotate-[-90deg]">
+      <div className="relative flex items-center justify-center shrink-0">
+        <svg viewBox="0 0 220 220" className="w-44 h-44 sm:w-52 sm:h-52 rotate-[-90deg]">
           {/* Ring 1 Track - Tasks */}
           <circle
             cx={center}

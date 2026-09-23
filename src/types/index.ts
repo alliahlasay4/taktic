@@ -15,6 +15,8 @@ export interface Task {
   completedAt?: string;
   isSomeday?: boolean;
   recurring?: 'daily' | 'weekly' | 'monthly' | null;
+  archived?: boolean;
+  archivedAt?: string;
 }
 
 export interface Habit {
@@ -45,6 +47,7 @@ export interface CircleMember {
   id: string;
   name: string;
   avatar: string;
+  email?: string;
   status: 'focusing' | 'idle' | 'completed_day';
   statusText?: string;
   closedRingsCount: number; // 0 to 3
@@ -53,6 +56,17 @@ export interface CircleMember {
   isCirclePartner?: boolean;
   isMuted?: boolean;
   microGoal?: string;
+}
+
+export interface CircleInvite {
+  id: string;
+  email?: string;
+  name?: string;
+  status: 'pending' | 'accepted' | 'cancelled';
+  inviteToken: string;
+  inviteLink: string;
+  createdAt: string;
+  inviterName?: string;
 }
 
 
@@ -75,7 +89,7 @@ export interface HeatmapDay {
   level: 0 | 1 | 2 | 3 | 4;
 }
 
-export type ActiveTab = 'dashboard' | 'inbox' | 'focus' | 'habits' | 'circles' | 'analytics' | 'profile';
+export type ActiveTab = 'dashboard' | 'inbox' | 'focus' | 'habits' | 'circles' | 'analytics' | 'archive' | 'profile';
 
 export interface InAppNotification {
   id: string;
@@ -137,4 +151,16 @@ export interface FocusPod {
     durationMinutes: number;
     completedAt: string;
   }[];
+}
+
+export type NoteColor = 'terracotta' | 'sage' | 'ochre' | 'rose' | 'slate';
+
+export interface QuickNote {
+  id: string;
+  title?: string;
+  content: string;
+  color: NoteColor;
+  isPinned: boolean;
+  createdAt: string;
+  updatedAt: string;
 }

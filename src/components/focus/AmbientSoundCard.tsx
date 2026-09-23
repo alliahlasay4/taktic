@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Volume2, VolumeX, Volume1, Music, Square } from 'lucide-react';
+import { Volume2, VolumeX, Volume1, Music, Square, CloudRain, Waves, Headphones, Coffee } from 'lucide-react';
 import { soundEngine } from '../../lib/audio';
 
 interface AmbientSoundCardProps {
@@ -8,10 +8,10 @@ interface AmbientSoundCardProps {
 }
 
 const SOUNDSCAPES = [
-  { id: 'Gentle Rain', label: 'Gentle Rain', icon: '🌧️', desc: 'Soft rainfall' },
-  { id: 'Ocean Waves', label: 'Ocean Waves', icon: '🌊', desc: 'Shoreline waves' },
-  { id: 'Lo-Fi Autumn Beats', label: 'Lo-Fi Warmth', icon: '🎧', desc: 'Vinyl hum' },
-  { id: 'Coffee Shop Ambience', label: 'Cafe Chatter', icon: '☕', desc: 'Cafe ambience' },
+  { id: 'Gentle Rain', label: 'Gentle Rain', icon: CloudRain, desc: 'Soft rainfall' },
+  { id: 'Ocean Waves', label: 'Ocean Waves', icon: Waves, desc: 'Shoreline waves' },
+  { id: 'Lo-Fi Autumn Beats', label: 'Lo-Fi Warmth', icon: Headphones, desc: 'Vinyl hum' },
+  { id: 'Coffee Shop Ambience', label: 'Cafe Chatter', icon: Coffee, desc: 'Cafe ambience' },
 ];
 
 export const AmbientSoundCard: React.FC<AmbientSoundCardProps> = ({
@@ -61,12 +61,12 @@ export const AmbientSoundCard: React.FC<AmbientSoundCardProps> = ({
   const VolumeIcon = isMuted || volume === 0 ? VolumeX : volume < 0.5 ? Volume1 : Volume2;
 
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-md transition-all">
+    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs transition-colors duration-300">
       {/* Top Header Row with Title, Playing Indicator & Integrated Master Volume Slider */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4 pb-4 border-b border-[var(--border-subtle)]">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4 pb-4 border-b border-[var(--border-subtle)]">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#CFA052]/15 text-[#CFA052] shrink-0">
-            <Music className="h-4.5 w-4.5" />
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] shrink-0">
+            <Music className="h-4.5 w-4.5" strokeWidth={1.5} />
           </div>
           <div>
             <div className="flex items-center gap-2">
@@ -74,8 +74,8 @@ export const AmbientSoundCard: React.FC<AmbientSoundCardProps> = ({
                 Ambient Soundscapes
               </h3>
               {activeSoundscape && (
-                <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-400">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-ping" />
+                <span className="flex items-center gap-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
                   Playing
                 </span>
               )}
@@ -87,13 +87,15 @@ export const AmbientSoundCard: React.FC<AmbientSoundCardProps> = ({
         </div>
 
         {/* Master Volume Slider & Controls */}
-        <div className="flex items-center gap-3 bg-[var(--bg-main)]/70 px-3.5 py-1.5 rounded-xl border border-[var(--border-subtle)]">
+        <div className="flex items-center gap-3 bg-[var(--bg-main)] px-3.5 py-1.5 rounded-xl border border-[var(--border-subtle)] self-start sm:self-auto">
           <button
+            type="button"
             onClick={handleToggleMute}
-            className="text-[var(--text-secondary)] hover:text-[#CFA052] transition p-0.5"
+            className="text-[var(--text-secondary)] hover:text-[var(--accent-terracotta)] transition p-0.5 cursor-pointer"
             title={isMuted ? 'Unmute' : 'Mute'}
+            aria-label={isMuted ? 'Unmute' : 'Mute'}
           >
-            <VolumeIcon className={`h-4 w-4 ${isMuted ? 'text-red-400' : 'text-[#CFA052]'}`} />
+            <VolumeIcon className={`h-4 w-4 ${isMuted ? 'text-rose-500' : 'text-[var(--accent-terracotta)]'}`} strokeWidth={1.5} />
           </button>
 
           <div className="flex items-center gap-2">
@@ -104,20 +106,22 @@ export const AmbientSoundCard: React.FC<AmbientSoundCardProps> = ({
               step="0.02"
               value={isMuted ? 0 : volume}
               onChange={(e) => handleVolumeChange(parseFloat(e.target.value))}
-              className="w-24 sm:w-28 h-1.5 rounded-lg appearance-none bg-gray-800 accent-[#CFA052] cursor-pointer"
+              className="w-24 sm:w-28 h-1.5 rounded-lg appearance-none bg-[var(--border-subtle)] accent-[var(--accent-terracotta)] cursor-pointer"
+              aria-label="Volume Slider"
             />
-            <span className="font-mono text-[11px] font-bold text-[#CFA052] w-8 text-right">
+            <span className="font-mono text-[11px] font-bold text-[var(--text-primary)] w-8 text-right">
               {isMuted ? '0%' : `${Math.round(volume * 100)}%`}
             </span>
           </div>
 
           {activeSoundscape && (
             <button
+              type="button"
               onClick={handleStopAll}
-              className="ml-1 flex items-center gap-1 rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[10px] font-semibold text-red-400 hover:bg-red-500/20 transition active:scale-95"
+              className="ml-1 flex items-center gap-1 rounded-lg border border-rose-500/30 bg-rose-500/10 px-2 py-1 text-[10px] font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/20 transition active:scale-95 cursor-pointer"
               title="Stop Soundscape"
             >
-              <Square className="h-3 w-3 fill-red-400" />
+              <Square className="h-3 w-3 fill-rose-500" />
               <span>Stop</span>
             </button>
           )}
@@ -128,22 +132,31 @@ export const AmbientSoundCard: React.FC<AmbientSoundCardProps> = ({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
         {SOUNDSCAPES.map((sound) => {
           const isActive = activeSoundscape === sound.id;
+          const SoundIcon = sound.icon;
           return (
             <button
               key={sound.id}
+              type="button"
               onClick={() => handleSelectSoundscape(sound.id)}
-              className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all ${
+              aria-pressed={isActive}
+              className={`flex items-center gap-2.5 rounded-xl border p-2.5 text-left transition-all min-h-[44px] cursor-pointer ${
                 isActive
-                  ? 'border-[#CFA052] bg-[#CFA052]/15 text-[#CFA052] shadow-sm ring-1 ring-[#CFA052]/30 scale-[1.02]'
-                  : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:border-gray-700 hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]'
+                  ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] shadow-xs ring-1 ring-[var(--accent-terracotta)]/30'
+                  : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:border-[var(--text-muted)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]'
               }`}
             >
-              <span className="text-lg p-0.5 shrink-0">{sound.icon}</span>
+              <div
+                className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 transition-colors ${
+                  isActive ? 'bg-[var(--accent-terracotta)]/20 text-[var(--accent-terracotta)]' : 'bg-[var(--card-surface)] text-[var(--text-secondary)]'
+                }`}
+              >
+                <SoundIcon className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between">
                   <p className="font-semibold text-xs truncate">{sound.label}</p>
                   {isActive && (
-                    <span className="flex h-2 w-2 rounded-full bg-[#CFA052] animate-pulse shrink-0 ml-1" />
+                    <span className="flex h-2 w-2 rounded-full bg-[var(--accent-terracotta)] animate-pulse shrink-0 ml-1" />
                   )}
                 </div>
                 <p className="text-[10px] opacity-75 truncate mt-0.5">{sound.desc}</p>

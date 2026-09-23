@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Flame, Clock, Award } from 'lucide-react';
+import { Target, Clock, Award, Minimize2 } from 'lucide-react';
 import { Task, TimeBlockSlot } from '../../types';
 import { PomodoroTimer } from './PomodoroTimer';
 import { TimeBlockGrid } from './TimeBlockGrid';
@@ -12,6 +12,7 @@ interface FocusViewProps {
   activeSoundscape: string | null;
   setActiveSoundscape: (sound: string | null) => void;
   totalFocusMinutesToday?: number;
+  onExitImmersive?: () => void;
 }
 
 export const FocusView: React.FC<FocusViewProps> = ({
@@ -21,6 +22,7 @@ export const FocusView: React.FC<FocusViewProps> = ({
   activeSoundscape,
   setActiveSoundscape,
   totalFocusMinutesToday = 75,
+  onExitImmersive,
 }) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
@@ -30,16 +32,16 @@ export const FocusView: React.FC<FocusViewProps> = ({
   const targetPomodoros = 8;
 
   return (
-    <div className="space-y-6">
-      {/* Daily Focus Target & Pomodoro Count Progress Header */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs">
+    <div className="space-y-6 p-4 sm:p-6 max-w-7xl mx-auto animate-in fade-in duration-300">
+      {/* Daily Focus Target & Exit Button Header */}
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs transition-colors duration-300">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[#CFA052] to-[#C06C4C] text-white shadow-xs">
-              <Target className="h-5 w-5" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-tr from-[var(--accent-terracotta)] to-[var(--accent-warm-ochre)] text-white shadow-xs">
+              <Target className="h-5 w-5" strokeWidth={1.5} aria-hidden="true" />
             </div>
             <div>
-              <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
+              <h2 className="font-heading font-bold text-base text-[var(--text-primary)] tracking-tight">
                 Daily Deep Work Target
               </h2>
               <p className="text-xs text-[var(--text-secondary)]">
@@ -48,23 +50,41 @@ export const FocusView: React.FC<FocusViewProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-4 text-xs font-semibold text-[var(--text-secondary)]">
-            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-1.5">
-              <Clock className="h-4 w-4 text-[#CFA052]" />
-              <span>{totalFocusMinutesToday}m Total</span>
+          <div className="flex items-center gap-2.5 text-xs font-semibold text-[var(--text-secondary)] flex-wrap">
+            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-1.5 shadow-2xs">
+              <Clock className="h-4 w-4 text-[var(--accent-warm-ochre)]" strokeWidth={1.5} aria-hidden="true" />
+              <span>{totalFocusMinutesToday}m Logged</span>
             </div>
 
-            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-1.5">
-              <Award className="h-4 w-4 text-[#C06C4C]" />
+            <div className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-1.5 shadow-2xs">
+              <Award className="h-4 w-4 text-[var(--accent-terracotta)]" strokeWidth={1.5} aria-hidden="true" />
               <span>{completedPomodoros} / {targetPomodoros} Sessions</span>
             </div>
+
+            {onExitImmersive && (
+              <button
+                type="button"
+                onClick={onExitImmersive}
+                className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-3.5 py-1.5 min-h-[38px] text-xs font-semibold transition-all shadow-xs active:scale-95 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
+                aria-label="Exit Immersive Focus Mode"
+              >
+                <Minimize2 className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                <span>Exit Focus View</span>
+              </button>
+            )}
           </div>
         </div>
 
         {/* Progress Bar Line */}
-        <div className="h-2.5 w-full rounded-full bg-[var(--border-subtle)]/40 overflow-hidden">
+        <div
+          className="h-2 w-full rounded-full bg-[var(--border-subtle)]/40 overflow-hidden"
+          role="progressbar"
+          aria-valuenow={progressPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div
-            className="h-full rounded-full bg-gradient-to-r from-[#CFA052] to-[#C06C4C] transition-all duration-500"
+            className="h-full rounded-full bg-gradient-to-r from-[var(--accent-warm-ochre)] to-[var(--accent-terracotta)] transition-all duration-500"
             style={{ width: `${progressPct}%` }}
           />
         </div>

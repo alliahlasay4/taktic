@@ -127,10 +127,12 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             </div>
 
             <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-5 space-y-3">
-              <label className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">
+              <label htmlFor="onboarding-micro-goal" className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-emerald-400">
                 <Target className="h-4 w-4" /> What is your primary micro-goal?
               </label>
               <input
+                id="onboarding-micro-goal"
+                name="microGoal"
                 type="text"
                 value={microGoal}
                 onChange={(e) => setMicroGoal(e.target.value)}
@@ -146,7 +148,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <span>🌱</span> Set Up Your First Habit
+                <Sparkles className="h-5 w-5 text-emerald-400" /> Set Up Your First Habit
               </h3>
               <p className="mt-1 text-sm text-gray-400">
                 Consistency is key. What is one habit you want to lock in this week?
@@ -155,8 +157,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Habit Title</label>
+                <label htmlFor="onboarding-habit-title" className="block text-xs font-medium text-gray-400 mb-1">Habit Title</label>
                 <input
+                  id="onboarding-habit-title"
+                  name="habitTitle"
                   type="text"
                   value={habitTitle}
                   onChange={(e) => setHabitTitle(e.target.value)}
@@ -166,14 +170,14 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
               </div>
 
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-2">Category</label>
+                <div className="block text-xs font-medium text-gray-400 mb-2">Category</div>
                 <div className="grid grid-cols-3 gap-2">
                   {[
-                    { id: 'mindset', label: 'Mindset 🧘' },
-                    { id: 'health', label: 'Health 💧' },
-                    { id: 'fitness', label: 'Fitness 🌅' },
-                    { id: 'growth', label: 'Growth 🌱' },
-                    { id: 'creative', label: 'Creative ✍️' },
+                    { id: 'mindset', label: 'Mindset' },
+                    { id: 'health', label: 'Health' },
+                    { id: 'fitness', label: 'Fitness' },
+                    { id: 'growth', label: 'Growth' },
+                    { id: 'creative', label: 'Creative' },
                   ].map((cat) => (
                     <button
                       key={cat.id}
@@ -199,7 +203,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <span>🎯</span> Add Your First Priority Task
+                <Target className="h-5 w-5 text-emerald-400" /> Add Your First Priority Task
               </h3>
               <p className="mt-1 text-sm text-gray-400">
                 What single task will move the needle for you today?
@@ -208,8 +212,10 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-medium text-gray-400 mb-1">Task Title</label>
+                <label htmlFor="onboarding-task-title" className="block text-xs font-medium text-gray-400 mb-1">Task Title</label>
                 <input
+                  id="onboarding-task-title"
+                  name="taskTitle"
                   type="text"
                   value={taskTitle}
                   onChange={(e) => setTaskTitle(e.target.value)}
@@ -231,7 +237,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
           <div className="space-y-6">
             <div>
               <h3 className="text-xl font-bold text-white flex items-center gap-2">
-                <span>🎧</span> Soundscapes & Notifications
+                <Volume2 className="h-5 w-5 text-emerald-400" /> Soundscapes & Notifications
               </h3>
               <p className="mt-1 text-sm text-gray-400">
                 Customize your focus environment and enable desktop alerts.
@@ -240,15 +246,15 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
 
             <div className="space-y-4">
               <div>
-                <label className="flex items-center gap-2 text-xs font-medium text-gray-400 mb-2">
+                <div className="flex items-center gap-2 text-xs font-medium text-gray-400 mb-2">
                   <Volume2 className="h-4 w-4 text-emerald-400" /> Favorite Ambient Soundscape
-                </label>
+                </div>
                 <div className="grid grid-cols-2 gap-2">
                   {[
-                    { id: 'rain', label: '🌧️ Cozy Rain' },
-                    { id: 'cafe', label: '☕ Cyber Cafe' },
-                    { id: 'waves', label: '🌊 Ocean Waves' },
-                    { id: 'binaural', label: '🧠 Alpha Beats' },
+                    { id: 'rain', label: 'Cozy Rain' },
+                    { id: 'cafe', label: 'Cyber Cafe' },
+                    { id: 'waves', label: 'Ocean Waves' },
+                    { id: 'binaural', label: 'Alpha Beats' },
                   ].map((s) => (
                     <button
                       key={s.id}

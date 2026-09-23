@@ -46,7 +46,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   return (
     <div
       ref={menuRef}
-      className="absolute right-0 top-12 z-50 w-72 overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/95 backdrop-blur-xl p-3 shadow-2xl text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150"
+      className="absolute right-0 top-11 sm:top-12 z-50 w-[calc(100vw-28px)] max-w-xs sm:w-72 overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/95 backdrop-blur-xl p-3 shadow-2xl text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150"
     >
       {/* User Header Identity Card */}
       <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] mb-2">

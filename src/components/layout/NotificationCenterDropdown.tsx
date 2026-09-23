@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Clock, Repeat, Flame, Users, Sparkles, CheckCheck, Trash2, X, BellOff } from 'lucide-react';
 import { InAppNotification, ActiveTab } from '../../types';
 
@@ -22,6 +22,22 @@ export const NotificationCenterDropdown: React.FC<NotificationCenterDropdownProp
   onSelectTab,
 }) => {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Click outside to close
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
+        onClose();
+      }
+    };
+    if (isOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isOpen, onClose]);
 
   if (!isOpen) return null;
 
@@ -54,7 +70,10 @@ export const NotificationCenterDropdown: React.FC<NotificationCenterDropdownProp
   };
 
   return (
-    <div className="absolute right-0 top-12 z-50 w-80 sm:w-96 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/95 backdrop-blur-xl p-4 shadow-2xl text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150">
+    <div
+      ref={dropdownRef}
+      className="absolute right-0 top-11 sm:top-12 z-50 w-[calc(100vw-28px)] max-w-sm sm:w-96 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/95 backdrop-blur-xl p-4 shadow-2xl text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150"
+    >
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] mb-3">
         <div className="flex items-center gap-2">

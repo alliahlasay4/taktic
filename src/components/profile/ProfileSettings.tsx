@@ -18,7 +18,6 @@ const AVATAR_PRESETS = [
 
 const SOUNDSCAPE_OPTIONS = ['Gentle Rain', 'Ocean Waves', 'Lo-Fi Autumn Beats', 'Coffee Shop Ambience'];
 
-
 const TIMEZONE_OPTIONS = [
   'GMT+8 (Asia/Manila)',
   'GMT+8 (Asia/Singapore)',
@@ -88,11 +87,11 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
       <div className="rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-6 space-y-5 transition-colors duration-300">
         <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border-subtle)]">
           <div className="p-2 rounded-lg bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[var(--accent-terracotta)]">
-            <User className="w-4 h-4" />
+            <User className="w-4 h-4" strokeWidth={1.5} />
           </div>
           <div>
             <h3 className="text-base font-semibold text-[var(--text-primary)]">Public Identity</h3>
-            <p className="text-xs text-[var(--text-secondary)]">Information displayed to your Circle partners.</p>
+            <p className="text-xs text-[var(--text-secondary)]">Information displayed across your Focus circles and pods.</p>
           </div>
         </div>
 
@@ -100,7 +99,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
         <div className="space-y-3">
           <div className="flex items-center justify-between flex-wrap gap-2">
             <label className="text-xs font-semibold text-[var(--text-secondary)]">Profile Avatar</label>
-            <span className="text-[11px] text-[var(--text-muted)]">Upload your own photo or pick a preset</span>
+            <span className="text-[11px] text-[var(--text-muted)]">Upload a photo or choose a preset</span>
           </div>
 
           <div className="flex items-center gap-4 flex-wrap">
@@ -108,16 +107,16 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
             <div
               className="relative group cursor-pointer"
               onClick={() => fileInputRef.current?.click()}
-              title="Click to upload your own picture"
+              title="Click to upload custom picture"
             >
               <img
                 src={avatarUrl}
                 alt="Avatar Preview"
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-[var(--accent-terracotta)] shadow-sm group-hover:opacity-80 transition"
+                className="w-16 h-16 rounded-2xl object-cover border-2 border-[var(--accent-terracotta)] shadow-sm group-hover:opacity-85 transition"
               />
-              <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition duration-200">
-                <Camera className="w-5 h-5 mb-0.5" />
-                <span className="text-[8px] font-bold uppercase tracking-wider">Upload</span>
+              <div className="absolute inset-0 rounded-2xl bg-black/45 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition duration-200">
+                <Camera className="w-4 h-4 mb-0.5" />
+                <span className="text-[8px] font-bold uppercase tracking-wider">Change</span>
               </div>
             </div>
 
@@ -175,8 +174,10 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Full Name</label>
+            <label htmlFor="profile-full-name" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Full Name</label>
             <input
+              id="profile-full-name"
+              name="fullName"
               type="text"
               required
               value={fullName}
@@ -186,8 +187,10 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
           </div>
 
           <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Username Handle</label>
+            <label htmlFor="profile-username" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Username Handle</label>
             <input
+              id="profile-username"
+              name="username"
               type="text"
               required
               value={username}
@@ -199,25 +202,29 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" />
+            <label htmlFor="profile-status-message" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1.5">
+              <Sparkles className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} />
               Status Indicator
             </label>
             <input
+              id="profile-status-message"
+              name="statusMessage"
               type="text"
               value={statusMessage}
               onChange={(e) => setStatusMessage(e.target.value)}
-              placeholder="e.g. In Deep Flow Mode ⚡"
+              placeholder="e.g. In Deep Flow Mode"
               className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none transition-colors"
             />
           </div>
 
           <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" />
+            <label htmlFor="profile-micro-goal" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1.5">
+              <Target className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} />
               Daily Micro-Goal
             </label>
             <input
+              id="profile-micro-goal"
+              name="microGoal"
               type="text"
               value={microGoal}
               onChange={(e) => setMicroGoal(e.target.value)}
@@ -228,8 +235,10 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
         </div>
 
         <div>
-          <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Bio</label>
+          <label htmlFor="profile-bio" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Bio</label>
           <textarea
+            id="profile-bio"
+            name="bio"
             rows={2}
             value={bio}
             onChange={(e) => setBio(e.target.value)}
@@ -243,18 +252,20 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
       <div className="rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-6 space-y-4 transition-colors duration-300">
         <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border-subtle)]">
           <div className="p-2 rounded-lg bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[var(--accent-terracotta)]">
-            <Clock className="w-4 h-4" />
+            <Clock className="w-4 h-4" strokeWidth={1.5} />
           </div>
           <div>
             <h3 className="text-base font-semibold text-[var(--text-primary)]">Routine & Audio Preferences</h3>
-            <p className="text-xs text-[var(--text-secondary)]">Configure your work hours and ambient audio.</p>
+            <p className="text-xs text-[var(--text-secondary)]">Configure your working hours and preferred ambient soundscape.</p>
           </div>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Timezone</label>
+            <label htmlFor="profile-timezone" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Timezone</label>
             <select
+              id="profile-timezone"
+              name="timezone"
               value={timezone}
               onChange={(e) => setTimezone(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none"
@@ -268,11 +279,13 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
           </div>
 
           <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1.5">
-              <Volume2 className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" />
+            <label htmlFor="profile-soundscape" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1.5">
+              <Volume2 className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} />
               Favorite Soundscape
             </label>
             <select
+              id="profile-soundscape"
+              name="favoriteSoundscape"
               value={favoriteSoundscape}
               onChange={(e) => setFavoriteSoundscape(e.target.value)}
               className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none"
@@ -288,8 +301,10 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Work Hours Start</label>
+            <label htmlFor="profile-work-hours-start" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Work Hours Start</label>
             <input
+              id="profile-work-hours-start"
+              name="workHoursStart"
               type="time"
               value={workHoursStart}
               onChange={(e) => setWorkHoursStart(e.target.value)}
@@ -298,8 +313,10 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
           </div>
 
           <div>
-            <label className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Work Hours End</label>
+            <label htmlFor="profile-work-hours-end" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Work Hours End</label>
             <input
+              id="profile-work-hours-end"
+              name="workHoursEnd"
               type="time"
               value={workHoursEnd}
               onChange={(e) => setWorkHoursEnd(e.target.value)}
@@ -313,11 +330,11 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
       <div className="rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-6 space-y-4 transition-colors duration-300">
         <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border-subtle)]">
           <div className="p-2 rounded-lg bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[var(--accent-terracotta)]">
-            <Shield className="w-4 h-4" />
+            <Shield className="w-4 h-4" strokeWidth={1.5} />
           </div>
           <div>
             <h3 className="text-base font-semibold text-[var(--text-primary)]">Privacy & Visibility Controls</h3>
-            <p className="text-xs text-[var(--text-secondary)]">Manage what stats are shared with your social Circles.</p>
+            <p className="text-xs text-[var(--text-secondary)]">Manage what statistics are shared publicly with your Circles.</p>
           </div>
         </div>
 
@@ -326,7 +343,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
             {
               key: 'showFocusHours',
               label: 'Display Total Deep Focus Hours',
-              desc: 'Share your total focused time on your public profile counter.',
+              desc: 'Share your total focused hours on your public profile banner.',
             },
             {
               key: 'showMicroGoal',
@@ -336,7 +353,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
             {
               key: 'showStreak',
               label: 'Display Streak Badges',
-              desc: 'Broadcast active day streaks to Circle partners.',
+              desc: 'Broadcast active day streaks to your Circle partners.',
             },
             {
               key: 'showActivityFeed',
@@ -374,7 +391,7 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
 
         <button
           type="submit"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--accent-terracotta)] hover:opacity-90 text-white font-medium text-sm transition-all shadow-xs active:scale-95"
+          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--accent-terracotta)] hover:opacity-90 text-white font-medium text-sm transition-all shadow-xs active:scale-95 cursor-pointer"
         >
           <Save className="w-4 h-4" />
           Save Changes

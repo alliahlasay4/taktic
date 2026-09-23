@@ -3,6 +3,7 @@ import { Sparkles, ArrowRight, Flame, Clock, CheckCircle2, Users } from 'lucide-
 import { Task, Habit, ActiveTab, CircleMember } from '../../types';
 import { TripleRings } from '../habits/TripleRings';
 import { TaskItem } from '../inbox/TaskItem';
+import { IconRenderer } from '../common/IconRenderer';
 
 interface DashboardViewProps {
   tasks: Task[];
@@ -32,23 +33,24 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenSummary,
 }) => {
   const today = new Date().toISOString().split('T')[0];
-  const focusTasks = tasks.filter((t) => t.isTodayFocus);
-  const tasksCompletedToday = tasks.filter((t) => t.completed && t.completedAt?.startsWith(today)).length;
+  const activeTasks = tasks.filter((t) => !t.archived);
+  const focusTasks = activeTasks.filter((t) => t.isTodayFocus);
+  const tasksCompletedToday = activeTasks.filter((t) => t.completed && t.completedAt?.startsWith(today)).length;
   const habitsCompletedToday = habits.filter((h) => h.completedDates.includes(today)).length;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6 w-full max-w-full overflow-hidden">
       {/* Welcome Banner */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] p-6 sm:p-8 text-white shadow-lg shadow-[#C06C4C]/15">
-        <div className="relative z-10 max-w-xl space-y-2">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-xs font-semibold">
-            <Sparkles className="h-3.5 w-3.5" />
+      <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] p-4 sm:p-6 md:p-8 text-white shadow-lg shadow-[#C06C4C]/15">
+        <div className="relative z-10 max-w-xl space-y-1.5 sm:space-y-2">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-2.5 sm:px-3 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold">
+            <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
             <span>Tactical Focus & Social Rhythm</span>
           </div>
-          <h1 className="font-heading font-bold text-2xl sm:text-3xl tracking-tight">
+          <h1 className="font-heading font-bold text-xl sm:text-2xl md:text-3xl tracking-tight">
             Welcome back, Alliah.
           </h1>
-          <p className="text-xs sm:text-sm text-white/90">
+          <p className="text-xs sm:text-sm text-white/90 leading-relaxed">
             You're on a <strong className="underline decoration-white/40">{userStreak}-day streak</strong>! Keep your momentum steady by executing your 3 focus priorities today.
           </p>
         </div>
@@ -130,13 +132,13 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                     className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2.5 text-xs cursor-pointer hover:border-[#C87D87]/50"
                   >
                     <div className="flex items-center gap-2.5">
-                      <span className="text-base">{habit.icon}</span>
+                      <IconRenderer name={habit.icon} className="h-4 w-4 text-[#C87D87]" strokeWidth={1.5} />
                       <span className={`font-medium ${isDone ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
                         {habit.title}
                       </span>
                     </div>
                     <span className="flex items-center gap-1 font-semibold text-[#C06C4C] text-[11px]">
-                      <Flame className="h-3 w-3 fill-[#C06C4C]" />
+                      <Flame className="h-3 w-3 fill-[#C06C4C]" strokeWidth={1.5} aria-hidden="true" />
                       {habit.streak}d
                     </span>
                   </div>

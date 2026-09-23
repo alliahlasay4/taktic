@@ -1,6 +1,6 @@
 import React from 'react';
 import { Badge } from '../../types';
-import { Flame, Clock, CheckCircle2, Users, Lock } from 'lucide-react';
+import { Flame, Clock, CheckCircle2, Users, Lock, Check } from 'lucide-react';
 
 interface BadgeCardProps {
   badge: Badge;
@@ -8,12 +8,12 @@ interface BadgeCardProps {
 
 const TIER_STYLES = {
   bronze: {
-    bg: 'border-[#CFA052]/40 bg-[#CFA052]/10 text-[#CFA052]',
-    iconBg: 'bg-[#CFA052]/20 border-[#CFA052]/40 text-[#CFA052]',
-    bar: 'bg-[#CFA052]',
+    bg: 'border-[var(--accent-warm-ochre)]/40 bg-[var(--accent-warm-ochre)]/10 text-[var(--accent-warm-ochre)]',
+    iconBg: 'bg-[var(--accent-warm-ochre)]/20 border-[var(--accent-warm-ochre)]/40 text-[var(--accent-warm-ochre)]',
+    bar: 'bg-[var(--accent-warm-ochre)]',
   },
   silver: {
-    bg: 'border-[var(--border-subtle)] bg-[var(--card-hover)]/40 text-[var(--text-primary)]',
+    bg: 'border-[var(--border-subtle)] bg-[var(--card-hover)]/60 text-[var(--text-primary)]',
     iconBg: 'bg-[var(--card-hover)] border-[var(--border-subtle)] text-[var(--text-primary)]',
     bar: 'bg-[var(--text-secondary)]',
   },
@@ -39,22 +39,24 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
   const getCategoryIcon = () => {
     switch (badge.category) {
       case 'streak':
-        return <Flame className="w-5 h-5" />;
+        return <Flame className="w-4 h-4" strokeWidth={1.5} />;
       case 'focus':
-        return <Clock className="w-5 h-5" />;
+        return <Clock className="w-4 h-4" strokeWidth={1.5} />;
       case 'habit':
-        return <CheckCircle2 className="w-5 h-5" />;
+        return <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />;
       case 'social':
-        return <Users className="w-5 h-5" />;
+        return <Users className="w-4 h-4" strokeWidth={1.5} />;
+      default:
+        return <CheckCircle2 className="w-4 h-4" strokeWidth={1.5} />;
     }
   };
 
   return (
     <div
-      className={`relative p-4 rounded-xl border transition-all duration-300 ${
+      className={`relative p-4 rounded-xl border flex flex-col transition-all duration-200 ${
         badge.isUnlocked
-          ? `bg-[var(--card-surface)] border-[var(--border-subtle)] shadow-xs hover:scale-[1.02]`
-          : 'bg-[var(--bg-main)]/50 border-[var(--border-subtle)] opacity-70'
+          ? `bg-[var(--card-surface)] border-[var(--border-subtle)] shadow-xs hover:border-[var(--accent-terracotta)]/30`
+          : 'bg-[var(--bg-main)]/50 border-[var(--border-subtle)] opacity-75'
       }`}
     >
       <div className="flex items-start justify-between mb-3">
@@ -65,7 +67,7 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
               : 'bg-[var(--card-hover)] border-[var(--border-subtle)] text-[var(--text-muted)]'
           }`}
         >
-          {badge.isUnlocked ? getCategoryIcon() : <Lock className="w-5 h-5" />}
+          {badge.isUnlocked ? getCategoryIcon() : <Lock className="w-4 h-4" strokeWidth={1.5} />}
         </div>
         <span
           className={`text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full border ${
@@ -79,17 +81,29 @@ export const BadgeCard: React.FC<BadgeCardProps> = ({ badge }) => {
       </div>
 
       <h4 className="font-semibold text-[var(--text-primary)] text-sm mb-1">{badge.title}</h4>
-      <p className="text-xs text-[var(--text-secondary)] mb-3 line-clamp-2">{badge.description}</p>
+      <p className="text-xs text-[var(--text-secondary)] mb-4 line-clamp-2">{badge.description}</p>
 
       {/* Progress Bar */}
       <div className="mt-auto">
-        <div className="flex justify-between items-center text-[11px] mb-1 font-mono">
-          <span className="text-[var(--text-muted)]">
-            {badge.isUnlocked ? 'Unlocked 🎉' : `${badge.currentProgress} / ${badge.targetProgress}`}
+        <div className="flex justify-between items-center text-[11px] mb-1.5 font-mono">
+          <span className="text-[var(--text-muted)] flex items-center gap-1">
+            {badge.isUnlocked ? (
+              <span className="text-emerald-600 dark:text-emerald-400 font-sans font-semibold flex items-center gap-1">
+                <Check className="w-3 h-3" /> Unlocked
+              </span>
+            ) : (
+              `${badge.currentProgress} / ${badge.targetProgress}`
+            )}
           </span>
           <span className="font-semibold text-[var(--text-primary)]">{progressPercent}%</span>
         </div>
-        <div className="w-full bg-[var(--border-subtle)] h-1.5 rounded-full overflow-hidden">
+        <div
+          className="w-full bg-[var(--border-subtle)] h-1.5 rounded-full overflow-hidden"
+          role="progressbar"
+          aria-valuenow={progressPercent}
+          aria-valuemin={0}
+          aria-valuemax={100}
+        >
           <div
             className={`h-full transition-all duration-500 rounded-full ${
               badge.isUnlocked ? styles.bar : 'bg-[var(--text-muted)]'

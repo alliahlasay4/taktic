@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CircleFeedPost, CircleMember } from '../types';
+import { CircleFeedPost, CircleMember, CircleInvite } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_CIRCLE_FEED, INITIAL_CIRCLE_MEMBERS } from '../lib/mockData';
@@ -18,8 +18,33 @@ export function useCircles() {
     }
     return INITIAL_CIRCLE_MEMBERS;
   });
+  const [invites, setInvites] = useState<CircleInvite[]>(() => {
+    const saved = localStorage.getItem('taktic_circle_invites');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [
+      {
+        id: 'inv-sample-1',
+        email: 'alex.dev@gmail.com',
+        name: 'Alex Dev',
+        status: 'pending',
+        inviteToken: 'tok_demo_alex',
+        inviteLink: `${typeof window !== 'undefined' ? window.location.origin : ''}/?circle_invite=tok_demo_alex&inviter=You`,
+        createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+        inviterName: 'You',
+      },
+    ];
+  });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [tableExists, setTableExists] = useState<boolean>(() => {
+    return localStorage.getItem('taktic_circle_posts_disabled') !== 'true';
+  });
 
   const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
   const userAvatar = user?.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
@@ -28,6 +53,52 @@ export function useCircles() {
   const saveMembers = (updated: CircleMember[]) => {
     setMembers(updated);
     localStorage.setItem('taktic_circle_members', JSON.stringify(updated));
+  };
+
+  // Persist invites when changed
+  const saveInvites = (updated: CircleInvite[]) => {
+    setInvites(updated);
+    localStorage.setItem('taktic_circle_invites', JSON.stringify(updated));
+  };
+
+  const generateMagicInviteLink = (email?: string, name?: string) => {
+    const token = `tok_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
+    const baseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://taktic.app';
+    const params = new URLSearchParams();
+    params.set('circle_invite', token);
+    params.set('inviter', userName);
+    if (email) params.set('email', email);
+    if (name) params.set('name', name);
+    return { token, link: `${baseUrl}/?${params.toString()}` };
+  };
+
+  const sendCircleInvite = async (email: string, name?: string) => {
+    const { token, link } = generateMagicInviteLink(email, name);
+    const newInvite: CircleInvite = {
+      id: `inv-${Date.now()}`,
+      email: email.trim(),
+      name: name?.trim() || email.split('@')[0],
+      status: 'pending',
+      inviteToken: token,
+      inviteLink: link,
+      createdAt: new Date().toISOString(),
+      inviterName: userName,
+    };
+
+    const updated = [newInvite, ...invites.filter((i) => i.email !== email.trim())];
+    saveInvites(updated);
+    return { success: true, inviteLink: link, message: `Invite sent to ${email}` };
+  };
+
+  const cancelCircleInvite = async (inviteId: string) => {
+    const updated = invites.filter((i) => i.id !== inviteId);
+    saveInvites(updated);
+  };
+
+  const resendCircleInvite = async (inviteId: string) => {
+    const target = invites.find((i) => i.id === inviteId);
+    if (!target) return { success: false, inviteLink: '' };
+    return { success: true, inviteLink: target.inviteLink };
   };
 
   const togglePartner = async (memberId: string) => {
@@ -138,8 +209,8 @@ export function useCircles() {
     setLoading(true);
     setError(null);
 
-    // Demo Mode -> Mock Data
-    if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
+    // Demo Mode or Missing Table -> Local Mock Data
+    if (!tableExists || isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
       const savedFeed = localStorage.getItem('taktic_circle_feed');
       setFeedPosts(savedFeed ? JSON.parse(savedFeed) : INITIAL_CIRCLE_FEED);
       setLoading(false);
@@ -154,14 +225,33 @@ export function useCircles() {
         .order('created_at', { ascending: false })
         .limit(25);
 
-      if (postsErr) throw postsErr;
+      if (postsErr) {
+        // Table not found in Supabase schema (PGRST205 / 404)
+        const isTableMissing =
+          postsErr.code === 'PGRST205' ||
+          (postsErr as any).status === 404 ||
+          postsErr.message?.includes('schema cache') ||
+          postsErr.message?.includes('circle_posts');
+
+        if (isTableMissing) {
+          localStorage.setItem('taktic_circle_posts_disabled', 'true');
+          setTableExists(false);
+          const savedFeed = localStorage.getItem('taktic_circle_feed');
+          setFeedPosts(savedFeed ? JSON.parse(savedFeed) : INITIAL_CIRCLE_FEED);
+          setLoading(false);
+          return;
+        }
+        throw postsErr;
+      }
 
       // 2. Fetch all likes
       const { data: likesData, error: likesErr } = await supabase
         .from('post_likes')
         .select('*');
 
-      if (likesErr) throw likesErr;
+      if (likesErr) {
+        // Non-critical, ignore if table missing
+      }
 
       // 3. Fetch user's circle members from DB
       const { data: membersData, error: membersErr } = await supabase
@@ -185,7 +275,7 @@ export function useCircles() {
         localStorage.setItem('taktic_circle_members', JSON.stringify(dbMembers));
       }
 
-      // 3. Map to CircleFeedPost type
+      // 4. Map to CircleFeedPost type
       const mappedPosts: CircleFeedPost[] = (postsData || []).map((p) => {
         const likesForPost = (likesData || []).filter((l) => l.post_id === p.id);
         const userLiked = likesForPost.some((l) => l.user_id === user.id);
@@ -206,14 +296,15 @@ export function useCircles() {
 
       // If DB is empty, combine with mock posts so feed looks active
       if (mappedPosts.length === 0) {
-        setFeedPosts(INITIAL_CIRCLE_FEED);
+        const savedFeed = localStorage.getItem('taktic_circle_feed');
+        setFeedPosts(savedFeed ? JSON.parse(savedFeed) : INITIAL_CIRCLE_FEED);
       } else {
         setFeedPosts(mappedPosts);
       }
     } catch (err: any) {
-      console.error('Error fetching circle feed from Supabase:', err);
-      setError(err.message || 'Failed to load social feed.');
-      setFeedPosts(INITIAL_CIRCLE_FEED);
+      // Quietly fallback for missing table
+      const savedFeed = localStorage.getItem('taktic_circle_feed');
+      setFeedPosts(savedFeed ? JSON.parse(savedFeed) : INITIAL_CIRCLE_FEED);
     } finally {
       setLoading(false);
     }
@@ -222,8 +313,8 @@ export function useCircles() {
   useEffect(() => {
     fetchCirclesData();
 
-    // Enable Supabase Realtime subscription for live feed updates
-    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+    // Enable Supabase Realtime subscription for live feed updates if table exists
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123' && tableExists) {
       const channel = supabase
         .channel('public:circle_posts')
         .on(
@@ -252,7 +343,7 @@ export function useCircles() {
         supabase.removeChannel(channel);
       };
     }
-  }, [fetchCirclesData, isDemo, user]);
+  }, [fetchCirclesData, isDemo, user, tableExists]);
 
   // Filter feed posts based on active, unmuted circle partners + user's own posts
   const activePartnerIds = new Set(
@@ -320,7 +411,7 @@ export function useCircles() {
 
     setFeedPosts((prev) => [newPost, ...prev]);
 
-    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+    if (tableExists && !isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {
         const { data, error } = await supabase
           .from('circle_posts')
@@ -352,12 +443,17 @@ export function useCircles() {
     feedPosts: filteredFeedPosts,
     rawFeedPosts: feedPosts,
     members,
+    invites,
     loading,
     error,
     togglePartner,
     toggleMute,
     addMemberByName,
     removeMember,
+    sendCircleInvite,
+    cancelCircleInvite,
+    resendCircleInvite,
+    generateMagicInviteLink,
     toggleLikePost,
     broadcastAchievement,
     refreshFeed: fetchCirclesData,

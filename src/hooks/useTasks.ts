@@ -46,6 +46,8 @@ export function useTasks() {
         completedAt: t.completed_at || undefined,
         isSomeday: t.is_someday || false,
         recurring: t.recurring || null,
+        archived: t.archived || false,
+        archivedAt: t.archived_at || undefined,
       }));
 
       setTasks(mapped);
@@ -279,6 +281,8 @@ export function useTasks() {
         if (updatedFields.completed !== undefined) dbPayload.completed = updatedFields.completed;
         if (updatedFields.isSomeday !== undefined) dbPayload.is_someday = updatedFields.isSomeday;
         if (updatedFields.recurring !== undefined) dbPayload.recurring = updatedFields.recurring;
+        if (updatedFields.archived !== undefined) dbPayload.archived = updatedFields.archived;
+        if (updatedFields.archivedAt !== undefined) dbPayload.archived_at = updatedFields.archivedAt;
 
         const { error } = await supabase
           .from('tasks')
@@ -320,13 +324,152 @@ export function useTasks() {
     }
   };
 
+  // Archive a single task
+  const archiveTask = async (id: string) => {
+    const targetTask = tasks.find((t) => t.id === id);
+    if (!targetTask) return;
+
+    const nowIso = new Date().toISOString();
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, archived: true, archivedAt: nowIso } : t))
+    );
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('tasks')
+          .update({ archived: true, archived_at: nowIso })
+          .eq('id', id)
+          .eq('user_id', user.id);
+      } catch (err: any) {
+        console.error('Error archiving task in Supabase:', err);
+        setTasks((prev) => prev.map((t) => (t.id === id ? targetTask : t)));
+      }
+    }
+  };
+
+  // Unarchive / Restore a task
+  const unarchiveTask = async (id: string) => {
+    const targetTask = tasks.find((t) => t.id === id);
+    if (!targetTask) return;
+
+    setTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, archived: false, archivedAt: undefined } : t))
+    );
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('tasks')
+          .update({ archived: false, archived_at: null })
+          .eq('id', id)
+          .eq('user_id', user.id);
+      } catch (err: any) {
+        console.error('Error unarchiving task in Supabase:', err);
+        setTasks((prev) => prev.map((t) => (t.id === id ? targetTask : t)));
+      }
+    }
+  };
+
+  // Sweep all completed unarchived tasks to Archive
+  const sweepCompletedTasks = async () => {
+    const completedUnarchived = tasks.filter((t) => t.completed && !t.archived);
+    if (completedUnarchived.length === 0) return;
+
+    const ids = completedUnarchived.map((t) => t.id);
+    const nowIso = new Date().toISOString();
+
+    setTasks((prev) =>
+      prev.map((t) => (ids.includes(t.id) ? { ...t, archived: true, archivedAt: nowIso } : t))
+    );
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('tasks')
+          .update({ archived: true, archived_at: nowIso })
+          .in('id', ids)
+          .eq('user_id', user.id);
+      } catch (err: any) {
+        console.error('Error sweeping completed tasks in Supabase:', err);
+        fetchTasks();
+      }
+    }
+  };
+
+  // Batch Archive Multiple Tasks
+  const batchArchiveTasks = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const nowIso = new Date().toISOString();
+
+    setTasks((prev) =>
+      prev.map((t) => (ids.includes(t.id) ? { ...t, archived: true, archivedAt: nowIso } : t))
+    );
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('tasks')
+          .update({ archived: true, archived_at: nowIso })
+          .in('id', ids)
+          .eq('user_id', user.id);
+      } catch (err: any) {
+        console.error('Error batch archiving tasks in Supabase:', err);
+        fetchTasks();
+      }
+    }
+  };
+
+  // Batch Unarchive Multiple Tasks
+  const batchUnarchiveTasks = async (ids: string[]) => {
+    if (ids.length === 0) return;
+
+    setTasks((prev) =>
+      prev.map((t) => (ids.includes(t.id) ? { ...t, archived: false, archivedAt: undefined } : t))
+    );
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('tasks')
+          .update({ archived: false, archived_at: null })
+          .in('id', ids)
+          .eq('user_id', user.id);
+      } catch (err: any) {
+        console.error('Error batch unarchiving tasks in Supabase:', err);
+        fetchTasks();
+      }
+    }
+  };
+
+  // Batch Delete Multiple Tasks
+  const batchDeleteTasks = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const previousTasks = [...tasks];
+
+    setTasks((prev) => prev.filter((t) => !ids.includes(t.id)));
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('tasks')
+          .delete()
+          .in('id', ids)
+          .eq('user_id', user.id);
+      } catch (err: any) {
+        console.error('Error batch deleting tasks in Supabase:', err);
+        setTasks(previousTasks);
+      }
+    }
+  };
+
   // Rollover Overdue Tasks to Today
   const rolloverOverdueTasksToToday = async () => {
     const todayStr = new Date().toISOString().split('T')[0];
     
     // Find uncompleted overdue tasks
     const overdueTasks = tasks.filter((t) => {
-      if (t.completed || !t.dueDate) return false;
+      if (t.completed || t.archived || !t.dueDate) return false;
       const lower = t.dueDate.trim().toLowerCase();
       if (lower === 'today') return false;
       if (lower === 'tomorrow') return false;
@@ -361,6 +504,8 @@ export function useTasks() {
 
   return {
     tasks,
+    activeTasks: tasks.filter((t) => !t.archived),
+    archivedTasks: tasks.filter((t) => t.archived),
     loading,
     error,
     addTask,
@@ -369,6 +514,12 @@ export function useTasks() {
     updateTimeBlock,
     updateTask,
     deleteTask,
+    archiveTask,
+    unarchiveTask,
+    sweepCompletedTasks,
+    batchArchiveTasks,
+    batchUnarchiveTasks,
+    batchDeleteTasks,
     rolloverOverdueTasksToToday,
     refreshTasks: fetchTasks,
   };

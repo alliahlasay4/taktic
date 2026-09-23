@@ -4,7 +4,7 @@ import { InAppNotification, ActiveTab } from '../types';
 const INITIAL_NOTIFICATIONS: InAppNotification[] = [
   {
     id: 'n-1',
-    title: 'Welcome to Taktic! 🚀',
+    title: 'Welcome to Taktic!',
     message: 'Your tactical productivity workspace is ready. Set your daily goals and habits.',
     type: 'system',
     read: false,
@@ -13,7 +13,7 @@ const INITIAL_NOTIFICATIONS: InAppNotification[] = [
   },
   {
     id: 'n-2',
-    title: 'Streak Shield Active 🛡️',
+    title: 'Streak Shield Active',
     message: '3 freeze shields are loaded on your habits to protect your streaks.',
     type: 'streak',
     read: false,

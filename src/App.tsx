@@ -10,6 +10,7 @@ import { HabitView } from './components/habits/HabitView';
 import { CirclesView } from './components/circles/CirclesView';
 import { AnalyticsView } from './components/analytics/AnalyticsView';
 import { ProfileView } from './components/ProfileView';
+import { ArchiveView } from './components/archive/ArchiveView';
 import { RewardModal } from './components/rewards/RewardModal';
 import { EndOfDaySummary } from './components/rewards/EndOfDaySummary';
 import { OnboardingModal } from './components/onboarding/OnboardingModal';
@@ -19,10 +20,13 @@ import { soundEngine } from './lib/audio';
 import { useHabits } from './hooks/useHabits';
 import { useFocusSessions } from './hooks/useFocusSessions';
 import { useTasks } from './hooks/useTasks';
+import { useQuickNotes } from './hooks/useQuickNotes';
 import { useCircles } from './hooks/useCircles';
 import { useNotifications } from './hooks/useNotifications';
 import { useInAppNotifications } from './hooks/useInAppNotifications';
 import { NotificationToastOverlay } from './components/layout/NotificationToastOverlay';
+import { QuickNotesDrawer } from './components/notes/QuickNotesDrawer';
+import { QuickNotesFloatingTrigger } from './components/notes/QuickNotesFloatingTrigger';
 import { TimerProvider } from './context/TimerContext';
 
 function MainLayout() {
@@ -60,8 +64,40 @@ function MainLayout() {
     updateTimeBlock: handleUpdateTimeBlock,
     updateTask: handleUpdateTask,
     deleteTask: handleDeleteTask,
+    archiveTask: handleArchiveTask,
+    unarchiveTask: handleUnarchiveTask,
+    sweepCompletedTasks: handleSweepCompletedTasks,
+    batchArchiveTasks: handleBatchArchiveTasks,
+    batchUnarchiveTasks: handleBatchUnarchiveTasks,
+    batchDeleteTasks: handleBatchDeleteTasks,
     rolloverOverdueTasksToToday: handleRolloverOverdueTasks,
   } = useTasks();
+
+  // Quick Notes Scratchpad Hook & Drawer State
+  const [isQuickNotesOpen, setIsQuickNotesOpen] = useState<boolean>(false);
+  const {
+    notes: quickNotes,
+    addNote: handleAddQuickNote,
+    updateNote: handleUpdateQuickNote,
+    deleteNote: handleDeleteQuickNote,
+    togglePin: handleTogglePinQuickNote,
+  } = useQuickNotes();
+
+  // Global Keyboard Shortcuts (Ctrl+J to toggle notes, Esc to close)
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
+        e.preventDefault();
+        setIsQuickNotesOpen((prev) => !prev);
+      }
+      if (e.key === 'Escape' && isQuickNotesOpen) {
+        setIsQuickNotesOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isQuickNotesOpen]);
 
   // Notifications Hook
   const { sendNotification, requestPermission } = useNotifications();
@@ -80,10 +116,15 @@ function MainLayout() {
   const {
     feedPosts,
     members,
+    invites,
     togglePartner,
     toggleMute,
     addMemberByName,
     removeMember,
+    sendCircleInvite,
+    cancelCircleInvite,
+    resendCircleInvite,
+    generateMagicInviteLink,
     toggleLikePost,
     broadcastAchievement,
   } = useCircles();
@@ -108,15 +149,15 @@ function MainLayout() {
   const handleFocusComplete = (durationMinutes: number, taskTitle?: string, focusQuality?: 'high_flow' | 'moderate' | 'distracted') => {
     addFocusSession(durationMinutes, taskTitle, 'pomodoro', activeSoundscape || undefined, focusQuality);
 
-    const qualityText = focusQuality === 'high_flow' ? ' (High Flow ⚡)' : focusQuality === 'distracted' ? ' (Low Energy 🥱)' : '';
+    const qualityText = focusQuality === 'high_flow' ? ' (High Flow)' : focusQuality === 'distracted' ? ' (Low Energy)' : '';
 
     // Trigger browser & in-app notification
-    sendNotification('Focus Session Completed! 🎯', {
+    sendNotification('Focus Session Completed', {
       body: `Great job! You completed ${durationMinutes} minutes of focus${taskTitle ? ` on ${taskTitle}` : ''}.`,
     });
 
     notify(
-      'Deep Focus Complete! 🌾',
+      'Deep Focus Complete',
       `Focused for ${durationMinutes} minutes${taskTitle ? ` on "${taskTitle}"` : ''}.`,
       'timer',
       'analytics'
@@ -125,14 +166,14 @@ function MainLayout() {
     // Broadcast social achievement
     broadcastAchievement(
       'focus_marathon',
-      'Completed Focus Session 🌾',
+      'Completed Focus Session',
       `Focused uninterrupted for ${durationMinutes} minutes${taskTitle ? ` on "${taskTitle}"` : ''}${qualityText}.`
     );
 
     // Show celebration reward
     setRewardModal({
       open: true,
-      title: 'Deep Focus Session Completed! 🌾',
+      title: 'Deep Focus Session Completed',
       message: `You completed ${durationMinutes} minutes of uninterrupted focus${
         taskTitle ? ` on "${taskTitle}"` : ''
       }${qualityText}.`,
@@ -145,7 +186,7 @@ function MainLayout() {
       const today = new Date().toISOString().split('T')[0];
       const isDone = target.completedDates.includes(today);
       if (!isDone) {
-        notify('Habit Completed! ✨', `Great work locking in "${target.title}". Keep the streak going!`, 'habit', 'habits');
+        notify('Habit Completed', `Great work locking in "${target.title}". Keep the streak going!`, 'habit', 'habits');
       }
     }
     toggleHabit(id);
@@ -166,149 +207,173 @@ function MainLayout() {
   const focusTasks = tasks.filter((t) => t.isTodayFocus);
   const tasksCompletedToday = tasks.filter((t) => t.completed && t.completedAt?.startsWith(todayStr)).length;
   const habitsCompletedToday = habits.filter((h) => h.completedDates.includes(todayStr)).length;
+  const isImmersiveFocusMode = activeTab === 'focus';
 
   return (
     <TimerProvider onFocusComplete={handleFocusComplete}>
       <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)]">
-        {/* Top Navbar Header */}
-        <Navbar
-          darkMode={darkMode}
-          setDarkMode={setDarkMode}
-          userStreak={userStreak}
-          activeSoundscape={activeSoundscape}
-          onToggleSoundscape={handleToggleSoundscapeGlobal}
-          onOpenSummary={() => setIsSummaryOpen(true)}
-          onOpenProfile={() => setActiveTab('profile')}
-          notifications={notifications}
-          unreadCount={unreadCount}
-          onMarkAsRead={markAsRead}
-          onMarkAllAsRead={markAllAsRead}
-          onClearAll={clearAll}
-          onSelectTab={setActiveTab}
-        />
+        {/* Top Navbar Header (Hidden in Immersive Focus Mode) */}
+        {!isImmersiveFocusMode && (
+          <Navbar
+            darkMode={darkMode}
+            setDarkMode={setDarkMode}
+            userStreak={userStreak}
+            activeSoundscape={activeSoundscape}
+            onToggleSoundscape={handleToggleSoundscapeGlobal}
+            onOpenSummary={() => setIsSummaryOpen(true)}
+            onOpenProfile={() => setActiveTab('profile')}
+            onToggleQuickNotes={() => setIsQuickNotesOpen((prev) => !prev)}
+            notesCount={quickNotes.length}
+            notifications={notifications}
+            unreadCount={unreadCount}
+            onMarkAsRead={markAsRead}
+            onMarkAllAsRead={markAllAsRead}
+            onClearAll={clearAll}
+            onSelectTab={setActiveTab}
+          />
+        )}
 
         {/* Database Error Banner */}
         {habitsError && (
-          <div className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 text-center text-xs text-red-400">
-            ⚠️ {habitsError} (Running in Local Mode)
+          <div role="alert" className="bg-red-500/10 border-b border-red-500/20 px-4 py-2 text-center text-xs text-red-400 flex items-center justify-center gap-2">
+            <span className="font-semibold">{habitsError} (Running in Local Mode)</span>
           </div>
         )}
 
         {/* Main Container Layout */}
-        <main className="mx-auto max-w-[1800px] px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex flex-col lg:flex-row gap-6">
-            {/* Navigation Sidebar */}
-            <Sidebar
-              activeTab={activeTab}
-              setActiveTab={setActiveTab}
-              todayFocusCount={focusTasks.length}
-              inboxCount={tasks.filter((t) => !t.completed).length}
-              totalFocusMinutesToday={totalFocusMinutesToday}
-              members={members}
+        <main className={isImmersiveFocusMode ? 'w-full min-h-screen p-0' : 'mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-6'}>
+          {isImmersiveFocusMode ? (
+            <FocusView
+              tasks={tasks}
+              onFocusComplete={handleFocusComplete}
+              onUpdateTimeBlock={handleUpdateTimeBlock}
               activeSoundscape={activeSoundscape}
               setActiveSoundscape={setActiveSoundscape}
-              onQuickAddTask={(title) =>
-                handleAddTask({
-                  title,
-                  priority: 'medium',
-                  tags: ['Quick Capture'],
-                  isTodayFocus: true,
-                  timeBlock: 'morning',
-                  estimatedMinutes: 25,
-                })
-              }
-              onFocusComplete={handleFocusComplete}
+              totalFocusMinutesToday={totalFocusMinutesToday}
+              onExitImmersive={() => setActiveTab('dashboard')}
             />
+          ) : (
+            <div className="flex flex-col lg:flex-row gap-6">
+              {/* Navigation Sidebar */}
+              <Sidebar
+                activeTab={activeTab}
+                setActiveTab={setActiveTab}
+                todayFocusCount={focusTasks.length}
+                inboxCount={tasks.filter((t) => !t.completed).length}
+                totalFocusMinutesToday={totalFocusMinutesToday}
+                members={members}
+                activeSoundscape={activeSoundscape}
+                setActiveSoundscape={setActiveSoundscape}
+                onQuickAddTask={(title) =>
+                  handleAddTask({
+                    title,
+                    priority: 'medium',
+                    tags: ['Quick Capture'],
+                    isTodayFocus: true,
+                    timeBlock: 'morning',
+                    estimatedMinutes: 25,
+                  })
+                }
+                onFocusComplete={handleFocusComplete}
+              />
 
-            {/* View Content Panel */}
-            <section className="flex-1 min-w-0">
-              {activeTab === 'dashboard' && (
-                <DashboardView
-                  tasks={tasks}
-                  habits={habits}
-                  focusMinutes={totalFocusMinutesToday}
-                  userStreak={userStreak}
-                  members={members}
-                  onToggleComplete={handleToggleCompleteTask}
-                  onToggleTodayFocus={handleToggleTodayFocus}
-                  onDeleteTask={handleDeleteTask}
-                  onToggleHabit={handleToggleHabitWithNotification}
-                  setActiveTab={setActiveTab}
-                  onOpenSummary={() => setIsSummaryOpen(true)}
-                />
-              )}
+              {/* View Content Panel */}
+              <section className="flex-1 min-w-0">
+                {activeTab === 'dashboard' && (
+                  <DashboardView
+                    tasks={tasks}
+                    habits={habits}
+                    focusMinutes={totalFocusMinutesToday}
+                    userStreak={userStreak}
+                    members={members}
+                    onToggleComplete={handleToggleCompleteTask}
+                    onToggleTodayFocus={handleToggleTodayFocus}
+                    onDeleteTask={handleDeleteTask}
+                    onToggleHabit={handleToggleHabitWithNotification}
+                    setActiveTab={setActiveTab}
+                    onOpenSummary={() => setIsSummaryOpen(true)}
+                  />
+                )}
 
-              {activeTab === 'inbox' && (
-                <InboxView
-                  tasks={tasks}
-                  onAddTask={handleAddTask}
-                  onUpdateTask={handleUpdateTask}
-                  onToggleComplete={handleToggleCompleteTask}
-                  onToggleTodayFocus={handleToggleTodayFocus}
-                  onDeleteTask={handleDeleteTask}
-                  onRolloverOverdueTasks={handleRolloverOverdueTasks}
-                />
-              )}
+                {activeTab === 'inbox' && (
+                  <InboxView
+                    tasks={tasks}
+                    onAddTask={handleAddTask}
+                    onUpdateTask={handleUpdateTask}
+                    onToggleComplete={handleToggleCompleteTask}
+                    onToggleTodayFocus={handleToggleTodayFocus}
+                    onDeleteTask={handleDeleteTask}
+                    onArchiveTask={handleArchiveTask}
+                    onSweepCompleted={handleSweepCompletedTasks}
+                    onRolloverOverdueTasks={handleRolloverOverdueTasks}
+                  />
+                )}
 
-              {activeTab === 'focus' && (
-                <FocusView
-                  tasks={tasks}
-                  onFocusComplete={handleFocusComplete}
-                  onUpdateTimeBlock={handleUpdateTimeBlock}
-                  activeSoundscape={activeSoundscape}
-                  setActiveSoundscape={setActiveSoundscape}
-                  totalFocusMinutesToday={totalFocusMinutesToday}
-                />
-              )}
+                {activeTab === 'habits' && (
+                  <div>
+                    {habitsLoading && habits.length === 0 ? (
+                      <div className="flex items-center justify-center p-12 text-sm text-[var(--text-secondary)]">
+                        <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent mr-3" />
+                        Loading your habit routines...
+                      </div>
+                    ) : (
+                      <HabitView
+                        habits={habits}
+                        tasksCompleted={tasksCompletedToday}
+                        totalTasks={Math.max(1, focusTasks.length)}
+                        focusMinutes={totalFocusMinutesToday}
+                        targetFocusMinutes={100}
+                        onToggleHabit={handleToggleHabitWithNotification}
+                        onAddHabit={addHabit}
+                        onDeleteHabit={deleteHabit}
+                      />
+                    )}
+                  </div>
+                )}
 
-              {activeTab === 'habits' && (
-                <div>
-                  {habitsLoading && habits.length === 0 ? (
-                    <div className="flex items-center justify-center p-12 text-sm text-[var(--text-secondary)]">
-                      <span className="inline-block h-5 w-5 animate-spin rounded-full border-2 border-emerald-500 border-t-transparent mr-3" />
-                      Loading your habit routines...
-                    </div>
-                  ) : (
-                    <HabitView
-                      habits={habits}
-                      tasksCompleted={tasksCompletedToday}
-                      totalTasks={Math.max(1, focusTasks.length)}
-                      focusMinutes={totalFocusMinutesToday}
-                      targetFocusMinutes={100}
-                      onToggleHabit={handleToggleHabitWithNotification}
-                      onAddHabit={addHabit}
-                      onDeleteHabit={deleteHabit}
-                    />
-                  )}
-                </div>
-              )}
+                {activeTab === 'circles' && (
+                  <CirclesView
+                    members={members}
+                    feedPosts={feedPosts}
+                    invites={invites}
+                    userStreak={userStreak}
+                    onToggleLike={toggleLikePost}
+                    onBroadcastAchievement={broadcastAchievement}
+                    onTogglePartner={togglePartner}
+                    onToggleMute={toggleMute}
+                    onAddMemberByName={addMemberByName}
+                    onRemoveMember={removeMember}
+                    onSendInvite={sendCircleInvite}
+                    onCancelInvite={cancelCircleInvite}
+                    onResendInvite={resendCircleInvite}
+                    onGenerateMagicLink={generateMagicInviteLink}
+                  />
+                )}
 
-              {activeTab === 'circles' && (
-                <CirclesView
-                  members={members}
-                  feedPosts={feedPosts}
-                  userStreak={userStreak}
-                  onToggleLike={toggleLikePost}
-                  onBroadcastAchievement={broadcastAchievement}
-                  onTogglePartner={togglePartner}
-                  onToggleMute={toggleMute}
-                  onAddMemberByName={addMemberByName}
-                  onRemoveMember={removeMember}
-                />
-              )}
+                {activeTab === 'analytics' && (
+                  <AnalyticsView
+                    tasksCompleted={tasksCompletedToday}
+                    totalTasks={tasks.length}
+                    focusMinutes={totalFocusMinutesToday}
+                    userStreak={userStreak}
+                  />
+                )}
 
-              {activeTab === 'analytics' && (
-                <AnalyticsView
-                  tasksCompleted={tasksCompletedToday}
-                  totalTasks={tasks.length}
-                  focusMinutes={totalFocusMinutesToday}
-                  userStreak={userStreak}
-                />
-              )}
+                {activeTab === 'archive' && (
+                  <ArchiveView
+                    tasks={tasks}
+                    onUnarchiveTask={handleUnarchiveTask}
+                    onDeleteTask={handleDeleteTask}
+                    onBatchUnarchiveTasks={handleBatchUnarchiveTasks}
+                    onBatchDeleteTasks={handleBatchDeleteTasks}
+                    onNavigateToInbox={() => setActiveTab('inbox')}
+                  />
+                )}
 
-              {activeTab === 'profile' && <ProfileView />}
-            </section>
-          </div>
+                {activeTab === 'profile' && <ProfileView />}
+              </section>
+            </div>
+          )}
         </main>
 
         {/* Confetti & Reward Modal */}
@@ -339,6 +404,25 @@ function MainLayout() {
           onAddHabit={addHabit}
           onAddTask={handleAddTask}
           requestNotificationPermission={requestPermission}
+        />
+
+        {/* Global Quick Notes Floating Trigger */}
+        <QuickNotesFloatingTrigger
+          onClick={() => setIsQuickNotesOpen(true)}
+          notesCount={quickNotes.length}
+          isOpen={isQuickNotesOpen}
+        />
+
+        {/* Global Quick Notes Slide-over Drawer */}
+        <QuickNotesDrawer
+          isOpen={isQuickNotesOpen}
+          onClose={() => setIsQuickNotesOpen(false)}
+          notes={quickNotes}
+          onAddNote={handleAddQuickNote}
+          onUpdateNote={handleUpdateQuickNote}
+          onDeleteNote={handleDeleteQuickNote}
+          onTogglePin={handleTogglePinQuickNote}
+          onConvertToTask={handleAddTask}
         />
 
         {/* Real-time Floating Toast Overlay */}
