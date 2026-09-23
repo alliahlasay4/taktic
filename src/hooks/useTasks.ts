@@ -129,7 +129,7 @@ export function useTasks() {
     }
   };
 
-  // Toggle Task Completion (with Auto-Recurring Spawn)
+  // Toggle Task Completion
   const toggleCompleteTask = async (id: string) => {
     const taskToToggle = tasks.find((t) => t.id === id);
     if (!taskToToggle) return;
@@ -141,39 +141,6 @@ export function useTasks() {
     setTasks((prev) =>
       prev.map((t) => (t.id === id ? { ...t, completed: nextCompleted, completedAt: completedAtIso } : t))
     );
-
-    // Handle Recurring Task Spawning when marked completed
-    if (nextCompleted && taskToToggle.recurring) {
-      const baseDate = taskToToggle.dueDate ? new Date(taskToToggle.dueDate) : new Date();
-      if (isNaN(baseDate.getTime())) {
-        baseDate.setTime(Date.now());
-      }
-      
-      const nextDate = new Date(baseDate);
-      if (taskToToggle.recurring === 'daily') {
-        nextDate.setDate(nextDate.getDate() + 1);
-      } else if (taskToToggle.recurring === 'weekly') {
-        nextDate.setDate(nextDate.getDate() + 7);
-      } else if (taskToToggle.recurring === 'monthly') {
-        nextDate.setMonth(nextDate.getMonth() + 1);
-      }
-
-      const nextDueDateStr = nextDate.toISOString().split('T')[0];
-
-      // Auto-add next cycle task instance
-      addTask({
-        title: taskToToggle.title,
-        description: taskToToggle.description,
-        priority: taskToToggle.priority,
-        tags: taskToToggle.tags,
-        dueDate: nextDueDateStr,
-        isTodayFocus: false,
-        timeBlock: taskToToggle.timeBlock,
-        estimatedMinutes: taskToToggle.estimatedMinutes,
-        isSomeday: taskToToggle.isSomeday,
-        recurring: taskToToggle.recurring,
-      });
-    }
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {

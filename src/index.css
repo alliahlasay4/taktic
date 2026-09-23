@@ -1,31 +1,36 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 @layer base {
   :root {
-    --bg-main: #FAF7F2;
-    --card-surface: #FFFFFF;
-    --card-hover: #F4EFE6;
-    --border-subtle: #E7DFD5;
-    --text-primary: #2D2623;
-    --text-secondary: #786E65;
-    --text-muted: #9E9388;
+    /* Base surfaces: Warm Sepia & Gentle Oat palette (soft on the eyes, zero glare) */
+    --bg-main: #F3EFE6;
+    --card-surface: #FAF6EE;
+    --card-hover: #EBE3D5;
+    --surface-sunken: #EAE2D3;
+    --border-subtle: #DFD5C6;
+    --text-primary: #362C24;
+    --text-secondary: #6B5E52;
+    --text-muted: #948678;
     
-    /* Accents */
-    --accent-dusty-rose: #C87D87;
-    --accent-terracotta: #C06C4C;
-    --accent-warm-ochre: #CFA052;
-    --accent-botanical-sage: #6B8E6E;
-    --accent-dusty-mauve: #B08B9E;
+    /* Accents: Warm, earthy, eye-friendly tones */
+    --accent-dusty-rose: #BD6B76;
+    --accent-terracotta: #B85B38;
+    --accent-warm-ochre: #B88636;
+    --accent-botanical-sage: #5E8061;
+    --accent-dusty-mauve: #A0788C;
     
-    --ring-tasks: #6B8E6E;
-    --ring-habits: #C87D87;
-    --ring-focus: #CFA052;
+    --ring-tasks: #5E8061;
+    --ring-habits: #BD6B76;
+    --ring-focus: #B88636;
   }
 
   .dark {
     --bg-main: #1C1917;
     --card-surface: #282421;
     --card-hover: #322D29;
+    --surface-sunken: #201C19;
     --border-subtle: #3D3631;
     --text-primary: #F5F0EB;
     --text-secondary: #A89F95;

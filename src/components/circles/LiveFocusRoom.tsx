@@ -601,30 +601,30 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
 
       {/* Break Wellness Guidance Alert */}
       {isBreakActive && (
-        <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-3 text-center text-xs font-semibold text-amber-800 dark:text-amber-300 shadow-xs flex items-center justify-center gap-2">
-          <Coffee className="h-4 w-4 text-amber-500 shrink-0" />
-          <span>Break interval active. Stand up, stretch your shoulders, take deep breaths, and hydrate before the next sprint.</span>
+        <div className="rounded-2xl border-2 border-amber-400 bg-amber-200/90 dark:border-amber-500/50 dark:bg-amber-500/20 p-3.5 text-center text-xs font-bold text-stone-900 dark:text-amber-100 shadow-sm shadow-amber-400/20 flex items-center justify-center gap-2.5">
+          <Coffee className="h-4.5 w-4.5 text-amber-900 dark:text-amber-300 shrink-0" />
+          <span className="text-stone-900 dark:text-amber-100">Break interval active. Stand up, stretch your shoulders, take deep breaths, and hydrate before the next sprint.</span>
         </div>
       )}
 
       {/* Auto-Close Alert */}
       {autoCloseAlert && (
-        <div className="flex items-center justify-between rounded-xl border border-amber-500/40 bg-amber-500/10 p-3.5 shadow-md animate-in fade-in duration-200">
+        <div className="flex items-center justify-between rounded-2xl border-2 border-amber-400 bg-amber-200/90 dark:border-amber-500/50 dark:bg-amber-500/20 p-3.5 shadow-md shadow-amber-400/20 animate-in fade-in duration-200">
           <div className="flex items-center gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-amber-500/20 text-amber-600 dark:text-amber-400 shrink-0">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-white shadow-xs shrink-0">
               <Bell className="h-4 w-4" />
             </div>
             <div>
-              <p className="font-heading font-bold text-xs text-amber-800 dark:text-amber-300">
+              <p className="font-heading font-extrabold text-xs text-stone-900 dark:text-amber-100">
                 Sprint Started — Lounge Chat Closed
               </p>
-              <p className="text-xs text-[var(--text-primary)] mt-0.5">{autoCloseAlert}</p>
+              <p className="text-xs text-stone-800 dark:text-amber-200 font-semibold mt-0.5">{autoCloseAlert}</p>
             </div>
           </div>
           <button
             type="button"
             onClick={() => setAutoCloseAlert(null)}
-            className="p-1 rounded-lg text-amber-700 dark:text-amber-300 hover:bg-amber-500/20 transition"
+            className="p-1 rounded-lg text-stone-800 dark:text-amber-200 hover:bg-amber-400/50 transition cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -633,8 +633,8 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
 
       {/* Lock Warning */}
       {lockWarning && (
-        <div className="flex items-center justify-center gap-2 rounded-xl border border-amber-500/30 bg-amber-500/10 p-2.5 text-xs font-semibold text-amber-700 dark:text-amber-400">
-          <AlertCircle className="h-4 w-4 shrink-0" />
+        <div className="flex items-center justify-center gap-2 rounded-2xl border-2 border-amber-400 bg-amber-200/90 p-2.5 text-xs font-bold text-stone-900 dark:text-amber-100 shadow-xs">
+          <AlertCircle className="h-4 w-4 text-amber-900 dark:text-amber-300 shrink-0" />
           <span>{lockWarning}</span>
         </div>
       )}
