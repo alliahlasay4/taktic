@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Target, Clock, Award, Minimize2 } from 'lucide-react';
+import { Target, Clock, Award, Minimize2, Sparkles, Zap, CheckCircle2 } from 'lucide-react';
 import { Task, TimeBlockSlot } from '../../types';
 import { PomodoroTimer } from './PomodoroTimer';
 import { TimeBlockGrid } from './TimeBlockGrid';
@@ -26,10 +26,11 @@ export const FocusView: React.FC<FocusViewProps> = ({
 }) => {
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
 
-  const targetMinutes = 200;
+  const targetMinutes = 100;
   const progressPct = Math.min(100, Math.round((totalFocusMinutesToday / targetMinutes) * 100));
   const completedPomodoros = Math.floor(totalFocusMinutesToday / 25);
-  const targetPomodoros = 8;
+  const targetPomodoros = 4;
+  const isGoalReached = totalFocusMinutesToday >= targetMinutes;
 
   return (
     <div className="space-y-6 p-4 sm:p-6 max-w-7xl mx-auto animate-in fade-in duration-300">
@@ -41,9 +42,17 @@ export const FocusView: React.FC<FocusViewProps> = ({
               <Target className="h-5 w-5" strokeWidth={1.5} aria-hidden="true" />
             </div>
             <div>
-              <h2 className="font-heading font-bold text-base text-[var(--text-primary)] tracking-tight">
-                Daily Deep Work Target
-              </h2>
+              <div className="flex items-center gap-2">
+                <h2 className="font-heading font-bold text-base text-[var(--text-primary)] tracking-tight">
+                  Daily Deep Work Target
+                </h2>
+                {isGoalReached && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 px-2 py-0.5 text-[10px] font-bold text-emerald-700 dark:text-emerald-300">
+                    <CheckCircle2 className="h-3 w-3" />
+                    Focus Ring Closed! 🎉
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-[var(--text-secondary)]">
                 {totalFocusMinutesToday} / {targetMinutes} Mins Focused ({progressPct}%)
               </p>
@@ -87,6 +96,52 @@ export const FocusView: React.FC<FocusViewProps> = ({
             className="h-full rounded-full bg-gradient-to-r from-[var(--accent-warm-ochre)] to-[var(--accent-terracotta)] transition-all duration-500"
             style={{ width: `${progressPct}%` }}
           />
+        </div>
+
+        {/* Quick Log & Test Goal Action Bar */}
+        <div className="mt-4 pt-3.5 border-t border-[var(--border-subtle)] flex flex-wrap items-center justify-between gap-3">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-xs font-bold text-[var(--text-secondary)] flex items-center gap-1.5">
+              <Sparkles className="h-3.5 w-3.5 text-[var(--accent-warm-ochre)]" />
+              Quick Log Session:
+            </span>
+            <div className="flex items-center gap-1.5">
+              <button
+                type="button"
+                onClick={() => onFocusComplete(25, selectedTask?.title || 'Pomodoro Sprint', 'high_flow')}
+                className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[var(--bg-main)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--accent-warm-ochre)] hover:text-[var(--accent-warm-ochre)] transition cursor-pointer shadow-2xs"
+                title="Log 25-minute Pomodoro session"
+              >
+                +25m
+              </button>
+              <button
+                type="button"
+                onClick={() => onFocusComplete(50, selectedTask?.title || 'Deep Work Block', 'high_flow')}
+                className="px-2.5 py-1 rounded-xl text-xs font-bold bg-[var(--bg-main)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--accent-warm-ochre)] hover:text-[var(--accent-warm-ochre)] transition cursor-pointer shadow-2xs"
+                title="Log 50-minute Deep Work session"
+              >
+                +50m
+              </button>
+            </div>
+          </div>
+
+          {/* Instant 100m Goal Fulfillment for Ring Testing */}
+          <button
+            type="button"
+            onClick={() => {
+              const needed = Math.max(25, 100 - totalFocusMinutesToday);
+              onFocusComplete(needed, selectedTask?.title || 'Focus Ring Sprint', 'high_flow');
+            }}
+            className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl text-xs font-bold bg-gradient-to-r from-[var(--accent-terracotta)] to-[var(--accent-warm-ochre)] text-white shadow-xs hover:brightness-105 active:scale-95 transition cursor-pointer"
+            title="Instantly fulfill 100 minutes focus target to test concentric rings"
+          >
+            <Zap className="h-3.5 w-3.5" />
+            <span>
+              {isGoalReached
+                ? '+25m Extra Sprint (Goal Reached 🎉)'
+                : `⚡ Complete 100m Goal (+${Math.max(25, 100 - totalFocusMinutesToday)}m)`}
+            </span>
+          </button>
         </div>
       </div>
 

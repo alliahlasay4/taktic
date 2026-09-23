@@ -1,5 +1,5 @@
 import React from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle, Flame, Clock, Sparkles } from 'lucide-react';
 
 interface TripleRingsProps {
@@ -27,11 +27,11 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
 
   const allClosed = taskPct >= 100 && habitPct >= 100 && focusPct >= 100;
 
-  // SVG Concentric Ring Dimensions
+  // SVG Concentric Ring Dimensions (220x220 canvas with generous inner clear radius)
   const center = 110;
 
   // Ring 1: Outer - Tasks (Botanical Sage)
-  const r1 = 90;
+  const r1 = 88;
   const c1 = 2 * Math.PI * r1;
   const strokeDashoffset1 = c1 - (c1 * taskPct) / 100;
 
@@ -41,117 +41,144 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
   const strokeDashoffset2 = c2 - (c2 * habitPct) / 100;
 
   // Ring 3: Inner - Focus Time (Warm Ochre)
-  const r3 = 46;
+  const r3 = 48;
   const c3 = 2 * Math.PI * r3;
   const strokeDashoffset3 = c3 - (c3 * focusPct) / 100;
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between gap-4 sm:gap-6 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-6 shadow-xs w-full max-w-full overflow-hidden">
+    <div className="flex flex-col md:flex-row items-center justify-between gap-6 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-7 shadow-xs w-full max-w-full relative overflow-hidden group transition-colors duration-300">
+      {/* Ambient Background Aura */}
+      <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-radial from-[var(--accent-warm-ochre)]/10 via-[var(--accent-terracotta)]/5 to-transparent blur-2xl pointer-events-none" />
+
       {/* SVG Concentric Rings */}
       <div className="relative flex items-center justify-center shrink-0">
-        <svg viewBox="0 0 220 220" className="w-44 h-44 sm:w-52 sm:h-52 rotate-[-90deg]">
-          {/* Ring 1 Track - Tasks */}
+        <svg viewBox="0 0 220 220" className="w-48 h-48 sm:w-56 sm:h-56 rotate-[-90deg]">
+          <defs>
+            {/* Task Ring Gradient */}
+            <linearGradient id="tripleTaskGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#4E7A52" />
+              <stop offset="100%" stopColor="#7BB280" />
+            </linearGradient>
+
+            {/* Habit Ring Gradient */}
+            <linearGradient id="tripleHabitGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#B85D6A" />
+              <stop offset="100%" stopColor="#E58A97" />
+            </linearGradient>
+
+            {/* Focus Ring Gradient */}
+            <linearGradient id="tripleFocusGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+              <stop offset="0%" stopColor="#CFA052" />
+              <stop offset="100%" stopColor="#E6B870" />
+            </linearGradient>
+
+            {/* Soft Glow Filter */}
+            <filter id="tripleGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#CFA052" floodOpacity="0.3" />
+            </filter>
+          </defs>
+
+          {/* Ring 1 Track & Fill - Tasks */}
           <circle
             cx={center}
             cy={center}
             r={r1}
-            stroke="var(--border-subtle)"
-            strokeWidth="14"
+            stroke="#6B8E6E"
+            strokeWidth="12"
             fill="transparent"
-            className="opacity-40"
+            opacity="0.15"
           />
-          {/* Ring 1 Fill */}
           <motion.circle
             cx={center}
             cy={center}
             r={r1}
-            stroke="var(--ring-tasks)"
-            strokeWidth="14"
+            stroke="url(#tripleTaskGradient)"
+            strokeWidth="12"
             fill="transparent"
             strokeDasharray={c1}
             animate={{ strokeDashoffset: strokeDashoffset1 }}
-            transition={{ duration: 1.2, ease: 'easeOut' }}
+            transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }}
             strokeLinecap="round"
             className="cursor-pointer hover:opacity-90"
             onClick={() => onRingClick?.('tasks')}
           />
 
-          {/* Ring 2 Track - Habits */}
+          {/* Ring 2 Track & Fill - Habits */}
           <circle
             cx={center}
             cy={center}
             r={r2}
-            stroke="var(--border-subtle)"
-            strokeWidth="14"
+            stroke="#C87D87"
+            strokeWidth="12"
             fill="transparent"
-            className="opacity-40"
+            opacity="0.15"
           />
-          {/* Ring 2 Fill */}
           <motion.circle
             cx={center}
             cy={center}
             r={r2}
-            stroke="var(--ring-habits)"
-            strokeWidth="14"
+            stroke="url(#tripleHabitGradient)"
+            strokeWidth="12"
             fill="transparent"
             strokeDasharray={c2}
             animate={{ strokeDashoffset: strokeDashoffset2 }}
-            transition={{ duration: 1.2, delay: 0.1, ease: 'easeOut' }}
+            transition={{ duration: 1.2, delay: 0.1, ease: [0.34, 1.56, 0.64, 1] }}
             strokeLinecap="round"
             className="cursor-pointer hover:opacity-90"
             onClick={() => onRingClick?.('habits')}
           />
 
-          {/* Ring 3 Track - Focus Time */}
+          {/* Ring 3 Track & Fill - Focus Time */}
           <circle
             cx={center}
             cy={center}
             r={r3}
-            stroke="var(--border-subtle)"
-            strokeWidth="14"
+            stroke="#CFA052"
+            strokeWidth="12"
             fill="transparent"
-            className="opacity-40"
+            opacity="0.15"
           />
-          {/* Ring 3 Fill */}
           <motion.circle
             cx={center}
             cy={center}
             r={r3}
-            stroke="var(--ring-focus)"
-            strokeWidth="14"
+            stroke="url(#tripleFocusGradient)"
+            strokeWidth="12"
             fill="transparent"
             strokeDasharray={c3}
             animate={{ strokeDashoffset: strokeDashoffset3 }}
-            transition={{ duration: 1.2, delay: 0.2, ease: 'easeOut' }}
+            transition={{ duration: 1.2, delay: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
             strokeLinecap="round"
             className="cursor-pointer hover:opacity-90"
             onClick={() => onRingClick?.('focus')}
+            filter="url(#tripleGlow)"
           />
         </svg>
 
-        {/* Center Icon / Badge */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
-          {allClosed ? (
+        {/* Center Percentage & High-Impact Glassmorphic Pill Display */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none select-none z-10 px-2">
+          <AnimatePresence mode="wait">
             <motion.div
-              initial={{ scale: 0.5, rotate: -180 }}
-              animate={{ scale: 1, rotate: 0 }}
+              key={Math.round((taskPct + habitPct + focusPct) / 3)}
+              initial={{ scale: 0.85, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.85, opacity: 0 }}
+              transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               className="flex flex-col items-center"
             >
-              <Sparkles className="h-7 w-7 text-[#C87D87] animate-bounce" />
-              <span className="text-[10px] font-bold text-[#C87D87] uppercase tracking-wider mt-0.5">
-                All Closed!
-              </span>
-            </motion.div>
-          ) : (
-            <div className="flex flex-col items-center">
-              <span className="font-heading text-xl font-bold text-[var(--text-primary)]">
+              <span className="font-heading text-2xl sm:text-3xl font-black text-[var(--text-primary)] leading-none tracking-tight">
                 {Math.round((taskPct + habitPct + focusPct) / 3)}%
               </span>
-              <span className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider font-semibold">
-                Daily Rhythm
-              </span>
-            </div>
-          )}
+            </motion.div>
+          </AnimatePresence>
+
+          {/* Styled Glassmorphic Pill with Live Status Indicator */}
+          <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--card-surface)]/95 dark:bg-[#25201D]/95 border border-[var(--border-subtle)] shadow-md backdrop-blur-md">
+            <span className={`h-1.5 w-1.5 rounded-full ${allClosed ? 'bg-emerald-500 animate-ping' : 'bg-[#CFA052] animate-pulse'}`} />
+            <span className="text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] bg-clip-text text-transparent whitespace-nowrap">
+              {allClosed ? 'All Closed! 🎉' : 'Daily Rhythm'}
+            </span>
+          </div>
         </div>
       </div>
 
