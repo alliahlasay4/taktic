@@ -163,4 +163,6 @@ export interface QuickNote {
   isPinned: boolean;
   createdAt: string;
   updatedAt: string;
+  archived?: boolean;
+  archivedAt?: string;
 }

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Sparkles, ArrowRight, Flame, Clock, CheckCircle2, Users } from 'lucide-react';
 import { Task, Habit, ActiveTab, CircleMember } from '../../types';
+import { useAuth } from '../../context/AuthContext';
 import { TripleRings } from '../habits/TripleRings';
 import { TaskItem } from '../inbox/TaskItem';
 import { IconRenderer } from '../common/IconRenderer';
@@ -32,6 +33,8 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   setActiveTab,
   onOpenSummary,
 }) => {
+  const { profile } = useAuth();
+  const firstName = profile?.fullName?.trim()?.split(/\s+/)[0] || 'there';
   const today = new Date().toISOString().split('T')[0];
   const activeTasks = tasks.filter((t) => !t.archived);
   const focusTasks = activeTasks.filter((t) => t.isTodayFocus);
@@ -48,7 +51,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span>Tactical Focus & Social Rhythm</span>
           </div>
           <h1 className="font-heading font-bold text-xl sm:text-2xl md:text-3xl tracking-tight">
-            Welcome back, Alliah.
+            Welcome back, {firstName}.
           </h1>
           <p className="text-xs sm:text-sm text-white/90 leading-relaxed">
             You're on a <strong className="underline decoration-white/40">{userStreak}-day streak</strong>! Keep your momentum steady by executing your 3 focus priorities today.

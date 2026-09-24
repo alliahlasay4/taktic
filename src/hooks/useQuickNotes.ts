@@ -5,31 +5,13 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 
 const INITIAL_QUICK_NOTES: QuickNote[] = [
   {
-    id: 'note-sample-1',
-    title: '🌱 Deep Work Sprint Idea',
-    content: 'Explore combining visual velocity charts with daily time-blocking presets.\n• Research pomodoro intervals\n• Test acoustic ambient soundscapes',
+    id: 'welcome-scratchpad-note',
+    title: '📝 Welcome to your Scratchpad',
+    content: 'Capture your thoughts, ideas, and fleeting notes during focus sessions.\n\nTip: Press Ctrl+J (or Cmd+J) anytime to toggle this scratchpad.',
     color: 'sage',
-    isPinned: true,
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    updatedAt: new Date(Date.now() - 3600000).toISOString(),
-  },
-  {
-    id: 'note-sample-2',
-    title: '⚡ Quick Checklist',
-    content: '- [ ] Review daily focus matrix\n- [ ] Hydrate after 50-minute sprint\n- [ ] Check off habit rings',
-    color: 'terracotta',
     isPinned: false,
-    createdAt: new Date(Date.now() - 7200000).toISOString(),
-    updatedAt: new Date(Date.now() - 7200000).toISOString(),
-  },
-  {
-    id: 'note-sample-3',
-    title: '💡 Reflection & Reference',
-    content: 'Remember: Consistent 80% effort over 30 days beats a 100% burst that leads to burnout.',
-    color: 'ochre',
-    isPinned: false,
-    createdAt: new Date(Date.now() - 14400000).toISOString(),
-    updatedAt: new Date(Date.now() - 14400000).toISOString(),
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
   },
 ];
 
@@ -39,15 +21,37 @@ export function useQuickNotes() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
+  const userKey = user?.id || (isDemo ? 'demo' : 'guest');
+  const storageKey = `taktic_quick_notes_${userKey}`;
+  const seedKey = `taktic_scratchpad_seeded_${userKey}`;
+
   // Fetch Notes from LocalStorage or Supabase
   const fetchNotes = useCallback(async () => {
     setLoading(true);
     setError(null);
 
+    const currentKey = user?.id || (isDemo ? 'demo' : 'guest');
+    const curStorageKey = `taktic_quick_notes_${currentKey}`;
+    const curSeedKey = `taktic_scratchpad_seeded_${currentKey}`;
+
     // Demo or offline mode -> LocalStorage
     if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
-      const saved = localStorage.getItem('taktic_quick_notes');
-      setNotes(saved ? JSON.parse(saved) : INITIAL_QUICK_NOTES);
+      const saved = localStorage.getItem(curStorageKey);
+      if (saved) {
+        try {
+          setNotes(JSON.parse(saved));
+        } catch (e) {
+          setNotes(INITIAL_QUICK_NOTES);
+        }
+      } else {
+        const hasSeeded = localStorage.getItem(curSeedKey);
+        if (!hasSeeded) {
+          setNotes(INITIAL_QUICK_NOTES);
+          localStorage.setItem(curSeedKey, 'true');
+        } else {
+          setNotes([]);
+        }
+      }
       setLoading(false);
       return;
     }
@@ -68,16 +72,29 @@ export function useQuickNotes() {
         content: n.content || '',
         color: (n.color as NoteColor) || 'slate',
         isPinned: n.is_pinned || false,
+        archived: n.archived || false,
+        archivedAt: n.archived_at || undefined,
         createdAt: n.created_at || new Date().toISOString(),
         updatedAt: n.updated_at || new Date().toISOString(),
       }));
 
-      setNotes(mapped.length > 0 ? mapped : INITIAL_QUICK_NOTES);
+      const hasSeeded = localStorage.getItem(curSeedKey);
+      if (mapped.length > 0) {
+        setNotes(mapped);
+        localStorage.setItem(curSeedKey, 'true');
+      } else if (!hasSeeded) {
+        // First time for this user: show single welcome note
+        setNotes(INITIAL_QUICK_NOTES);
+        localStorage.setItem(curSeedKey, 'true');
+      } else {
+        // User deliberately deleted all notes
+        setNotes([]);
+      }
     } catch (err: any) {
       console.error('Error fetching quick notes from Supabase:', err);
       setError(err.message || 'Failed to fetch notes.');
-      const saved = localStorage.getItem('taktic_quick_notes');
-      setNotes(saved ? JSON.parse(saved) : INITIAL_QUICK_NOTES);
+      const saved = localStorage.getItem(curStorageKey);
+      setNotes(saved ? JSON.parse(saved) : []);
     } finally {
       setLoading(false);
     }
@@ -87,12 +104,10 @@ export function useQuickNotes() {
     fetchNotes();
   }, [fetchNotes]);
 
-  // Write-through cache to LocalStorage
+  // Write-through cache to LocalStorage scoped per user
   useEffect(() => {
-    if (notes.length > 0) {
-      localStorage.setItem('taktic_quick_notes', JSON.stringify(notes));
-    }
-  }, [notes]);
+    localStorage.setItem(storageKey, JSON.stringify(notes));
+  }, [notes, storageKey]);
 
   // Add Note
   const addNote = async (newNoteData: {
@@ -109,6 +124,7 @@ export function useQuickNotes() {
       content: newNoteData.content,
       color: newNoteData.color || 'slate',
       isPinned: newNoteData.isPinned || false,
+      archived: false,
       createdAt: nowIso,
       updatedAt: nowIso,
     };
@@ -156,6 +172,10 @@ export function useQuickNotes() {
         if (updates.content !== undefined) dbPayload.content = updates.content;
         if (updates.color !== undefined) dbPayload.color = updates.color;
         if (updates.isPinned !== undefined) dbPayload.is_pinned = updates.isPinned;
+        if (updates.archived !== undefined) {
+          dbPayload.archived = updates.archived;
+          dbPayload.archived_at = updates.archived ? (updates.archivedAt || nowIso) : null;
+        }
 
         await supabase
           .from('quick_notes')
@@ -168,7 +188,74 @@ export function useQuickNotes() {
     }
   };
 
-  // Delete Note
+  // Archive a note (soft delete -> moves to Archive)
+  const archiveNote = async (id: string) => {
+    const target = notes.find((n) => n.id === id);
+    if (!target) return;
+
+    const nowIso = new Date().toISOString();
+    setNotes((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, archived: true, archivedAt: nowIso } : n))
+    );
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('quick_notes')
+          .update({ archived: true, archived_at: nowIso, updated_at: nowIso })
+          .eq('id', id)
+          .eq('user_id', user.id);
+      } catch (err: any) {
+        console.warn('Could not archive note in Supabase (falling back to local state):', err);
+      }
+    }
+  };
+
+  // Unarchive / restore a note from Archive back to Scratchpad
+  const unarchiveNote = async (id: string) => {
+    const target = notes.find((n) => n.id === id);
+    if (!target) return;
+
+    const nowIso = new Date().toISOString();
+    setNotes((prev) =>
+      prev.map((n) => (n.id === id ? { ...n, archived: false, archivedAt: undefined } : n))
+    );
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('quick_notes')
+          .update({ archived: false, archived_at: null, updated_at: nowIso })
+          .eq('id', id)
+          .eq('user_id', user.id);
+      } catch (err: any) {
+        console.warn('Could not unarchive note in Supabase:', err);
+      }
+    }
+  };
+
+  // Batch unarchive notes
+  const batchUnarchiveNotes = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    const nowIso = new Date().toISOString();
+    setNotes((prev) =>
+      prev.map((n) => (ids.includes(n.id) ? { ...n, archived: false, archivedAt: undefined } : n))
+    );
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('quick_notes')
+          .update({ archived: false, archived_at: null, updated_at: nowIso })
+          .in('id', ids)
+          .eq('user_id', user.id);
+      } catch (err: any) {
+        console.warn('Error batch unarchiving notes in Supabase:', err);
+      }
+    }
+  };
+
+  // Permanent Delete Note
   const deleteNote = async (id: string) => {
     setNotes((prev) => prev.filter((n) => n.id !== id));
 
@@ -181,6 +268,24 @@ export function useQuickNotes() {
           .eq('user_id', user.id);
       } catch (err: any) {
         console.error('Error deleting quick note from Supabase:', err);
+      }
+    }
+  };
+
+  // Batch Permanent Delete Notes
+  const batchDeleteNotes = async (ids: string[]) => {
+    if (ids.length === 0) return;
+    setNotes((prev) => prev.filter((n) => !ids.includes(n.id)));
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('quick_notes')
+          .delete()
+          .in('id', ids)
+          .eq('user_id', user.id);
+      } catch (err: any) {
+        console.error('Error batch deleting notes from Supabase:', err);
       }
     }
   };
@@ -199,6 +304,10 @@ export function useQuickNotes() {
     addNote,
     updateNote,
     deleteNote,
+    archiveNote,
+    unarchiveNote,
+    batchUnarchiveNotes,
+    batchDeleteNotes,
     togglePin,
     refreshNotes: fetchNotes,
   };

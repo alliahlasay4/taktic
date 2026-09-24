@@ -87,7 +87,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? { ...prev.privacySettings, ...updates.privacySettings }
           : prev.privacySettings,
       };
-      localStorage.setItem('taktic_user_profile', JSON.stringify(updated));
+      if (user?.id) {
+        localStorage.setItem(`taktic_user_profile_${user.id}`, JSON.stringify(updated));
+      } else {
+        localStorage.setItem('taktic_user_profile', JSON.stringify(updated));
+      }
 
       // Asynchronously sync profile changes to Supabase table if logged in
       if (!isDemo && isSupabaseConfigured && updated.id && updated.id !== 'demo-user-123') {
@@ -105,19 +109,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const dbProfile = await fetchUserProfileFromSupabase(userId);
     if (dbProfile) {
       setProfile(dbProfile);
-      localStorage.setItem('taktic_user_profile', JSON.stringify(dbProfile));
+      localStorage.setItem(`taktic_user_profile_${userId}`, JSON.stringify(dbProfile));
     } else {
-      // Initialize initial profile state for new session
-      setProfile((prev) => {
-        const initialProfile: UserProfile = {
-          ...prev,
-          id: userId,
-          fullName: currentSession.user.user_metadata?.full_name || prev.fullName,
-          avatarUrl: currentSession.user.user_metadata?.avatar_url || prev.avatarUrl,
-        };
-        saveUserProfileToSupabase(initialProfile);
-        return initialProfile;
-      });
+      // Initialize initial profile state for new session cleanly
+      const userMetaName = currentSession.user.user_metadata?.full_name?.trim();
+      const emailPrefix = currentSession.user.email ? currentSession.user.email.split('@')[0] : 'user';
+      const fallbackName = userMetaName || (emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)) || 'New User';
+
+      const initialProfile: UserProfile = {
+        ...DEFAULT_PROFILE,
+        id: userId,
+        fullName: fallbackName,
+        username: `@${emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '')}`,
+        avatarUrl: currentSession.user.user_metadata?.avatar_url || DEFAULT_PROFILE.avatarUrl,
+      };
+      setProfile(initialProfile);
+      localStorage.setItem(`taktic_user_profile_${userId}`, JSON.stringify(initialProfile));
+      saveUserProfileToSupabase(initialProfile);
     }
   };
 
@@ -149,6 +157,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null);
       if (session?.user) {
         syncSupabaseProfile(session);
+      } else if (!isDemo) {
+        setProfile(DEFAULT_PROFILE);
       }
       setLoading(false);
     });
@@ -213,6 +223,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       localStorage.removeItem('taktic_demo_mode');
       setUser(null);
       setSession(null);
+      setProfile(DEFAULT_PROFILE);
+      if (typeof window !== 'undefined') {
+        window.history.replaceState(null, '', window.location.pathname);
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       return;
     }
 
@@ -221,6 +236,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setUser(null);
     setSession(null);
+    setProfile(DEFAULT_PROFILE);
+    localStorage.removeItem('taktic_user_profile');
+    if (typeof window !== 'undefined') {
+      window.history.replaceState(null, '', window.location.pathname);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   return (

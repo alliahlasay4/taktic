@@ -102,9 +102,12 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
     }
   }, [isCreating]);
 
-  // Filter notes
+  // Filter active (non-archived) notes
+  const activeNotes = useMemo(() => notes.filter((n) => !n.archived), [notes]);
+
+  // Filter notes based on search query
   const filteredNotes = useMemo(() => {
-    return notes.filter((n) => {
+    return activeNotes.filter((n) => {
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase();
       return (
@@ -112,7 +115,7 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
         n.content.toLowerCase().includes(q)
       );
     });
-  }, [notes, searchQuery]);
+  }, [activeNotes, searchQuery]);
 
   const pinnedNotes = useMemo(() => filteredNotes.filter((n) => n.isPinned), [filteredNotes]);
   const regularNotes = useMemo(() => filteredNotes.filter((n) => !n.isPinned), [filteredNotes]);
@@ -248,78 +251,88 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
               )}
             </div>
 
-            {/* Quick Creation Form (Expandable) */}
-            {isCreating && (
-              <form
-                onSubmit={handleCreateSubmit}
-                className="p-3.5 rounded-2xl bg-[var(--card-surface)] border border-[var(--accent-terracotta)]/40 shadow-xs space-y-3 animate-in fade-in duration-150"
-              >
-                <input
-                  type="text"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  placeholder="Note Title (Optional)..."
-                  className="w-full px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--input-bg)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-hidden"
-                />
+            {/* Quick Creation Form (Expandable with Live Color Theme Preview) */}
+            {isCreating && (() => {
+              const activeTheme = COLOR_THEMES[newColor] || COLOR_THEMES.sage;
+              return (
+                <form
+                  onSubmit={handleCreateSubmit}
+                  className={`p-3.5 rounded-2xl border shadow-xs space-y-3 animate-in fade-in duration-200 transition-all ${activeTheme.bg} ${activeTheme.border}`}
+                >
+                  <input
+                    type="text"
+                    value={newTitle}
+                    onChange={(e) => setNewTitle(e.target.value)}
+                    placeholder="Note Title (Optional)..."
+                    className="w-full px-3 py-1.5 text-xs font-semibold rounded-lg bg-[var(--input-bg)]/80 backdrop-blur-xs border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-hidden focus:border-[var(--border-strong)] transition-colors"
+                  />
 
-                <textarea
-                  ref={textareaRef}
-                  value={newContent}
-                  onChange={(e) => setNewContent(e.target.value)}
-                  placeholder="Jot down your thought or checklist (- [ ] task)..."
-                  rows={3}
-                  className="w-full p-3 text-xs rounded-lg bg-[var(--input-bg)] border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-hidden resize-none leading-relaxed"
-                />
+                  <textarea
+                    ref={textareaRef}
+                    value={newContent}
+                    onChange={(e) => setNewContent(e.target.value)}
+                    placeholder="Jot down your thought or checklist (- [ ] task)..."
+                    rows={3}
+                    className="w-full p-3 text-xs rounded-lg bg-[var(--input-bg)]/80 backdrop-blur-xs border border-[var(--border-subtle)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-hidden focus:border-[var(--border-strong)] resize-none leading-relaxed transition-colors"
+                  />
 
-                {/* Color Pills & Pin Control */}
-                <div className="flex items-center justify-between pt-1">
-                  <div className="flex items-center gap-1.5">
-                    {(Object.keys(COLOR_THEMES) as NoteColor[]).map((c) => (
+                  {/* Color Pills & Pin Control */}
+                  <div className="flex items-center justify-between pt-1">
+                    <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
+                        {(Object.keys(COLOR_THEMES) as NoteColor[]).map((c) => (
+                          <button
+                            type="button"
+                            key={c}
+                            onClick={() => setNewColor(c)}
+                            className={`w-5 h-5 rounded-full ${COLOR_THEMES[c].dot} transition-all duration-200 ${
+                              newColor === c
+                                ? 'scale-125 ring-2 ring-offset-2 ring-offset-[var(--card-surface)] ring-[var(--text-primary)] shadow-xs'
+                                : 'opacity-60 hover:opacity-100 hover:scale-110'
+                            }`}
+                            title={COLOR_THEMES[c].label}
+                          />
+                        ))}
+                      </div>
+                      <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full border transition-all ${activeTheme.badge}`}>
+                        {activeTheme.label}
+                      </span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
                       <button
                         type="button"
-                        key={c}
-                        onClick={() => setNewColor(c)}
-                        className={`w-5 h-5 rounded-full ${COLOR_THEMES[c].dot} transition-transform ${
-                          newColor === c ? 'scale-125 ring-2 ring-offset-2 ring-[var(--accent-terracotta)]' : 'opacity-70 hover:opacity-100'
+                        onClick={() => setNewPinned(!newPinned)}
+                        className={`p-1.5 rounded-lg text-xs transition-colors ${
+                          newPinned
+                            ? 'bg-[var(--accent-warm-ochre)]/20 text-[var(--accent-warm-ochre)]'
+                            : 'text-[var(--text-muted)] hover:bg-[var(--card-hover)]'
                         }`}
-                        title={COLOR_THEMES[c].label}
-                      />
-                    ))}
+                        title={newPinned ? 'Pinned note' : 'Pin note to top'}
+                      >
+                        <Pin className={`w-3.5 h-3.5 ${newPinned ? 'fill-current' : ''}`} />
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => setIsCreating(false)}
+                        className="px-2.5 py-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors"
+                      >
+                        Cancel
+                      </button>
+
+                      <button
+                        type="submit"
+                        disabled={!newContent.trim()}
+                        className="px-3 py-1 text-xs font-semibold rounded-lg bg-[var(--accent-terracotta)] text-white hover:opacity-90 disabled:opacity-50 shadow-2xs transition-opacity"
+                      >
+                        Save Note
+                      </button>
+                    </div>
                   </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setNewPinned(!newPinned)}
-                      className={`p-1.5 rounded-lg text-xs transition-colors ${
-                        newPinned
-                          ? 'bg-[var(--accent-warm-ochre)]/20 text-[var(--accent-warm-ochre)]'
-                          : 'text-[var(--text-muted)] hover:bg-[var(--card-hover)]'
-                      }`}
-                      title={newPinned ? 'Pinned note' : 'Pin note to top'}
-                    >
-                      <Pin className={`w-3.5 h-3.5 ${newPinned ? 'fill-current' : ''}`} />
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => setIsCreating(false)}
-                      className="px-2.5 py-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                    >
-                      Cancel
-                    </button>
-
-                    <button
-                      type="submit"
-                      disabled={!newContent.trim()}
-                      className="px-3 py-1 text-xs font-semibold rounded-lg bg-[var(--accent-terracotta)] text-white hover:opacity-90 disabled:opacity-50 shadow-2xs"
-                    >
-                      Save Note
-                    </button>
-                  </div>
-                </div>
-              </form>
-            )}
+                </form>
+              );
+            })()}
           </div>
 
           {/* Notes Stack Content (Scrollable) */}
@@ -446,11 +459,11 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
               <Pin className={`w-3.5 h-3.5 ${note.isPinned ? 'fill-current' : ''}`} />
             </button>
 
-            {/* Delete Note */}
+            {/* Archive Note */}
             <button
               onClick={() => onDeleteNote(note.id)}
               className="p-1 rounded-lg text-[var(--text-muted)] hover:text-rose-500 hover:bg-rose-500/10 transition-colors"
-              title="Delete note"
+              title="Archive note"
             >
               <Trash2 className="w-3.5 h-3.5" />
             </button>

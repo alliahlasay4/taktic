@@ -50,31 +50,19 @@ export const Navbar: React.FC<NavbarProps> = ({
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[var(--border-subtle)] bg-[var(--card-surface)]/80 backdrop-blur-md transition-colors duration-300">
       <div className="mx-auto flex h-14 sm:h-16 w-full max-w-[1800px] items-center justify-between px-2.5 sm:px-6 lg:px-8">
-        {/* Brand Logo & Tagline */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-md shadow-[#C06C4C]/20">
-            <span className="text-base sm:text-xl font-bold font-heading">T</span>
+        {/* Clean Brand Logo */}
+        <button
+          type="button"
+          onClick={() => onSelectTab?.('dashboard')}
+          className="flex items-center gap-2.5 sm:gap-3 shrink-0 text-left cursor-pointer focus-visible:outline-hidden group"
+        >
+          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-md shadow-[#C06C4C]/20 transition-transform group-hover:scale-105">
+            <span className="text-lg sm:text-xl font-bold font-heading">T</span>
           </div>
-          <div>
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <span className="font-heading text-sm sm:text-lg font-bold tracking-tight text-[var(--text-primary)]">
-                Taktic
-              </span>
-              {isDemo ? (
-                <span className="hidden sm:inline-block rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[10px] font-bold text-amber-400">
-                  DEMO
-                </span>
-              ) : (
-                <span className="hidden sm:inline-block rounded-full bg-[#C87D87]/15 px-2 py-0.5 text-[10px] font-semibold text-[#C87D87]">
-                  PROD v1.0
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-[var(--text-secondary)] hidden md:block">
-              Tactical Focus & Social Rhythm Hub
-            </p>
-          </div>
-        </div>
+          <span className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] leading-none transition-colors group-hover:text-[#C06C4C]">
+            Taktic
+          </span>
+        </button>
 
         {/* Action Controls */}
         <div className="flex items-center gap-1 sm:gap-2 md:gap-3 relative shrink-0">

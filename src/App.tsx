@@ -80,6 +80,10 @@ function MainLayout() {
     addNote: handleAddQuickNote,
     updateNote: handleUpdateQuickNote,
     deleteNote: handleDeleteQuickNote,
+    archiveNote: handleArchiveQuickNote,
+    unarchiveNote: handleUnarchiveQuickNote,
+    batchUnarchiveNotes: handleBatchUnarchiveQuickNotes,
+    batchDeleteNotes: handleBatchDeleteQuickNotes,
     togglePin: handleTogglePinQuickNote,
   } = useQuickNotes();
 
@@ -223,7 +227,7 @@ function MainLayout() {
             onOpenSummary={() => setIsSummaryOpen(true)}
             onOpenProfile={() => setActiveTab('profile')}
             onToggleQuickNotes={() => setIsQuickNotesOpen((prev) => !prev)}
-            notesCount={quickNotes.length}
+            notesCount={quickNotes.filter((n) => !n.archived).length}
             notifications={notifications}
             unreadCount={unreadCount}
             onMarkAsRead={markAsRead}
@@ -362,10 +366,15 @@ function MainLayout() {
                 {activeTab === 'archive' && (
                   <ArchiveView
                     tasks={tasks}
+                    notes={quickNotes}
                     onUnarchiveTask={handleUnarchiveTask}
                     onDeleteTask={handleDeleteTask}
                     onBatchUnarchiveTasks={handleBatchUnarchiveTasks}
                     onBatchDeleteTasks={handleBatchDeleteTasks}
+                    onUnarchiveNote={handleUnarchiveQuickNote}
+                    onDeleteNote={handleDeleteQuickNote}
+                    onBatchUnarchiveNotes={handleBatchUnarchiveQuickNotes}
+                    onBatchDeleteNotes={handleBatchDeleteQuickNotes}
                     onNavigateToInbox={() => setActiveTab('inbox')}
                   />
                 )}
@@ -409,7 +418,7 @@ function MainLayout() {
         {/* Global Quick Notes Floating Trigger */}
         <QuickNotesFloatingTrigger
           onClick={() => setIsQuickNotesOpen(true)}
-          notesCount={quickNotes.length}
+          notesCount={quickNotes.filter((n) => !n.archived).length}
           isOpen={isQuickNotesOpen}
         />
 
@@ -420,9 +429,15 @@ function MainLayout() {
           notes={quickNotes}
           onAddNote={handleAddQuickNote}
           onUpdateNote={handleUpdateQuickNote}
-          onDeleteNote={handleDeleteQuickNote}
+          onDeleteNote={(id) => {
+            handleArchiveQuickNote(id);
+            notify('Note Archived', 'Moved note to your Archive. You can restore it anytime.', 'system', 'archive');
+          }}
           onTogglePin={handleTogglePinQuickNote}
-          onConvertToTask={handleAddTask}
+          onConvertToTask={(taskData) => {
+            handleAddTask(taskData);
+            notify('Task Created from Note', `Added "${taskData.title}" to your active master tasks.`, 'system', 'inbox');
+          }}
         />
 
         {/* Real-time Floating Toast Overlay */}

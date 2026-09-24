@@ -1,26 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { InAppNotification, ActiveTab } from '../types';
-
-const INITIAL_NOTIFICATIONS: InAppNotification[] = [
-  {
-    id: 'n-1',
-    title: 'Welcome to Taktic!',
-    message: 'Your tactical productivity workspace is ready. Set your daily goals and habits.',
-    type: 'system',
-    read: false,
-    createdAt: new Date().toISOString(),
-    actionTab: 'dashboard',
-  },
-  {
-    id: 'n-2',
-    title: 'Streak Shield Active',
-    message: '3 freeze shields are loaded on your habits to protect your streaks.',
-    type: 'streak',
-    read: false,
-    createdAt: new Date(Date.now() - 3600000).toISOString(),
-    actionTab: 'habits',
-  },
-];
+import { useAuth } from '../context/AuthContext';
 
 export interface ToastItem {
   id: string;
@@ -30,8 +10,26 @@ export interface ToastItem {
 }
 
 export function useInAppNotifications() {
+  const { user, isDemo } = useAuth();
+  const userKey = user?.id || (isDemo ? 'demo' : 'guest');
+  const storageKey = `taktic_in_app_notifications_${userKey}`;
+
+  const createInitialNotifications = useCallback((): InAppNotification[] => {
+    return [
+      {
+        id: `welcome-${userKey}`,
+        title: 'Welcome to Taktic!',
+        message: 'Your tactical productivity workspace is ready. Set your daily goals and habits.',
+        type: 'system',
+        read: false,
+        createdAt: new Date().toISOString(),
+        actionTab: 'dashboard',
+      },
+    ];
+  }, [userKey]);
+
   const [notifications, setNotifications] = useState<InAppNotification[]>(() => {
-    const saved = localStorage.getItem('taktic_in_app_notifications');
+    const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
         return JSON.parse(saved);
@@ -39,14 +37,45 @@ export function useInAppNotifications() {
         console.error(e);
       }
     }
-    return INITIAL_NOTIFICATIONS;
+    return [
+      {
+        id: `welcome-${userKey}`,
+        title: 'Welcome to Taktic!',
+        message: 'Your tactical productivity workspace is ready. Set your daily goals and habits.',
+        type: 'system',
+        read: false,
+        createdAt: new Date().toISOString(),
+        actionTab: 'dashboard',
+      },
+    ];
   });
 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
+  const isInitialMount = useRef(true);
 
+  // Switch notifications when authenticated user changes
   useEffect(() => {
-    localStorage.setItem('taktic_in_app_notifications', JSON.stringify(notifications));
-  }, [notifications]);
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
+
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        setNotifications(JSON.parse(saved));
+        return;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    setNotifications(createInitialNotifications());
+  }, [storageKey, createInitialNotifications]);
+
+  // Persist notifications for the current user
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(notifications));
+  }, [notifications, storageKey]);
 
   const notify = useCallback(
     (title: string, message: string, type: InAppNotification['type'] = 'system', actionTab?: ActiveTab) => {
