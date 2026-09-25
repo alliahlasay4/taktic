@@ -7,7 +7,7 @@ import { CircleManagerModal } from './CircleManagerModal';
 interface CircleFeedProps {
   feedPosts: CircleFeedPost[];
   members?: CircleMember[];
-  onToggleLike: (postId: string) => void;
+  onToggleLike: (postId: string, reaction?: string) => void;
   onBroadcastAchievement?: (type: CircleFeedPost['type'], title: string, detail: string) => void;
   onTogglePartner?: (memberId: string) => void;
   onToggleMute?: (memberId: string) => void;
@@ -28,16 +28,11 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
   const [activeFilter, setActiveFilter] = useState<'all' | 'ring_closed' | 'streak_milestone' | 'focus_marathon' | 'habit_mastered'>('all');
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isManagerOpen, setIsManagerOpen] = useState(false);
-  const [cheersState, setCheersState] = useState<Record<string, string[]>>({});
 
   const handleToggleCheer = (postId: string, emoji: string) => {
-    setCheersState((prev) => {
-      const current = prev[postId] || [];
-      const hasEmoji = current.includes(emoji);
-      const updated = hasEmoji ? current.filter((e) => e !== emoji) : [...current, emoji];
-      return { ...prev, [postId]: updated };
-    });
-    onToggleLike(postId);
+    if (onToggleLike) {
+      onToggleLike(postId, emoji);
+    }
   };
 
   const filteredPosts = feedPosts.filter((post) => {
@@ -86,7 +81,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6" data-tour="tour-feed-tab">
       {/* Feed Control Card */}
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-5">
         {/* Header & Quick Action Row */}
@@ -179,7 +174,8 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
           filteredPosts.map((post) => {
             const badge = getPostBadge(post.type);
             const BadgeIcon = badge.icon;
-            const activeCheers = cheersState[post.id] || [];
+            const selectedCheer = post.userReaction || (post.userLiked ? 'fire' : null);
+            const totalCheers = post.likes;
 
             return (
               <div
@@ -228,50 +224,64 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
                   </p>
                 </div>
 
-                {/* Post Footer: Interactive Cheers & Reaction Count */}
-                <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2 flex-wrap">
-                  {/* Multi-Reaction Icons */}
-                  <div className="flex items-center gap-1.5">
+                {/* Post Footer: Cheer Count on Left, Single-Select Reaction Buttons on Right */}
+                <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
+                  {/* Total Cheers Counter */}
+                  <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
+                    <Heart className={`h-3.5 w-3.5 transition-colors ${selectedCheer ? 'fill-rose-500 text-rose-500' : 'text-[var(--text-muted)]'}`} />
+                    <span className="font-bold text-xs text-[var(--text-primary)]">
+                      {totalCheers} <span className="font-normal text-[var(--text-secondary)]">{totalCheers === 1 ? 'Cheer' : 'Cheers'}</span>
+                    </span>
+                  </div>
+
+                  {/* Reaction Icons (Single Selection Only) - Aligned to Right */}
+                  <div className="flex items-center gap-1.5 ml-auto">
                     {[
-                      { id: 'fire', icon: Flame, label: 'Fire', color: 'text-[var(--accent-terracotta)]' },
-                      { id: 'zap', icon: Zap, label: 'Sprint', color: 'text-[var(--accent-warm-ochre)]' },
-                      { id: 'sparkles', icon: Sparkles, label: 'Sparkle', color: 'text-amber-400' },
-                      { id: 'heart', icon: Heart, label: 'Love', color: 'text-[var(--accent-dusty-rose)]' },
+                      {
+                        id: 'fire',
+                        icon: Flame,
+                        label: 'Fire',
+                        activeClass: 'border-[var(--accent-terracotta)]/60 bg-[var(--accent-terracotta)]/20 text-[var(--accent-terracotta)] shadow-xs scale-105',
+                      },
+                      {
+                        id: 'zap',
+                        icon: Zap,
+                        label: 'Sprint',
+                        activeClass: 'border-[var(--accent-warm-ochre)]/60 bg-[var(--accent-warm-ochre)]/20 text-[var(--accent-warm-ochre)] shadow-xs scale-105',
+                      },
+                      {
+                        id: 'sparkles',
+                        icon: Sparkles,
+                        label: 'Sparkle',
+                        activeClass: 'border-amber-400/60 bg-amber-400/20 text-amber-500 shadow-xs scale-105',
+                      },
+                      {
+                        id: 'heart',
+                        icon: Heart,
+                        label: 'Love',
+                        activeClass: 'border-rose-500/60 bg-rose-500/20 text-rose-500 shadow-xs scale-105',
+                      },
                     ].map((item) => {
                       const Icon = item.icon;
-                      const isSelected = activeCheers.includes(item.id);
+                      const isSelected = selectedCheer === item.id;
                       return (
                         <button
                           key={item.id}
                           type="button"
                           onClick={() => handleToggleCheer(post.id, item.id)}
-                          className={`flex h-8 w-8 items-center justify-center rounded-xl border transition active:scale-95 ${
+                          className={`flex h-8 w-8 items-center justify-center rounded-xl border transition active:scale-90 cursor-pointer ${
                             isSelected
-                              ? 'border-[var(--accent-dusty-rose)]/50 bg-[var(--accent-dusty-rose)]/20 text-[var(--accent-dusty-rose)] shadow-xs scale-105'
-                              : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)]'
+                              ? item.activeClass
+                              : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)]'
                           }`}
                           title={`Cheer with ${item.label}`}
                           aria-label={`Cheer with ${item.label}`}
                         >
-                          <Icon className="h-3.5 w-3.5" />
+                          <Icon className={`h-3.5 w-3.5 ${isSelected && item.id === 'heart' ? 'fill-current' : ''}`} />
                         </button>
                       );
                     })}
                   </div>
-
-                  {/* Like / Cheer Button */}
-                  <button
-                    type="button"
-                    onClick={() => onToggleLike(post.id)}
-                    className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition active:scale-95 min-h-[34px] ${
-                      post.userLiked
-                        ? 'border-rose-500/40 bg-rose-500/15 text-rose-500 shadow-xs'
-                        : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:text-rose-500 hover:border-rose-500/30'
-                    }`}
-                  >
-                    <Heart className={`h-3.5 w-3.5 ${post.userLiked ? 'fill-rose-500 text-rose-500 animate-pulse' : ''}`} />
-                    <span>{post.likes + activeCheers.length} Cheers</span>
-                  </button>
                 </div>
               </div>
             );

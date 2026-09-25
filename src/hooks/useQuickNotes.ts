@@ -72,23 +72,43 @@ export function useQuickNotes() {
         content: n.content || '',
         color: (n.color as NoteColor) || 'slate',
         isPinned: n.is_pinned || false,
-        archived: n.archived || false,
+        archived: Boolean(n.archived),
         archivedAt: n.archived_at || undefined,
         createdAt: n.created_at || new Date().toISOString(),
         updatedAt: n.updated_at || new Date().toISOString(),
       }));
 
+      // Merge with user-scoped local archive cache in case Supabase columns were un-migrated
+      let localNotes: QuickNote[] = [];
+      const saved = localStorage.getItem(curStorageKey);
+      if (saved) {
+        try {
+          localNotes = JSON.parse(saved);
+        } catch {}
+      }
+
+      const merged = mapped.map((dbNote) => {
+        const local = localNotes.find((l) => l.id === dbNote.id);
+        if (local && local.archived) {
+          return { ...dbNote, archived: true, archivedAt: local.archivedAt };
+        }
+        return dbNote;
+      });
+
       const hasSeeded = localStorage.getItem(curSeedKey);
-      if (mapped.length > 0) {
-        setNotes(mapped);
+      if (merged.length > 0) {
+        setNotes(merged);
         localStorage.setItem(curSeedKey, 'true');
+        localStorage.setItem(curStorageKey, JSON.stringify(merged));
       } else if (!hasSeeded) {
         // First time for this user: show single welcome note
         setNotes(INITIAL_QUICK_NOTES);
         localStorage.setItem(curSeedKey, 'true');
+        localStorage.setItem(curStorageKey, JSON.stringify(INITIAL_QUICK_NOTES));
       } else {
         // User deliberately deleted all notes
         setNotes([]);
+        localStorage.setItem(curStorageKey, JSON.stringify([]));
       }
     } catch (err: any) {
       console.error('Error fetching quick notes from Supabase:', err);
@@ -194,19 +214,36 @@ export function useQuickNotes() {
     if (!target) return;
 
     const nowIso = new Date().toISOString();
-    setNotes((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, archived: true, archivedAt: nowIso } : n))
-    );
+    const updated = notes.map((n) => (n.id === id ? { ...n, archived: true, archivedAt: nowIso } : n));
+    setNotes(updated);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+    localStorage.setItem(seedKey, 'true');
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {
-        await supabase
+        const res = await supabase
           .from('quick_notes')
           .update({ archived: true, archived_at: nowIso, updated_at: nowIso })
           .eq('id', id)
           .eq('user_id', user.id);
+
+        if (res.error) {
+          // If archived column does not exist on database, delete it so it never reappears
+          await supabase
+            .from('quick_notes')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
+        }
       } catch (err: any) {
-        console.warn('Could not archive note in Supabase (falling back to local state):', err);
+        console.warn('Could not archive note in Supabase:', err);
+        try {
+          await supabase
+            .from('quick_notes')
+            .delete()
+            .eq('id', id)
+            .eq('user_id', user.id);
+        } catch {}
       }
     }
   };
@@ -217,9 +254,9 @@ export function useQuickNotes() {
     if (!target) return;
 
     const nowIso = new Date().toISOString();
-    setNotes((prev) =>
-      prev.map((n) => (n.id === id ? { ...n, archived: false, archivedAt: undefined } : n))
-    );
+    const updated = notes.map((n) => (n.id === id ? { ...n, archived: false, archivedAt: undefined } : n));
+    setNotes(updated);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {
@@ -238,9 +275,9 @@ export function useQuickNotes() {
   const batchUnarchiveNotes = async (ids: string[]) => {
     if (ids.length === 0) return;
     const nowIso = new Date().toISOString();
-    setNotes((prev) =>
-      prev.map((n) => (ids.includes(n.id) ? { ...n, archived: false, archivedAt: undefined } : n))
-    );
+    const updated = notes.map((n) => (ids.includes(n.id) ? { ...n, archived: false, archivedAt: undefined } : n));
+    setNotes(updated);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {
@@ -257,7 +294,10 @@ export function useQuickNotes() {
 
   // Permanent Delete Note
   const deleteNote = async (id: string) => {
-    setNotes((prev) => prev.filter((n) => n.id !== id));
+    const updated = notes.filter((n) => n.id !== id);
+    setNotes(updated);
+    localStorage.setItem(storageKey, JSON.stringify(updated));
+    localStorage.setItem(seedKey, 'true');
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {

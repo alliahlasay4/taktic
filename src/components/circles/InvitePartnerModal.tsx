@@ -131,9 +131,12 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
 
                 <div className="flex items-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-2">
                   <input
+                    id="invite-success-link"
+                    name="successInviteLink"
                     type="text"
                     readOnly
                     value={successInfo.link}
+                    aria-label="Generated invitation link"
                     className="flex-1 text-[11px] font-mono text-[var(--text-secondary)] bg-transparent focus:outline-none truncate"
                   />
                   <button
@@ -162,6 +165,7 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
                   </label>
                   <input
                     id="partner-email"
+                    name="partnerEmail"
                     type="email"
                     required
                     placeholder="friend@company.com"
@@ -177,6 +181,7 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
                   </label>
                   <input
                     id="partner-name"
+                    name="partnerName"
                     type="text"
                     placeholder="e.g. Alex"
                     value={name}
@@ -207,9 +212,12 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
               </p>
               <div className="flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-2.5">
                 <input
+                  id="magic-share-link-input"
+                  name="magicShareLink"
                   type="text"
                   readOnly
                   value={defaultLink}
+                  aria-label="Magic share link"
                   className="flex-1 text-[11px] font-mono text-[var(--text-primary)] bg-transparent focus:outline-none truncate"
                 />
                 <button

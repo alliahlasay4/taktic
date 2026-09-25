@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Users,
   Flame,
@@ -21,6 +21,11 @@ import {
   Send,
   Copy,
   Check,
+  X,
+  SlidersHorizontal,
+  ChevronDown,
+  Compass,
+  HelpCircle,
 } from 'lucide-react';
 import { CircleMember, CircleFeedPost, CircleInvite } from '../../types';
 import { LiveFocusRoom } from './LiveFocusRoom';
@@ -30,13 +35,14 @@ import { CreatePodModal } from './CreatePodModal';
 import { JoinRoomModal } from './JoinRoomModal';
 import { ShareMilestoneModal } from './ShareMilestoneModal';
 import { InvitePartnerModal } from './InvitePartnerModal';
+import { CirclesOnboardingGuide } from './CirclesOnboardingGuide';
 
 interface CirclesViewProps {
   members: CircleMember[];
   feedPosts: CircleFeedPost[];
   invites?: CircleInvite[];
   userStreak: number;
-  onToggleLike: (postId: string) => void;
+  onToggleLike: (postId: string, reaction?: string) => void;
   onBroadcastAchievement?: (type: CircleFeedPost['type'], title: string, detail: string) => void;
   onTogglePartner?: (memberId: string) => void;
   onToggleMute?: (memberId: string) => void;
@@ -73,6 +79,40 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   const [newPartnerName, setNewPartnerName] = useState('');
+
+  const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
+  const actionsMenuRef = useRef<HTMLDivElement>(null);
+
+  // Close actions dropdown on click outside
+  useEffect(() => {
+    const handleOutsideClick = (e: MouseEvent) => {
+      if (actionsMenuRef.current && !actionsMenuRef.current.contains(e.target as Node)) {
+        setIsActionsMenuOpen(false);
+      }
+    };
+    if (isActionsMenuOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isActionsMenuOpen]);
+
+  // First-time onboarding guide state
+  const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState<boolean>(() => {
+    return localStorage.getItem('taktic_circles_onboarding_completed') !== 'true';
+  });
+  const [showCelebrationToast, setShowCelebrationToast] = useState<boolean>(false);
+  const [highlightInviteButton, setHighlightInviteButton] = useState<boolean>(false);
+
+  const handleCompleteTour = () => {
+    localStorage.setItem('taktic_circles_onboarding_completed', 'true');
+    setIsOnboardingGuideOpen(false);
+    setShowCelebrationToast(true);
+    setHighlightInviteButton(true);
+    setTimeout(() => setShowCelebrationToast(false), 5000);
+    setTimeout(() => setHighlightInviteButton(false), 5000);
+  };
 
   const {
     activeRoomCode,
@@ -112,7 +152,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   const activePodsCount = focusPods.filter((p) => (p.activeMembersCount || 0) > 0).length;
 
   return (
-    <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto p-3 sm:p-6">
+    <div className="space-y-6">
       {/* Top KPI Header Banner */}
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-6 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5">
@@ -136,104 +176,152 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
             </div>
           </div>
 
-          {/* Quick Actions & Compact Ghost Mode Switch */}
-          <div className="flex flex-col sm:flex-row sm:items-center gap-2 w-full lg:w-auto">
-            {/* Row 1 on mobile: Ghost Mode + Primary Invite Button */}
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              {/* Compact Ghost Mode Toggle with Rich Hover Explanation */}
-              <div className="relative group shrink-0">
-                <button
-                  type="button"
-                  onClick={toggleSoloInvisibleMode}
-                  className={`flex items-center gap-2 rounded-lg border px-2.5 py-1.5 text-xs font-semibold transition-all h-9 ${
-                    soloInvisibleMode
-                      ? 'border-[var(--accent-dusty-rose)]/60 bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)] shadow-xs'
-                      : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)]'
+          {/* Quick Actions & Unified Controls Bar */}
+          <div className="flex items-center gap-1.5 sm:gap-2 w-full lg:w-auto justify-end flex-wrap sm:flex-nowrap">
+            {/* Ghost Mode Toggle */}
+            <div className="relative group shrink-0">
+              <button
+                type="button"
+                onClick={toggleSoloInvisibleMode}
+                className={`flex items-center gap-1.5 sm:gap-2 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition-all h-9 cursor-pointer ${
+                  soloInvisibleMode
+                    ? 'border-[var(--accent-dusty-rose)]/60 bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)] shadow-xs'
+                    : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)]'
+                }`}
+                aria-label="Toggle Ghost Mode"
+              >
+                {soloInvisibleMode ? (
+                  <EyeOff className="h-4 w-4 text-[var(--accent-dusty-rose)] shrink-0" />
+                ) : (
+                  <Eye className="h-4 w-4 text-[var(--text-muted)] shrink-0" />
+                )}
+                <span className="text-[11px] sm:text-xs font-medium">
+                  {soloInvisibleMode ? 'Ghost' : 'Visible'}
+                </span>
+                <div
+                  className={`relative inline-flex h-3.5 w-6 shrink-0 rounded-full transition-colors duration-200 ease-in-out ${
+                    soloInvisibleMode ? 'bg-[var(--accent-dusty-rose)]' : 'bg-[var(--border-subtle)]'
                   }`}
-                  aria-label="Toggle Ghost Mode"
                 >
-                  {soloInvisibleMode ? (
-                    <EyeOff className="h-4 w-4 text-[var(--accent-dusty-rose)] shrink-0" />
-                  ) : (
-                    <Eye className="h-4 w-4 text-[var(--text-muted)] shrink-0" />
-                  )}
-                  <div
-                    className={`relative inline-flex h-4 w-7 shrink-0 cursor-pointer rounded-full border border-transparent transition-colors duration-200 ease-in-out ${
-                      soloInvisibleMode ? 'bg-[var(--accent-dusty-rose)]' : 'bg-[var(--border-subtle)]'
-                    }`}
-                  >
-                    <span
-                      className={`pointer-events-none inline-block h-3 w-3 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
-                        soloInvisibleMode ? 'translate-x-3' : 'translate-x-0'
-                      } mt-[1px]`}
-                    />
-                  </div>
-                </button>
-
-                {/* Hover Tooltip Info Popover - Positioned below button */}
-                <div className="pointer-events-none absolute top-full mt-2 left-0 sm:left-1/2 sm:-translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 w-56 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3 text-left shadow-xl backdrop-blur-md">
-                  <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)] mb-1">
-                    {soloInvisibleMode ? (
-                      <EyeOff className="h-3.5 w-3.5 text-[var(--accent-dusty-rose)]" />
-                    ) : (
-                      <Eye className="h-3.5 w-3.5 text-[var(--accent-terracotta)]" />
-                    )}
-                    <span>Ghost Mode {soloInvisibleMode ? '• Active' : '• Off'}</span>
-                  </div>
-                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                    Hides your timer and status from pods and roster partners.
-                  </p>
-                  <div className="absolute bottom-full left-6 sm:left-1/2 sm:-translate-x-1/2 -mb-1 border-4 border-transparent border-b-[var(--card-surface)]" />
+                  <span
+                    className={`pointer-events-none inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
+                      soloInvisibleMode ? 'translate-x-2.5' : 'translate-x-0.5'
+                    } mt-[2px]`}
+                  />
                 </div>
+              </button>
+
+              {/* Hover Tooltip Info Popover */}
+              <div className="pointer-events-none absolute top-full mt-2 right-0 sm:left-1/2 sm:-translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 w-56 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3 text-left shadow-xl backdrop-blur-md">
+                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)] mb-1">
+                  {soloInvisibleMode ? (
+                    <EyeOff className="h-3.5 w-3.5 text-[var(--accent-dusty-rose)]" />
+                  ) : (
+                    <Eye className="h-3.5 w-3.5 text-[var(--accent-terracotta)]" />
+                  )}
+                  <span>Ghost Mode {soloInvisibleMode ? '• Active' : '• Off'}</span>
+                </div>
+                <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                  Hides your live timer and status from pods and roster partners.
+                </p>
+                <div className="absolute bottom-full right-4 sm:left-1/2 sm:-translate-x-1/2 -mb-1 border-4 border-transparent border-b-[var(--card-surface)]" />
               </div>
+            </div>
 
-              {/* Invite Partner Action - Terracotta Primary Button */}
-              {onSendInvite && onGenerateMagicLink && (
-                <button
-                  type="button"
-                  onClick={() => setIsInviteModalOpen(true)}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-lg bg-[var(--accent-terracotta)] hover:brightness-110 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition active:scale-95 h-9 shrink-0"
-                >
-                  <UserPlus className="h-3.5 w-3.5 shrink-0" />
-                  <span>Invite Partner</span>
-                </button>
+            {/* Quick Actions Dropdown Menu */}
+            <div className="relative" ref={actionsMenuRef}>
+              <button
+                type="button"
+                onClick={() => setIsActionsMenuOpen(!isActionsMenuOpen)}
+                className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition h-9 shrink-0 cursor-pointer ${
+                  isActionsMenuOpen
+                    ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] shadow-xs'
+                    : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)]'
+                }`}
+                title="Quick Actions & Guide"
+                aria-expanded={isActionsMenuOpen}
+                aria-label="Open Quick Actions Menu"
+              >
+                <SlidersHorizontal className="h-3.5 w-3.5 text-[var(--accent-terracotta)]" />
+                <span className="text-[11px] sm:text-xs font-medium">Actions</span>
+                <ChevronDown className={`h-3 w-3 transition-transform duration-200 ${isActionsMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isActionsMenuOpen && (
+                <div className="absolute right-0 top-full mt-1.5 w-56 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-1.5 shadow-xl backdrop-blur-md z-50 animate-in fade-in zoom-in-95 duration-150 space-y-0.5">
+                  <div className="px-2.5 py-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
+                    Quick Actions
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsCreatePodOpen(true);
+                      setIsActionsMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] hover:text-[var(--accent-terracotta)] transition text-left cursor-pointer"
+                  >
+                    <Plus className="h-3.5 w-3.5 text-[var(--accent-terracotta)] shrink-0" />
+                    <span>Create Standing Pod</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsJoinRoomOpen(true);
+                      setIsActionsMenuOpen(false);
+                    }}
+                    className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] hover:text-[var(--accent-botanical-sage)] transition text-left cursor-pointer"
+                  >
+                    <KeyRound className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)] shrink-0" />
+                    <span>Join Room with Code</span>
+                  </button>
+
+                  {onBroadcastAchievement && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsShareModalOpen(true);
+                        setIsActionsMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] hover:text-[var(--accent-warm-ochre)] transition text-left cursor-pointer"
+                    >
+                      <Sparkles className="h-3.5 w-3.5 text-[var(--accent-warm-ochre)] shrink-0" />
+                      <span>Broadcast Milestone</span>
+                    </button>
+                  )}
+
+                  <div className="pt-1 mt-1 border-t border-[var(--border-subtle)]">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsOnboardingGuideOpen(true);
+                        setIsActionsMenuOpen(false);
+                      }}
+                      className="w-full flex items-center gap-2.5 px-2.5 py-2 rounded-xl text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] hover:text-[var(--accent-warm-ochre)] transition text-left cursor-pointer"
+                    >
+                      <Compass className="h-3.5 w-3.5 text-[var(--accent-warm-ochre)] shrink-0" />
+                      <span>Circle Guide & Tour</span>
+                    </button>
+                  </div>
+                </div>
               )}
             </div>
 
-            {/* Row 2 on mobile / flex on desktop: Create Pod, Join Code, Broadcast */}
-            <div className="grid grid-cols-3 sm:flex sm:items-center gap-1.5 sm:gap-2 w-full sm:w-auto">
-              {/* Create Pod Action */}
+            {/* Primary Action Button: Invite Partner */}
+            {onSendInvite && onGenerateMagicLink && (
               <button
                 type="button"
-                onClick={() => setIsCreatePodOpen(true)}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] hover:border-[var(--accent-terracotta)]/40 px-2 sm:px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition active:scale-95 h-9"
+                data-tour="tour-invite-partner"
+                onClick={() => setIsInviteModalOpen(true)}
+                className={`flex-1 sm:flex-initial flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition active:scale-95 h-9 shrink-0 cursor-pointer ${
+                  highlightInviteButton ? 'ring-4 ring-[var(--accent-terracotta)] ring-offset-2 animate-pulse' : ''
+                }`}
               >
-                <Plus className="h-3.5 w-3.5 text-[var(--accent-terracotta)] shrink-0" />
-                <span className="truncate">Create Pod</span>
+                <UserPlus className="h-3.5 w-3.5 shrink-0" />
+                <span>Invite Partner</span>
               </button>
-
-              {/* Join Room with Code */}
-              <button
-                type="button"
-                onClick={() => setIsJoinRoomOpen(true)}
-                className="flex items-center justify-center gap-1 sm:gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] hover:border-[var(--accent-terracotta)]/40 px-2 sm:px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition active:scale-95 h-9"
-              >
-                <KeyRound className="h-3.5 w-3.5 text-[var(--accent-terracotta)] shrink-0" />
-                <span className="truncate">Join Code</span>
-              </button>
-
-              {/* Broadcast Milestone Trigger - Warm Ochre Button */}
-              {onBroadcastAchievement && (
-                <button
-                  type="button"
-                  onClick={() => setIsShareModalOpen(true)}
-                  className="flex items-center justify-center gap-1 sm:gap-1.5 rounded-lg border border-[var(--accent-warm-ochre)]/40 bg-[var(--accent-warm-ochre)]/10 hover:bg-[var(--accent-warm-ochre)]/20 px-2 sm:px-3 py-1.5 text-xs font-bold text-[var(--accent-warm-ochre)] transition active:scale-95 h-9"
-                >
-                  <Sparkles className="h-3.5 w-3.5 shrink-0" />
-                  <span className="truncate">Broadcast</span>
-                </button>
-              )}
-            </div>
+            )}
           </div>
         </div>
 
@@ -454,10 +542,14 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
               <div className="relative w-full sm:w-64">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
                 <input
+                  id="search-circle-members-input"
+                  name="searchQuery"
                   type="text"
                   placeholder="Search members..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
+                  aria-label="Search members"
+                  autoComplete="off"
                   className="w-full pl-9 pr-3 py-1.5 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none min-h-[36px]"
                 />
               </div>
@@ -751,6 +843,38 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
           onSendInvite={onSendInvite}
           onGenerateMagicLink={onGenerateMagicLink}
         />
+      )}
+
+      {/* Interactive Onboarding Guide & Feature Tour */}
+      <CirclesOnboardingGuide
+        isOpen={isOnboardingGuideOpen}
+        onClose={() => setIsOnboardingGuideOpen(false)}
+        onComplete={handleCompleteTour}
+        setActiveTab={setActiveTab}
+      />
+
+      {/* Tour Completion Celebratory Toast */}
+      {showCelebrationToast && (
+        <div className="fixed bottom-6 right-6 z-50 flex items-center gap-3 rounded-2xl border border-emerald-500/30 bg-[var(--card-surface)]/95 backdrop-blur-md p-4 shadow-2xl text-[var(--text-primary)] animate-in slide-in-from-bottom-5 duration-300">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/15 text-emerald-500 shrink-0">
+            <Sparkles className="h-5 w-5 animate-pulse" />
+          </div>
+          <div className="pr-2">
+            <h4 className="font-heading font-bold text-xs text-[var(--text-primary)]">
+              You're all set to co-work! 🎉
+            </h4>
+            <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
+              Invite your first partner or start a quick room to begin.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={() => setShowCelebrationToast(false)}
+            className="text-[var(--text-muted)] hover:text-[var(--text-primary)] p-1 rounded-lg transition"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
       )}
     </div>
   );

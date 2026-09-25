@@ -6,7 +6,26 @@ import { INITIAL_TASKS } from '../lib/mockData';
 
 export function useTasks() {
   const { user, isDemo } = useAuth();
-  const [tasks, setTasks] = useState<Task[]>([]);
+  const userKey = user?.id || (isDemo ? 'demo' : 'guest');
+  const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
+
+  const [tasks, setTasks] = useState<Task[]>(() => {
+    if (isDemo || userKey === 'demo') {
+      const saved = sessionStorage.getItem('taktic_demo_tasks');
+      return saved ? JSON.parse(saved) : INITIAL_TASKS;
+    }
+    const saved = localStorage.getItem(`taktic_tasks_${userKey}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,9 +34,9 @@ export function useTasks() {
     setLoading(true);
     setError(null);
 
-    // Demo mode or unconfigured -> LocalStorage
+    // Demo mode or unconfigured -> LocalStorage/sessionStorage
     if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
-      const saved = localStorage.getItem('taktic_tasks');
+      const saved = sessionStorage.getItem('taktic_demo_tasks');
       setTasks(saved ? JSON.parse(saved) : INITIAL_TASKS);
       setLoading(false);
       return;
@@ -51,11 +70,16 @@ export function useTasks() {
       }));
 
       setTasks(mapped);
+      localStorage.setItem(`taktic_tasks_${user.id}`, JSON.stringify(mapped));
     } catch (err: any) {
       console.error('Error fetching tasks from Supabase:', err);
       setError(err.message || 'Failed to fetch tasks.');
-      const saved = localStorage.getItem('taktic_tasks');
-      setTasks(saved ? JSON.parse(saved) : INITIAL_TASKS);
+      const saved = localStorage.getItem(`taktic_tasks_${user?.id}`);
+      if (saved) {
+        try {
+          setTasks(JSON.parse(saved));
+        } catch {}
+      }
     } finally {
       setLoading(false);
     }
@@ -65,12 +89,14 @@ export function useTasks() {
     fetchTasks();
   }, [fetchTasks]);
 
-  // Always write-through cache to LocalStorage for offline support
+  // Always write-through cache with strict user isolation
   useEffect(() => {
-    if (tasks.length > 0) {
-      localStorage.setItem('taktic_tasks', JSON.stringify(tasks));
+    if (isDemo || userKey === 'demo') {
+      sessionStorage.setItem('taktic_demo_tasks', JSON.stringify(tasks));
+    } else if (user?.id) {
+      localStorage.setItem(`taktic_tasks_${user.id}`, JSON.stringify(tasks));
     }
-  }, [tasks]);
+  }, [tasks, isDemo, userKey, user]);
 
   // Helper to ensure clean date formatting for Postgres
   const formatDueDateForDb = (dateStr?: string) => {

@@ -259,7 +259,7 @@ Flow Quality Rate: ${qualityBreakdown[0]?.pct || 60}% High Flow`;
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto p-3 sm:p-6 animate-in fade-in duration-300">
+    <div className="space-y-6 animate-in fade-in duration-300">
       {/* Module Header with Time Horizon & Quick Export Dropdown */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
         <div>

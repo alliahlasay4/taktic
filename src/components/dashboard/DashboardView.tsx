@@ -167,18 +167,33 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </button>
             </div>
 
-            <div className="flex items-center gap-2 overflow-x-auto py-1">
-              {members.map((m) => (
-                <div key={m.id} className="relative group shrink-0" title={`${m.name}: ${m.statusText}`}>
-                  <img
-                    src={m.avatar}
-                    alt={m.name}
-                    className="h-9 w-9 rounded-xl object-cover ring-2 ring-emerald-500/50"
-                  />
-                  <span className="absolute -bottom-1 -right-1 flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-1 ring-[var(--card-surface)]" />
-                </div>
-              ))}
-            </div>
+            {members.length > 0 ? (
+              <div className="flex items-center gap-2 overflow-x-auto py-1">
+                {members.map((m) => (
+                  <div key={m.id} className="relative group shrink-0" title={`${m.name}: ${m.statusText}`}>
+                    <img
+                      src={m.avatar}
+                      alt={m.name}
+                      className="h-9 w-9 rounded-xl object-cover ring-2 ring-emerald-500/50"
+                    />
+                    <span className="absolute -bottom-1 -right-1 flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-1 ring-[var(--card-surface)]" />
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-[var(--border-subtle)] p-3 text-center">
+                <p className="text-[11px] text-[var(--text-secondary)]">
+                  No partners in your circle yet.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab('circles')}
+                  className="mt-1.5 text-xs font-semibold text-[var(--accent-terracotta)] hover:underline"
+                >
+                  Invite Friends & Co-Work &rarr;
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

@@ -97,10 +97,14 @@ export const CircleManagerModal: React.FC<CircleManagerModalProps> = ({
                   </label>
                   <form onSubmit={handleAddSubmit} className="flex items-center gap-2">
                     <input
+                      id="quick-add-partner-input"
+                      name="newPartnerName"
                       type="text"
                       placeholder="e.g. Elena Rostova..."
                       value={newMemberName}
                       onChange={(e) => setNewMemberName(e.target.value)}
+                      aria-label="Add partner by name"
+                      autoComplete="off"
                       className="flex-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-terracotta)] min-h-[38px]"
                     />
                     <button
@@ -150,10 +154,14 @@ export const CircleManagerModal: React.FC<CircleManagerModalProps> = ({
                   <div className="relative flex-1">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
                     <input
+                      id="search-roster-members-input"
+                      name="searchRosterQuery"
                       type="text"
                       placeholder="Search roster members..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      aria-label="Search roster members"
+                      autoComplete="off"
                       className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] min-h-[36px]"
                     />
                   </div>

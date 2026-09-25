@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Plus, 
   Repeat, 
@@ -30,6 +30,7 @@ import { TripleRings } from './TripleRings';
 import { HeatmapGrid } from './HeatmapGrid';
 import { MilestoneTrophyShelf } from './MilestoneTrophyShelf';
 import { IconRenderer } from '../common/IconRenderer';
+import { Pagination } from '../common/Pagination';
 
 interface HabitViewProps {
   habits: Habit[];
@@ -97,6 +98,10 @@ export const HabitView: React.FC<HabitViewProps> = ({
   const [newTimeOfDay, setNewTimeOfDay] = useState<'morning' | 'afternoon' | 'evening'>('morning');
   const [newTargetDays, setNewTargetDays] = useState<number>(7);
 
+  // Pagination states
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(8);
+
   const today = new Date().toISOString().split('T')[0];
   const habitsCompletedToday = habits.filter((h) => h.completedDates.includes(today)).length;
   const habitsPendingToday = habits.length - habitsCompletedToday;
@@ -128,6 +133,15 @@ export const HabitView: React.FC<HabitViewProps> = ({
     return true;
   });
 
+  // Reset pagination on filter or search changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [selectedCategory, selectedTimeOfDay, selectedStatus, searchQuery]);
+
+  const totalPages = Math.max(1, Math.ceil(filteredHabits.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedHabits = filteredHabits.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize);
+
   const isAnyFilterActive = selectedCategory !== 'all' || selectedTimeOfDay !== 'all' || selectedStatus !== 'all' || Boolean(searchQuery.trim());
 
   const handleResetFilters = () => {
@@ -135,6 +149,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
     setSelectedTimeOfDay('all');
     setSelectedStatus('all');
     setSearchQuery('');
+    setCurrentPage(1);
   };
 
   const handleToggleHabitWithConfetti = (id: string) => {
@@ -428,16 +443,29 @@ export const HabitView: React.FC<HabitViewProps> = ({
 
         {/* Habits List or Empty State */}
         {filteredHabits.length > 0 ? (
-          <div className="space-y-2.5 pt-2">
-            {filteredHabits.map((habit) => (
-              <HabitItem
-                key={habit.id}
-                habit={habit}
-                onToggleHabit={handleToggleHabitWithConfetti}
-                onDeleteHabit={onDeleteHabit}
-              />
-            ))}
-          </div>
+          <>
+            <div className="space-y-2.5 pt-2">
+              {paginatedHabits.map((habit) => (
+                <HabitItem
+                  key={habit.id}
+                  habit={habit}
+                  onToggleHabit={handleToggleHabitWithConfetti}
+                  onDeleteHabit={onDeleteHabit}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            <Pagination
+              currentPage={safeCurrentPage}
+              totalItems={filteredHabits.length}
+              pageSize={pageSize}
+              onPageChange={setCurrentPage}
+              onPageSizeChange={setPageSize}
+              pageSizeOptions={[6, 8, 12, 20]}
+              itemName="routines"
+            />
+          </>
         ) : (
           <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-main)]/40 p-6 space-y-2">
             <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] mb-1">

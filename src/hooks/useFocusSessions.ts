@@ -6,7 +6,26 @@ import { INITIAL_FOCUS_SESSIONS } from '../lib/mockData';
 
 export function useFocusSessions() {
   const { user, isDemo } = useAuth();
-  const [focusSessions, setFocusSessions] = useState<FocusSession[]>([]);
+  const userKey = user?.id || (isDemo ? 'demo' : 'guest');
+  const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
+
+  const [focusSessions, setFocusSessions] = useState<FocusSession[]>(() => {
+    if (isDemo || userKey === 'demo') {
+      const saved = sessionStorage.getItem('taktic_demo_focus_sessions');
+      return saved ? JSON.parse(saved) : INITIAL_FOCUS_SESSIONS;
+    }
+    const saved = localStorage.getItem(`taktic_focus_sessions_${userKey}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,9 +34,9 @@ export function useFocusSessions() {
     setLoading(true);
     setError(null);
 
-    // Demo mode or unconfigured -> LocalStorage
+    // Demo mode -> sessionStorage
     if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
-      const saved = localStorage.getItem('taktic_focus_sessions');
+      const saved = sessionStorage.getItem('taktic_demo_focus_sessions');
       setFocusSessions(saved ? JSON.parse(saved) : INITIAL_FOCUS_SESSIONS);
       setLoading(false);
       return;
@@ -43,11 +62,16 @@ export function useFocusSessions() {
       }));
 
       setFocusSessions(mapped);
+      localStorage.setItem(`taktic_focus_sessions_${user.id}`, JSON.stringify(mapped));
     } catch (err: any) {
       console.error('Error fetching focus sessions from Supabase:', err);
       setError(err.message || 'Failed to load focus sessions.');
-      const saved = localStorage.getItem('taktic_focus_sessions');
-      setFocusSessions(saved ? JSON.parse(saved) : INITIAL_FOCUS_SESSIONS);
+      const saved = localStorage.getItem(`taktic_focus_sessions_${user?.id}`);
+      if (saved) {
+        try {
+          setFocusSessions(JSON.parse(saved));
+        } catch {}
+      }
     } finally {
       setLoading(false);
     }
@@ -57,12 +81,14 @@ export function useFocusSessions() {
     fetchFocusSessions();
   }, [fetchFocusSessions]);
 
-  // Always persist write-through cache to LocalStorage for offline support
+  // Persist write-through cache with strict user isolation
   useEffect(() => {
-    if (focusSessions.length > 0) {
-      localStorage.setItem('taktic_focus_sessions', JSON.stringify(focusSessions));
+    if (isDemo || userKey === 'demo') {
+      sessionStorage.setItem('taktic_demo_focus_sessions', JSON.stringify(focusSessions));
+    } else if (user?.id) {
+      localStorage.setItem(`taktic_focus_sessions_${user.id}`, JSON.stringify(focusSessions));
     }
-  }, [focusSessions]);
+  }, [focusSessions, isDemo, userKey, user]);
 
   // Log a new completed Focus Session (Optimistic UI)
   const addFocusSession = async (

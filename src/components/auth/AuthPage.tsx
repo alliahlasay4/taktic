@@ -32,9 +32,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
   const [isSignUp, setIsSignUp] = useState(defaultSignUp);
   const [isResetPassword, setIsResetPassword] = useState(false);
 
+  const resetFormFields = () => {
+    setEmail('');
+    setPassword('');
+    setConfirmPassword('');
+    setFullName('');
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
+
   useEffect(() => {
     setIsSignUp(defaultSignUp);
     setIsResetPassword(false);
+    resetFormFields();
   }, [defaultSignUp]);
 
   const [email, setEmail] = useState('');
@@ -320,9 +330,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                 type="button"
                 onClick={() => {
                   setIsSignUp(false);
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
-                  setConfirmPassword('');
+                  resetFormFields();
                 }}
                 className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                   !isSignUp
@@ -338,9 +346,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                 type="button"
                 onClick={() => {
                   setIsSignUp(true);
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
-                  setConfirmPassword('');
+                  resetFormFields();
                 }}
                 className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                   isSignUp
@@ -370,7 +376,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
+          <form onSubmit={handleSubmit} autoComplete="off" className="space-y-2.5 sm:space-y-3">
             {/* Full Name Input (Sign Up only) */}
             {isSignUp && (
               <div className="space-y-1">
@@ -383,7 +389,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                     id="auth-full-name"
                     name="fullName"
                     type="text"
-                    autoComplete="name"
+                    autoComplete="off"
                     placeholder="Alex Rivera"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -405,7 +411,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                   id="auth-email-address"
                   name="email"
                   type="email"
-                  autoComplete="username email"
+                  autoComplete="off"
                   placeholder="username@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -427,7 +433,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                     id="auth-password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                    autoComplete="new-password"
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
@@ -500,9 +506,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                   type="button"
                   onClick={() => {
                     setIsResetPassword(true);
-                    setErrorMsg(null);
-                    setSuccessMsg(null);
-                    setConfirmPassword('');
+                    resetFormFields();
                   }}
                   className="text-xs font-semibold text-[#C06C4C] hover:underline cursor-pointer"
                 >
@@ -545,9 +549,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                 type="button"
                 onClick={() => {
                   setIsResetPassword(false);
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
-                  setConfirmPassword('');
+                  resetFormFields();
                 }}
                 className="text-xs font-bold text-[#C06C4C] hover:underline cursor-pointer"
               >
@@ -591,8 +593,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                       type="button"
                       onClick={() => {
                         setIsSignUp(false);
-                        setErrorMsg(null);
-                        setSuccessMsg(null);
+                        resetFormFields();
                       }}
                       className="font-bold text-[#C06C4C] hover:underline cursor-pointer ml-1"
                     >
@@ -606,8 +607,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                       type="button"
                       onClick={() => {
                         setIsSignUp(true);
-                        setErrorMsg(null);
-                        setSuccessMsg(null);
+                        resetFormFields();
                       }}
                       className="font-bold text-[#C06C4C] hover:underline cursor-pointer ml-1"
                     >

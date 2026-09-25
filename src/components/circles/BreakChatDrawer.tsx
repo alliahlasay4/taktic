@@ -151,10 +151,14 @@ export const BreakChatDrawer: React.FC<BreakChatDrawerProps> = ({
       {/* Message Input */}
       <form onSubmit={handleSend} className="pt-3 border-t border-[var(--border-subtle)] flex items-center gap-2">
         <input
+          id="break-chat-message-input"
+          name="chatMessage"
           type="text"
           placeholder={isBreakActive ? 'Share a break note...' : 'Chat active during break...'}
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
+          aria-label="Break chat message"
+          autoComplete="off"
           className="flex-1 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] py-2.5 px-3.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-terracotta)] transition shadow-2xs"
         />
         <button

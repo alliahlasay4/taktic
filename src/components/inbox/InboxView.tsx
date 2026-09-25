@@ -1,10 +1,11 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Plus, Search, Inbox, Tag as TagIcon, X, Calendar as CalendarIcon, Zap, RefreshCw, Sparkles, FolderArchive, SlidersHorizontal, RotateCcw, ChevronDown, Archive } from 'lucide-react';
 import { Task, PriorityLevel, TimeBlockSlot } from '../../types';
 import { TaskItem } from './TaskItem';
 import { FocusQueue } from './FocusQueue';
 import { InboxCalendarCard } from './InboxCalendarCard';
 import { TaskFormModal } from './TaskFormModal';
+import { Pagination } from '../common/Pagination';
 
 interface InboxViewProps {
   tasks: Task[];
@@ -47,6 +48,10 @@ export const InboxView: React.FC<InboxViewProps> = ({
   const [activeInboxTab, setActiveInboxTab] = useState<'active' | 'someday'>('active');
   const [sortMode, setSortMode] = useState<'recent' | 'quick_wins' | 'priority' | 'due_date'>('recent');
   const [quickAddTitle, setQuickAddTitle] = useState('');
+
+  // Pagination State
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
 
   // Filter out archived tasks for active view
   const activeInboxTasks = tasks.filter((t) => !t.archived);
@@ -114,6 +119,15 @@ export const InboxView: React.FC<InboxViewProps> = ({
     }
     return 0; // 'recent'
   });
+
+  // Reset pagination on filter, search, sort, or tab changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, selectedTag, selectedPriority, selectedCalendarDate, showCompleted, activeInboxTab, sortMode]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedTasks.length / pageSize));
+  const safeCurrentPage = Math.min(currentPage, totalPages);
+  const paginatedTasks = sortedTasks.slice((safeCurrentPage - 1) * pageSize, safeCurrentPage * pageSize);
 
   const handleQuickAddSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -593,19 +607,32 @@ export const InboxView: React.FC<InboxViewProps> = ({
                 </p>
               </div>
             ) : (
-              <div className="space-y-2.5">
-                {sortedTasks.map((task) => (
-                  <TaskItem
-                    key={task.id}
-                    task={task}
-                    onToggleComplete={onToggleComplete}
-                    onToggleTodayFocus={onToggleTodayFocus}
-                    onDeleteTask={onDeleteTask}
-                    onArchiveTask={onArchiveTask}
-                    onEditTask={handleStartEditTask}
-                  />
-                ))}
-              </div>
+              <>
+                <div className="space-y-2.5">
+                  {paginatedTasks.map((task) => (
+                    <TaskItem
+                      key={task.id}
+                      task={task}
+                      onToggleComplete={onToggleComplete}
+                      onToggleTodayFocus={onToggleTodayFocus}
+                      onDeleteTask={onDeleteTask}
+                      onArchiveTask={onArchiveTask}
+                      onEditTask={handleStartEditTask}
+                    />
+                  ))}
+                </div>
+
+                {/* Pagination Controls */}
+                <Pagination
+                  currentPage={safeCurrentPage}
+                  totalItems={sortedTasks.length}
+                  pageSize={pageSize}
+                  onPageChange={setCurrentPage}
+                  onPageSizeChange={setPageSize}
+                  pageSizeOptions={[5, 10, 20, 50]}
+                  itemName="tasks"
+                />
+              </>
             )}
           </div>
       </div>

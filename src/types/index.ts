@@ -81,6 +81,7 @@ export interface CircleFeedPost {
   timestamp: string;
   likes: number;
   userLiked?: boolean;
+  userReaction?: string | null;
 }
 
 export interface HeatmapDay {

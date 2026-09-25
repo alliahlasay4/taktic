@@ -192,7 +192,75 @@ CREATE POLICY "Users can delete own tasks"
   USING (auth.uid() = user_id);
 
 
--- 7. Create Circle Feed Posts Table
+-- 7. Create Circle Members Table (Social Network Roster)
+CREATE TABLE IF NOT EXISTS public.circle_members (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  member_name TEXT NOT NULL,
+  member_avatar TEXT,
+  status TEXT DEFAULT 'focusing' NOT NULL,
+  status_text TEXT,
+  closed_rings_count INT DEFAULT 0,
+  streak INT DEFAULT 1,
+  is_circle_partner BOOLEAN DEFAULT true,
+  is_muted BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
+  UNIQUE(user_id, member_name)
+);
+
+-- Enable RLS on Circle Members
+ALTER TABLE public.circle_members ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can select own circle members"
+  ON public.circle_members FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own circle members"
+  ON public.circle_members FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own circle members"
+  ON public.circle_members FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own circle members"
+  ON public.circle_members FOR DELETE
+  USING (auth.uid() = user_id);
+
+
+-- 8. Create Circle Invites Table
+CREATE TABLE IF NOT EXISTS public.circle_invites (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  email TEXT,
+  name TEXT,
+  status TEXT DEFAULT 'pending' NOT NULL,
+  invite_token TEXT UNIQUE NOT NULL,
+  invite_link TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+-- Enable RLS on Circle Invites
+ALTER TABLE public.circle_invites ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can select own circle invites"
+  ON public.circle_invites FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can insert own circle invites"
+  ON public.circle_invites FOR INSERT
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own circle invites"
+  ON public.circle_invites FOR UPDATE
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own circle invites"
+  ON public.circle_invites FOR DELETE
+  USING (auth.uid() = user_id);
+
+
+-- 9. Create Circle Feed Posts Table
 CREATE TABLE IF NOT EXISTS public.circle_posts (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
@@ -220,7 +288,7 @@ CREATE POLICY "Users can delete own circle posts"
   USING (auth.uid() = user_id);
 
 
--- 8. Create Post Likes Table
+-- 10. Create Post Likes Table
 CREATE TABLE IF NOT EXISTS public.post_likes (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   post_id UUID REFERENCES public.circle_posts(id) ON DELETE CASCADE NOT NULL,
@@ -245,10 +313,10 @@ CREATE POLICY "Users can delete own post likes"
   USING (auth.uid() = user_id);
 
 
--- 9. Create Focus Rooms Table (Private Focus Rooms & Permanent Focus Pods)
+-- 11. Create Focus Rooms Table (Private Focus Rooms & Permanent Focus Pods)
 CREATE TABLE IF NOT EXISTS public.focus_rooms (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  code VARCHAR(10) UNIQUE NOT NULL,
+  code VARCHAR(30) UNIQUE NOT NULL,
   name TEXT NOT NULL,
   creator_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   duration_minutes INT DEFAULT 25 NOT NULL,
@@ -256,6 +324,7 @@ CREATE TABLE IF NOT EXISTS public.focus_rooms (
   is_permanent BOOLEAN DEFAULT false NOT NULL,
   expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '30 days') NOT NULL,
   allowed_member_ids TEXT[] DEFAULT '{}',
+  allowed_member_names TEXT[] DEFAULT '{}',
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
@@ -279,17 +348,17 @@ CREATE POLICY "Room creator can delete focus rooms"
   USING (auth.uid() = creator_id);
 
 
--- 10. Create Room Members Table
+-- 12. Create Room Members Table (Live Presence)
 CREATE TABLE IF NOT EXISTS public.room_members (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  room_id UUID REFERENCES public.focus_rooms(id) ON DELETE CASCADE NOT NULL,
+  room_code VARCHAR(30) NOT NULL,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   user_name TEXT NOT NULL,
   user_avatar TEXT,
   current_goal TEXT,
   status TEXT DEFAULT 'focusing' NOT NULL,
   joined_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
-  UNIQUE(room_id, user_id)
+  UNIQUE(room_code, user_id)
 );
 
 -- Enable RLS on Room Members
@@ -312,12 +381,13 @@ CREATE POLICY "Users can leave room"
   USING (auth.uid() = user_id);
 
 
--- 11. Create Room Break Messages Table
+-- 13. Create Room Break Messages Table
 CREATE TABLE IF NOT EXISTS public.room_messages (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
-  room_id UUID REFERENCES public.focus_rooms(id) ON DELETE CASCADE NOT NULL,
+  room_code VARCHAR(30) NOT NULL,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
   user_name TEXT NOT NULL,
+  user_avatar TEXT,
   content TEXT NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );

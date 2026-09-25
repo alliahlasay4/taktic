@@ -6,7 +6,26 @@ import { INITIAL_HABITS } from '../lib/mockData';
 
 export function useHabits() {
   const { user, isDemo } = useAuth();
-  const [habits, setHabits] = useState<Habit[]>([]);
+  const userKey = user?.id || (isDemo ? 'demo' : 'guest');
+  const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
+
+  const [habits, setHabits] = useState<Habit[]>(() => {
+    if (isDemo || userKey === 'demo') {
+      const saved = sessionStorage.getItem('taktic_demo_habits');
+      return saved ? JSON.parse(saved) : INITIAL_HABITS;
+    }
+    const saved = localStorage.getItem(`taktic_habits_${userKey}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -15,9 +34,9 @@ export function useHabits() {
     setLoading(true);
     setError(null);
 
-    // Demo Mode or unconfigured fallback -> LocalStorage
+    // Demo Mode -> sessionStorage
     if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
-      const saved = localStorage.getItem('taktic_habits');
+      const saved = sessionStorage.getItem('taktic_demo_habits');
       setHabits(saved ? JSON.parse(saved) : INITIAL_HABITS);
       setLoading(false);
       return;
@@ -74,12 +93,16 @@ export function useHabits() {
       });
 
       setHabits(mapped);
+      localStorage.setItem(`taktic_habits_${user.id}`, JSON.stringify(mapped));
     } catch (err: any) {
       console.error('Error fetching habits from Supabase:', err);
       setError(err.message || 'Failed to fetch habits from database.');
-      // Fallback to local storage if DB fails
-      const saved = localStorage.getItem('taktic_habits');
-      setHabits(saved ? JSON.parse(saved) : INITIAL_HABITS);
+      const saved = localStorage.getItem(`taktic_habits_${user?.id}`);
+      if (saved) {
+        try {
+          setHabits(JSON.parse(saved));
+        } catch {}
+      }
     } finally {
       setLoading(false);
     }
@@ -89,12 +112,14 @@ export function useHabits() {
     fetchHabits();
   }, [fetchHabits]);
 
-  // Save to LocalStorage when in Demo mode
+  // Save to LocalStorage/sessionStorage with user isolation
   useEffect(() => {
-    if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
-      localStorage.setItem('taktic_habits', JSON.stringify(habits));
+    if (isDemo || userKey === 'demo') {
+      sessionStorage.setItem('taktic_demo_habits', JSON.stringify(habits));
+    } else if (user?.id) {
+      localStorage.setItem(`taktic_habits_${user.id}`, JSON.stringify(habits));
     }
-  }, [habits, isDemo, user]);
+  }, [habits, isDemo, userKey, user]);
 
   // Toggle Habit Completion (Optimistic UI)
   const toggleHabit = async (id: string) => {

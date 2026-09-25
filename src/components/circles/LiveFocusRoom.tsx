@@ -201,66 +201,97 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
     return (
       <div className="space-y-6">
         {/* Quick Launch & Instant Join Action Card */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs">
-          <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-            {/* Direct Code Join Form */}
-            <div className="flex-1 max-w-lg">
-              <div className="flex items-center gap-2 mb-1.5">
-                <KeyRound className="h-4 w-4 text-[var(--accent-terracotta)]" />
-                <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
-                  Join a Focus Room or Standing Pod
-                </h3>
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-4" data-tour="tour-quick-rooms">
+          {/* Card Top Title Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3.5 border-b border-[var(--border-subtle)]">
+            <div className="flex items-center gap-2.5">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] shrink-0">
+                <KeyRound className="h-4 w-4" />
               </div>
-              <p className="text-xs text-[var(--text-secondary)] mb-3">
-                Enter an invite code (e.g. <span className="font-mono font-semibold text-[var(--text-primary)]">TK-8492</span> or <span className="font-mono font-semibold text-[var(--text-primary)]">POD-102</span>) to jump right into a silent session.
-              </p>
+              <div>
+                <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
+                  Quick Co-Working & Instant Rooms
+                </h3>
+                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)]">
+                  Enter an invite code to join a session, or launch a new focus room for your circle.
+                </p>
+              </div>
+            </div>
+          </div>
 
+          {/* 2 Balanced Columns: Direct Join on Left, Create Space on Right */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+            {/* Left Block: Join Code Input Form */}
+            <div className="lg:col-span-7">
+              <label htmlFor="quick-join-room-code" className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+                Join with Room or Pod Code
+              </label>
               <form onSubmit={handleQuickJoinSubmit} className="flex items-center gap-2">
-                <input
-                  type="text"
-                  placeholder="Enter 6-digit room code..."
-                  value={quickCodeInput}
-                  onChange={(e) => setQuickCodeInput(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3.5 py-2 text-xs font-mono text-[var(--text-primary)] uppercase placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none min-h-[42px]"
-                />
+                <div className="relative flex-1">
+                  <input
+                    id="quick-join-room-code"
+                    name="quickRoomCode"
+                    type="text"
+                    placeholder="e.g. TK-8492 or POD-102"
+                    value={quickCodeInput}
+                    onChange={(e) => setQuickCodeInput(e.target.value)}
+                    aria-label="Enter 6-digit room code"
+                    autoComplete="off"
+                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3.5 py-2.5 text-xs font-mono text-[var(--text-primary)] uppercase placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none min-h-[42px]"
+                  />
+                </div>
                 <button
                   type="submit"
                   disabled={!quickCodeInput.trim()}
-                  className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2 text-xs font-bold text-white transition disabled:opacity-40 shrink-0 shadow-xs min-h-[42px] active:scale-95"
+                  className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2.5 text-xs font-bold text-white transition disabled:opacity-40 shrink-0 shadow-xs min-h-[42px] active:scale-95 cursor-pointer"
                 >
-                  <span>Join</span>
+                  <span>Join Room</span>
                   <ArrowRight className="h-3.5 w-3.5" />
                 </button>
               </form>
             </div>
 
-            {/* Quick Create Buttons */}
-            <div className="flex flex-wrap sm:flex-nowrap items-center gap-2.5 pt-4 lg:pt-0 border-t lg:border-t-0 border-[var(--border-subtle)]">
-              {onCreatePod && (
+            {/* Middle Divider (Desktop only) */}
+            <div className="hidden lg:flex lg:col-span-1 items-center justify-center">
+              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider bg-[var(--surface-sunken)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md">
+                OR
+              </span>
+            </div>
+
+            {/* Right Block: Create Pod & Quick Room */}
+            <div className="lg:col-span-4 flex flex-col justify-center">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+                Host a New Space
+              </span>
+              <div className="grid grid-cols-2 gap-2">
+                {onCreatePod && (
+                  <button
+                    type="button"
+                    onClick={() => setIsCreatePodOpen(true)}
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[var(--accent-terracotta)] hover:bg-[var(--accent-terracotta)] hover:text-white px-3 py-2.5 text-xs font-bold transition active:scale-95 min-h-[42px] cursor-pointer shadow-2xs"
+                    title="Create a 30-day recurring pod"
+                  >
+                    <Plus className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">Create Pod</span>
+                  </button>
+                )}
+
                 <button
                   type="button"
-                  onClick={() => setIsCreatePodOpen(true)}
-                  className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition active:scale-95 min-h-[42px]"
+                  onClick={() => setIsCreateOpen(true)}
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] hover:bg-[var(--card-hover)] hover:border-[var(--accent-warm-ochre)]/60 px-3 py-2.5 text-xs font-bold text-[var(--text-primary)] transition active:scale-95 min-h-[42px] cursor-pointer shadow-2xs"
+                  title="Start an instant sprint room"
                 >
-                  <Plus className="h-4 w-4" />
-                  <span>Create Standing Pod</span>
+                  <Zap className="h-3.5 w-3.5 text-[var(--accent-warm-ochre)] shrink-0" />
+                  <span className="truncate">Quick Room</span>
                 </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setIsCreateOpen(true)}
-                className="flex-1 sm:flex-initial flex items-center justify-center gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] hover:border-[var(--accent-terracotta)]/40 px-4 py-2.5 text-xs font-semibold text-[var(--text-primary)] transition active:scale-95 min-h-[42px]"
-              >
-                <Zap className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
-                <span>Quick Room</span>
-              </button>
+              </div>
             </div>
           </div>
         </div>
 
         {/* Standing Focus Pods Section */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-5">
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-5" data-tour="tour-standing-pods">
           {/* Section Header with Segmented Filter Pills */}
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--border-subtle)]">
             <div className="flex items-center gap-2.5">
@@ -362,28 +393,36 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
             </span>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            {members.slice(0, 4).map((member) => (
-              <div
-                key={member.id}
-                className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-main)]/60 border border-[var(--border-subtle)]"
-              >
-                <img
-                  src={member.avatar}
-                  alt={member.name}
-                  className="h-10 w-10 rounded-xl object-cover ring-1 ring-[var(--border-subtle)] shrink-0"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className="font-bold text-xs text-[var(--text-primary)] truncate">{member.name}</p>
-                  <p className="text-[10px] text-[var(--text-secondary)] truncate">{member.statusText || 'Focusing'}</p>
-                  <div className="flex items-center gap-1 mt-0.5 text-[10px] font-semibold text-[var(--accent-terracotta)]">
-                    <Flame className="h-3 w-3 fill-[var(--accent-terracotta)]" />
-                    <span>{member.streak}d Streak</span>
+          {members.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              {members.slice(0, 4).map((member) => (
+                <div
+                  key={member.id}
+                  className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-main)]/60 border border-[var(--border-subtle)]"
+                >
+                  <img
+                    src={member.avatar}
+                    alt={member.name}
+                    className="h-10 w-10 rounded-xl object-cover ring-1 ring-[var(--border-subtle)] shrink-0"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <p className="font-bold text-xs text-[var(--text-primary)] truncate">{member.name}</p>
+                    <p className="text-[10px] text-[var(--text-secondary)] truncate">{member.statusText || 'Focusing'}</p>
+                    <div className="flex items-center gap-1 mt-0.5 text-[10px] font-semibold text-[var(--accent-terracotta)]">
+                      <Flame className="h-3 w-3 fill-[var(--accent-terracotta)]" />
+                      <span>{member.streak}d Streak</span>
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          ) : (
+            <div className="rounded-xl border border-dashed border-[var(--border-subtle)] p-4 text-center">
+              <p className="text-xs text-[var(--text-secondary)]">
+                No circle partners added yet. Invite friends from the Roster tab to track live co-worker presence!
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Modals & Drawers */}
@@ -449,9 +488,12 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
             {isEditingName ? (
               <form onSubmit={handleSaveNameEdit} className="flex items-center gap-1.5">
                 <input
+                  id="edit-room-name-input"
+                  name="editedRoomName"
                   type="text"
                   value={editedName}
                   onChange={(e) => setEditedName(e.target.value)}
+                  aria-label="Room name"
                   className="rounded-lg border border-[var(--accent-terracotta)] bg-[var(--bg-main)] px-2.5 py-1 text-sm font-bold text-[var(--text-primary)] focus:outline-none"
                   autoFocus
                 />
@@ -710,9 +752,12 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
               {isEditingGoal ? (
                 <div className="flex items-center gap-1.5 mt-1">
                   <input
+                    id="edit-micro-goal-input"
+                    name="userMicroGoal"
                     type="text"
                     value={userMicroGoal}
                     onChange={(e) => setUserMicroGoal(e.target.value)}
+                    aria-label="Set micro-goal"
                     className="w-full rounded-lg bg-[var(--surface-sunken)] border border-[var(--accent-terracotta)] px-2 py-1 text-[11px] text-[var(--text-primary)] focus:outline-none"
                     placeholder="Set micro-goal..."
                     autoFocus

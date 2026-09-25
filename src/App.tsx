@@ -16,6 +16,7 @@ import { EndOfDaySummary } from './components/rewards/EndOfDaySummary';
 import { OnboardingModal } from './components/onboarding/OnboardingModal';
 
 import { ActiveTab } from './types';
+import { getTabFromPath, getPathFromTab } from './lib/routes';
 import { soundEngine } from './lib/audio';
 import { useHabits } from './hooks/useHabits';
 import { useFocusSessions } from './hooks/useFocusSessions';
@@ -44,8 +45,63 @@ function MainLayout() {
     localStorage.setItem('taktic_dark_mode', String(darkMode));
   }, [darkMode]);
 
-  // Tab State
-  const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
+  // Tab State initialized from URL route
+  const [activeTab, setActiveTabState] = useState<ActiveTab>(() => {
+    if (typeof window === 'undefined') return 'dashboard';
+    return getTabFromPath(window.location.pathname);
+  });
+
+  const setActiveTab = React.useCallback((tab: ActiveTab, replace = false) => {
+    setActiveTabState(tab);
+    if (typeof window !== 'undefined') {
+      const targetPath = getPathFromTab(tab);
+      const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+      if (currentPath !== targetPath) {
+        if (replace) {
+          window.history.replaceState(null, '', targetPath + window.location.search);
+        } else {
+          window.history.pushState(null, '', targetPath + window.location.search);
+        }
+      }
+    }
+  }, []);
+
+  // Listen to browser Back/Forward (popstate)
+  useEffect(() => {
+    const handlePopState = () => {
+      const tab = getTabFromPath(window.location.pathname);
+      setActiveTabState(tab);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  // Sync initial canonical URL path (e.g., '/' or legacy '/dashboard' to '/focushub')
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname.toLowerCase().replace(/\/+$/, '') || '/';
+      const canonicalPath = getPathFromTab(activeTab);
+      if (currentPath === '/' || currentPath !== canonicalPath) {
+        window.history.replaceState(null, '', canonicalPath + window.location.search);
+      }
+    }
+  }, [activeTab]);
+
+  // Dynamic document title based on current tab
+  useEffect(() => {
+    const TITLES: Record<ActiveTab, string> = {
+      dashboard: 'Focus Hub | Taktic',
+      inbox: 'Inbox & Planning | Taktic',
+      focus: 'Deep Focus Mode | Taktic',
+      habits: 'Habit Rings | Taktic',
+      circles: 'Social Circles | Taktic',
+      analytics: 'Insights & Recap | Taktic',
+      archive: 'Archive & History | Taktic',
+      profile: 'My Profile | Taktic',
+    };
+    document.title = TITLES[activeTab] || 'Taktic';
+  }, [activeTab]);
 
   // Habits State from Custom Hook (Supabase + RLS + Demo mode)
   const { habits, overallStreak, loading: habitsLoading, error: habitsError, addHabit, toggleHabit, deleteHabit } = useHabits();

@@ -223,10 +223,14 @@ export const CreatePodModal: React.FC<CreatePodModalProps> = ({
                   <div className="relative mb-2">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
                     <input
+                      id="search-pod-partners-input"
+                      name="searchPartners"
                       type="text"
                       placeholder="Search circle partners..."
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
+                      aria-label="Search circle partners"
+                      autoComplete="off"
                       className="w-full pl-8 pr-3 py-1.5 text-xs rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)]"
                     />
                   </div>

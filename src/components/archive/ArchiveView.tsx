@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Archive,
   Search,
@@ -19,6 +19,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { Task, PriorityLevel, QuickNote, NoteColor } from '../../types';
+import { Pagination } from '../common/Pagination';
 
 interface ArchiveViewProps {
   tasks: Task[];
@@ -107,6 +108,12 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [confirmBatchDelete, setConfirmBatchDelete] = useState(false);
   const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
+
+  // Pagination states
+  const [tasksPage, setTasksPage] = useState<number>(1);
+  const [tasksPageSize, setTasksPageSize] = useState<number>(10);
+  const [notesPage, setNotesPage] = useState<number>(1);
+  const [notesPageSize, setNotesPageSize] = useState<number>(10);
 
   // Filter archived items
   const archivedTasks = useMemo(() => {
@@ -220,6 +227,22 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
     });
   }, [archivedNotes, searchQuery, selectedNoteColor, timeHorizon]);
 
+  // Reset pagination on filter or search changes
+  useEffect(() => {
+    setTasksPage(1);
+  }, [searchQuery, selectedPriority, selectedTag, timeHorizon]);
+
+  useEffect(() => {
+    setNotesPage(1);
+  }, [searchQuery, selectedNoteColor, timeHorizon]);
+
+  // Pagination calculations for Tasks
+  const tasksTotalPages = Math.max(1, Math.ceil(filteredTasks.length / tasksPageSize));
+  const tasksSafePage = Math.min(tasksPage, tasksTotalPages);
+  const paginatedTasks = useMemo(() => {
+    return filteredTasks.slice((tasksSafePage - 1) * tasksPageSize, tasksSafePage * tasksPageSize);
+  }, [filteredTasks, tasksSafePage, tasksPageSize]);
+
   // Group tasks by date categories
   const groupedTasks = useMemo(() => {
     const now = new Date();
@@ -242,7 +265,7 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
       older: [],
     };
 
-    filteredTasks.forEach((task) => {
+    paginatedTasks.forEach((task) => {
       const dateStr = task.archivedAt || task.completedAt || task.dueDate;
       if (!dateStr) {
         groups.older.push(task);
@@ -272,7 +295,14 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
       { id: 'earlierThisMonth', title: 'Earlier This Month', items: groups.earlierThisMonth },
       { id: 'older', title: 'Older Records', items: groups.older },
     ].filter((g) => g.items.length > 0);
-  }, [filteredTasks]);
+  }, [paginatedTasks]);
+
+  // Pagination calculations for Notes
+  const notesTotalPages = Math.max(1, Math.ceil(filteredNotes.length / notesPageSize));
+  const notesSafePage = Math.min(notesPage, notesTotalPages);
+  const paginatedNotes = useMemo(() => {
+    return filteredNotes.slice((notesSafePage - 1) * notesPageSize, notesSafePage * notesPageSize);
+  }, [filteredNotes, notesSafePage, notesPageSize]);
 
   // Group notes by date categories
   const groupedNotes = useMemo(() => {
@@ -296,7 +326,7 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
       older: [],
     };
 
-    filteredNotes.forEach((note) => {
+    paginatedNotes.forEach((note) => {
       const dateStr = note.archivedAt || note.updatedAt || note.createdAt;
       if (!dateStr) {
         groups.older.push(note);
@@ -326,23 +356,23 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
       { id: 'earlierThisMonth', title: 'Earlier This Month', items: groups.earlierThisMonth },
       { id: 'older', title: 'Older Records', items: groups.older },
     ].filter((g) => g.items.length > 0);
-  }, [filteredNotes]);
+  }, [paginatedNotes]);
 
   // Active selected task for inspector
   const activeTask = useMemo(() => {
-    if (!selectedTaskId && filteredTasks.length > 0) {
-      return filteredTasks[0];
+    if (!selectedTaskId && paginatedTasks.length > 0) {
+      return paginatedTasks[0];
     }
-    return filteredTasks.find((t) => t.id === selectedTaskId) || null;
-  }, [selectedTaskId, filteredTasks]);
+    return paginatedTasks.find((t) => t.id === selectedTaskId) || paginatedTasks[0] || null;
+  }, [selectedTaskId, paginatedTasks]);
 
   // Active selected note for inspector
   const activeNote = useMemo(() => {
-    if (!selectedNoteId && filteredNotes.length > 0) {
-      return filteredNotes[0];
+    if (!selectedNoteId && paginatedNotes.length > 0) {
+      return paginatedNotes[0];
     }
-    return filteredNotes.find((n) => n.id === selectedNoteId) || null;
-  }, [selectedNoteId, filteredNotes]);
+    return paginatedNotes.find((n) => n.id === selectedNoteId) || paginatedNotes[0] || null;
+  }, [selectedNoteId, paginatedNotes]);
 
   // Multi-Select for Tasks
   const handleToggleSelectTaskId = (id: string, e: React.MouseEvent) => {
@@ -471,7 +501,7 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
   }, [archivedTasks]);
 
   return (
-    <div className="flex flex-col h-full w-full max-w-7xl mx-auto space-y-6 pb-20">
+    <div className="flex flex-col h-full w-full space-y-6 pb-20">
       {/* Top Header & Metrics Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-6">
         <div>
@@ -910,6 +940,17 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
                     </div>
                   </div>
                 ))}
+
+                {/* Tasks Pagination Controls */}
+                <Pagination
+                  currentPage={tasksSafePage}
+                  totalItems={filteredTasks.length}
+                  pageSize={tasksPageSize}
+                  onPageChange={setTasksPage}
+                  onPageSizeChange={setTasksPageSize}
+                  pageSizeOptions={[5, 10, 20, 50]}
+                  itemName="archived tasks"
+                />
               </div>
 
               {/* Right Pane: Task Inspector & Detail View (5 cols) */}
@@ -1290,6 +1331,17 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
                     </div>
                   </div>
                 ))}
+
+                {/* Notes Pagination Controls */}
+                <Pagination
+                  currentPage={notesSafePage}
+                  totalItems={filteredNotes.length}
+                  pageSize={notesPageSize}
+                  onPageChange={setNotesPage}
+                  onPageSizeChange={setNotesPageSize}
+                  pageSizeOptions={[5, 10, 20, 50]}
+                  itemName="archived notes"
+                />
               </div>
 
               {/* Right Pane: Note Inspector & Detail View (5 cols) */}
