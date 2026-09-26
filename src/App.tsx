@@ -324,14 +324,15 @@ function MainLayout() {
                 members={members}
                 activeSoundscape={activeSoundscape}
                 setActiveSoundscape={setActiveSoundscape}
-                onQuickAddTask={(title) =>
+                onQuickAddTask={(taskData) =>
                   handleAddTask({
-                    title,
-                    priority: 'medium',
-                    tags: ['Quick Capture'],
-                    isTodayFocus: true,
-                    timeBlock: 'morning',
-                    estimatedMinutes: 25,
+                    title: taskData.title,
+                    priority: taskData.priority || 'medium',
+                    tags: taskData.tags || ['Quick Capture'],
+                    dueDate: taskData.dueDate,
+                    isTodayFocus: taskData.isTodayFocus ?? true,
+                    timeBlock: taskData.timeBlock || 'morning',
+                    estimatedMinutes: taskData.estimatedMinutes || 25,
                   })
                 }
                 onFocusComplete={handleFocusComplete}

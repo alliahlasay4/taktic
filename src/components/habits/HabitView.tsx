@@ -31,6 +31,7 @@ import { HeatmapGrid } from './HeatmapGrid';
 import { MilestoneTrophyShelf } from './MilestoneTrophyShelf';
 import { IconRenderer } from '../common/IconRenderer';
 import { Pagination } from '../common/Pagination';
+import { soundEngine } from '../../lib/audio';
 
 interface HabitViewProps {
   habits: Habit[];
@@ -157,6 +158,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
     if (habitToToggle) {
       const isCurrentlyDone = habitToToggle.completedDates.includes(today);
       if (!isCurrentlyDone && habitsCompletedToday + 1 === habits.length && habits.length > 0) {
+        soundEngine.playCelebrationSound();
         confetti({
           particleCount: 80,
           spread: 70,

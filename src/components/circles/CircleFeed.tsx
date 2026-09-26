@@ -82,14 +82,14 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
 
   return (
     <div className="space-y-6" data-tour="tour-feed-tab">
-      {/* Feed Control Card */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-5">
+      {/* Feed Controls Header */}
+      <div className="space-y-4">
         {/* Header & Quick Action Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-[var(--border-subtle)]">
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
-                Social Activity & Milestone Feed
+              <h2 className="font-heading font-bold text-sm sm:text-base text-[var(--text-primary)]">
+                Milestone Feed & Social Activity
               </h2>
               <span className="flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-botanical-sage)]">
                 <ShieldCheck className="h-3 w-3" /> Privacy Mask Active
@@ -104,7 +104,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
             <button
               type="button"
               onClick={() => setIsManagerOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-3.5 py-2 text-xs font-semibold text-[var(--text-primary)] transition active:scale-95 min-h-[38px] shadow-xs"
+              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] hover:bg-[var(--card-hover)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition active:scale-95 shadow-2xs"
               title="Manage Circle Members & Mute Controls"
             >
               <Settings className="h-3.5 w-3.5 text-[var(--text-muted)]" />
@@ -115,9 +115,9 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
               <button
                 type="button"
                 onClick={() => setIsShareOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2 text-xs font-bold text-white shadow-xs transition active:scale-95 min-h-[38px] shrink-0"
+                className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition active:scale-95 shrink-0"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5" />
                 <span>Broadcast</span>
               </button>
             )}

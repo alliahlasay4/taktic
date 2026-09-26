@@ -34,9 +34,9 @@ export function useQuickNotes() {
     const curStorageKey = `taktic_quick_notes_${currentKey}`;
     const curSeedKey = `taktic_scratchpad_seeded_${currentKey}`;
 
-    // Demo or offline mode -> LocalStorage
-    if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
-      const saved = localStorage.getItem(curStorageKey);
+    // Demo mode -> ephemeral sessionStorage
+    if (isDemo || userKey === 'demo' || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
+      const saved = sessionStorage.getItem('taktic_demo_quick_notes');
       if (saved) {
         try {
           setNotes(JSON.parse(saved));
@@ -44,13 +44,8 @@ export function useQuickNotes() {
           setNotes(INITIAL_QUICK_NOTES);
         }
       } else {
-        const hasSeeded = localStorage.getItem(curSeedKey);
-        if (!hasSeeded) {
-          setNotes(INITIAL_QUICK_NOTES);
-          localStorage.setItem(curSeedKey, 'true');
-        } else {
-          setNotes([]);
-        }
+        setNotes(INITIAL_QUICK_NOTES);
+        sessionStorage.setItem('taktic_demo_quick_notes', JSON.stringify(INITIAL_QUICK_NOTES));
       }
       setLoading(false);
       return;
@@ -124,10 +119,14 @@ export function useQuickNotes() {
     fetchNotes();
   }, [fetchNotes]);
 
-  // Write-through cache to LocalStorage scoped per user
+  // Write-through cache with strict demo isolation
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(notes));
-  }, [notes, storageKey]);
+    if (isDemo || userKey === 'demo' || user?.id === 'demo-user-123') {
+      sessionStorage.setItem('taktic_demo_quick_notes', JSON.stringify(notes));
+    } else if (user?.id) {
+      localStorage.setItem(storageKey, JSON.stringify(notes));
+    }
+  }, [notes, storageKey, isDemo, userKey, user]);
 
   // Add Note
   const addNote = async (newNoteData: {
@@ -216,8 +215,6 @@ export function useQuickNotes() {
     const nowIso = new Date().toISOString();
     const updated = notes.map((n) => (n.id === id ? { ...n, archived: true, archivedAt: nowIso } : n));
     setNotes(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    localStorage.setItem(seedKey, 'true');
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {
@@ -256,7 +253,6 @@ export function useQuickNotes() {
     const nowIso = new Date().toISOString();
     const updated = notes.map((n) => (n.id === id ? { ...n, archived: false, archivedAt: undefined } : n));
     setNotes(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {
@@ -277,7 +273,6 @@ export function useQuickNotes() {
     const nowIso = new Date().toISOString();
     const updated = notes.map((n) => (ids.includes(n.id) ? { ...n, archived: false, archivedAt: undefined } : n));
     setNotes(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {
@@ -296,8 +291,6 @@ export function useQuickNotes() {
   const deleteNote = async (id: string) => {
     const updated = notes.filter((n) => n.id !== id);
     setNotes(updated);
-    localStorage.setItem(storageKey, JSON.stringify(updated));
-    localStorage.setItem(seedKey, 'true');
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {

@@ -152,9 +152,9 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   const activePodsCount = focusPods.filter((p) => (p.activeMembersCount || 0) > 0).length;
 
   return (
-    <div className="space-y-6">
+    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-xs transition-colors duration-300 overflow-hidden">
       {/* Top KPI Header Banner */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-6 shadow-xs">
+      <div className="p-4 sm:p-6 pb-4 sm:pb-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5">
           {/* Title & Brief Description */}
           <div className="flex items-start sm:items-center gap-3 sm:gap-3.5">
@@ -369,66 +369,69 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
         </div>
       </div>
 
-      {/* Segmented Navigation Tabs - Terracotta Selected State */}
-      <div className="flex items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] shadow-xs overflow-x-auto scrollbar-none">
-        {[
-          {
-            id: 'pods' as const,
-            label: 'Focus Pods',
-            fullLabel: 'Co-Working & Focus Pods',
-            icon: Users,
-            badge: activePodsCount > 0 ? `${activePodsCount} Active` : undefined,
-          },
-          {
-            id: 'feed' as const,
-            label: 'Milestones',
-            fullLabel: 'Milestone Feed & Activity',
-            icon: Sparkles,
-            badge: feedPosts.length > 0 ? `${feedPosts.length}` : undefined,
-          },
-          {
-            id: 'network' as const,
-            label: 'Roster',
-            fullLabel: 'Accountability Network',
-            icon: ShieldCheck,
-            badge: `${partnerMembers.length}`,
-          },
-        ].map((tab) => {
-          const TabIcon = tab.icon;
-          const isSelected = activeTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 px-2.5 sm:px-4 rounded-xl text-xs font-semibold transition-all min-h-[38px] sm:min-h-[42px] shrink-0 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-terracotta)] ${
-                isSelected
-                  ? 'bg-[var(--accent-terracotta)] text-white shadow-xs'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
-              }`}
-            >
-              <TabIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" strokeWidth={1.5} aria-hidden="true" />
-              <span className="hidden sm:inline">{tab.fullLabel}</span>
-              <span className="sm:hidden">{tab.label}</span>
-              {tab.badge && (
-                <span
-                  className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold ${
-                    isSelected
-                      ? 'bg-white/20 text-white'
-                      : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'
-                  }`}
-                >
-                  {tab.badge}
-                </span>
-              )}
-            </button>
-          );
-        })}
+      {/* Segmented Navigation Tabs - Seamlessly Connected */}
+      <div className="px-4 sm:px-6 py-2.5 sm:py-3 bg-[var(--bg-main)]/50 border-t border-b border-[var(--border-subtle)]">
+        <div className="flex items-center gap-1 sm:gap-1.5 p-1 sm:p-1.5 rounded-xl bg-[var(--card-surface)] border border-[var(--border-subtle)] shadow-2xs overflow-x-auto scrollbar-none">
+          {[
+            {
+              id: 'pods' as const,
+              label: 'Focus Pods',
+              fullLabel: 'Co-Working & Focus Pods',
+              icon: Users,
+              badge: activePodsCount > 0 ? `${activePodsCount} Active` : undefined,
+            },
+            {
+              id: 'feed' as const,
+              label: 'Milestones',
+              fullLabel: 'Milestone Feed & Activity',
+              icon: Sparkles,
+              badge: feedPosts.length > 0 ? `${feedPosts.length}` : undefined,
+            },
+            {
+              id: 'network' as const,
+              label: 'Roster',
+              fullLabel: 'Accountability Network',
+              icon: ShieldCheck,
+              badge: `${partnerMembers.length}`,
+            },
+          ].map((tab) => {
+            const TabIcon = tab.icon;
+            const isSelected = activeTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex-1 flex items-center justify-center gap-1.5 sm:gap-2 py-2 sm:py-2.5 px-2.5 sm:px-4 rounded-xl text-xs font-semibold transition-all min-h-[38px] sm:min-h-[42px] shrink-0 whitespace-nowrap focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent-terracotta)] ${
+                  isSelected
+                    ? 'bg-[var(--accent-terracotta)] text-white shadow-xs'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+                }`}
+              >
+                <TabIcon className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+                <span className="hidden sm:inline">{tab.fullLabel}</span>
+                <span className="sm:hidden">{tab.label}</span>
+                {tab.badge && (
+                  <span
+                    className={`rounded-full px-1.5 sm:px-2 py-0.5 text-[9px] sm:text-[10px] font-bold ${
+                      isSelected
+                        ? 'bg-white/20 text-white'
+                        : 'bg-[var(--surface-sunken)] text-[var(--text-secondary)] border border-[var(--border-subtle)]'
+                    }`}
+                  >
+                    {tab.badge}
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
       </div>
 
-      {/* Main Tab Content */}
-      {activeTab === 'pods' && (
-        <div className="animate-in fade-in duration-200">
+      {/* Main Tab Content - Directly Connected Inside Whole Card */}
+      <div className="p-4 sm:p-6">
+        {activeTab === 'pods' && (
+          <div className="animate-in fade-in duration-200">
           <LiveFocusRoom
             members={members}
             userStreak={userStreak}
@@ -471,12 +474,12 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
 
       {activeTab === 'network' && (
         <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Accountability Network Header & Controls Card */}
-          <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-5">
-            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
+          {/* Accountability Network Header & Controls */}
+          <div className="space-y-4">
+            <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3.5 border-b border-[var(--border-subtle)]">
               <div>
                 <div className="flex items-center gap-2 flex-wrap">
-                  <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
+                  <h2 className="font-heading font-bold text-sm sm:text-base text-[var(--text-primary)]">
                     Accountability Network & Circle Roster
                   </h2>
                   <span className="rounded-full bg-[var(--accent-warm-ochre)]/15 border border-[var(--accent-warm-ochre)]/30 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-warm-ochre)]">
@@ -494,7 +497,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsInviteModalOpen(true)}
-                    className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2.5 text-xs font-bold text-white shadow-xs transition active:scale-95 min-h-[40px]"
+                    className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-3.5 py-2 text-xs font-bold text-white shadow-2xs transition active:scale-95 min-h-[36px]"
                   >
                     <UserPlus className="h-4 w-4" />
                     <span>Invite Partner</span>
@@ -504,7 +507,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
             </div>
 
             {/* Privacy Shield Banner */}
-            <div className="rounded-xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--accent-botanical-sage)]/10 p-3.5 flex items-start gap-3">
+            <div className="rounded-xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--accent-botanical-sage)]/10 p-3 flex items-start gap-2.5">
               <Lock className="h-4 w-4 text-[var(--accent-botanical-sage)] shrink-0 mt-0.5" />
               <div className="text-xs text-[var(--text-primary)] leading-relaxed">
                 <span className="font-bold text-[var(--accent-botanical-sage)]">Controlled Sharing: </span>
@@ -810,6 +813,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
           })()}
         </div>
       )}
+      </div>
 
       {/* Global Modals for Quick Header Actions */}
       {createFocusPod && (

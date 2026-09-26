@@ -16,7 +16,7 @@ const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
 ];
 
-const SOUNDSCAPE_OPTIONS = ['Gentle Rain', 'Ocean Waves', 'Lo-Fi Autumn Beats', 'Coffee Shop Ambience'];
+const SOUNDSCAPE_OPTIONS = ['Gentle Rain', 'Ocean Waves', 'Warm Chords', 'Coffee Shop Ambience'];
 
 const TIMEZONE_OPTIONS = [
   'GMT+8 (Asia/Manila)',

@@ -47,6 +47,16 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
     resetFormFields();
   }, [defaultSignUp]);
 
+  useEffect(() => {
+    if (isResetPassword) {
+      document.title = 'Reset Password | Taktic';
+    } else if (isSignUp) {
+      document.title = 'Create Account | Taktic';
+    } else {
+      document.title = 'Sign In | Taktic';
+    }
+  }, [isSignUp, isResetPassword]);
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -376,7 +386,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
           )}
 
           {/* Form */}
-          <form onSubmit={handleSubmit} autoComplete="off" className="space-y-2.5 sm:space-y-3">
+          <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
             {/* Full Name Input (Sign Up only) */}
             {isSignUp && (
               <div className="space-y-1">
@@ -389,7 +399,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                     id="auth-full-name"
                     name="fullName"
                     type="text"
-                    autoComplete="off"
+                    autoComplete="name"
                     placeholder="Alex Rivera"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
@@ -411,7 +421,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                   id="auth-email-address"
                   name="email"
                   type="email"
-                  autoComplete="off"
+                  autoComplete="username email"
                   placeholder="username@gmail.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -433,7 +443,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                     id="auth-password"
                     name="password"
                     type={showPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
+                    autoComplete={isSignUp ? 'new-password' : 'current-password'}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}

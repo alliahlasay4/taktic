@@ -58,6 +58,34 @@ const DEMO_USER: DemoUser = {
   },
 };
 
+export const clearDemoData = () => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    // 1. Clear all session storage (where temporary demo state lives)
+    sessionStorage.clear();
+
+    // 2. Clear any lingering demo-related localStorage items while preserving real user keys
+    const demoKeysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (
+        key &&
+        (key.includes('demo') ||
+          key.includes('demo-user-123') ||
+          key.endsWith('_demo') ||
+          key.startsWith('taktic_demo_') ||
+          key === 'taktic_demo_mode')
+      ) {
+        demoKeysToRemove.push(key);
+      }
+    }
+    demoKeysToRemove.forEach((key) => localStorage.removeItem(key));
+  } catch (err) {
+    console.error('Error clearing demo data:', err);
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | DemoUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -67,6 +95,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState<boolean>(true);
 
   const [profile, setProfile] = useState<UserProfile>(() => {
+    if (localStorage.getItem('taktic_demo_mode') === 'true') {
+      const demoSaved = sessionStorage.getItem('taktic_demo_profile');
+      if (demoSaved) {
+        try {
+          return { ...DEFAULT_PROFILE, ...JSON.parse(demoSaved) };
+        } catch {}
+      }
+      return DEFAULT_PROFILE;
+    }
     const saved = localStorage.getItem('taktic_user_profile');
     if (saved) {
       try {
@@ -87,7 +124,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           ? { ...prev.privacySettings, ...updates.privacySettings }
           : prev.privacySettings,
       };
-      if (user?.id) {
+
+      if (isDemo || user?.id === 'demo-user-123') {
+        sessionStorage.setItem('taktic_demo_profile', JSON.stringify(updated));
+      } else if (user?.id) {
         localStorage.setItem(`taktic_user_profile_${user.id}`, JSON.stringify(updated));
       } else {
         localStorage.setItem('taktic_user_profile', JSON.stringify(updated));
@@ -212,20 +252,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const loginAsDemo = () => {
+    clearDemoData();
     setIsDemo(true);
     localStorage.setItem('taktic_demo_mode', 'true');
     setUser(DEMO_USER);
+    setProfile(DEFAULT_PROFILE);
   };
 
   const signOut = async () => {
     if (isDemo) {
+      clearDemoData();
       setIsDemo(false);
       localStorage.removeItem('taktic_demo_mode');
       setUser(null);
       setSession(null);
       setProfile(DEFAULT_PROFILE);
       if (typeof window !== 'undefined') {
-        window.history.replaceState(null, '', window.location.pathname);
+        window.history.replaceState(null, '', '/landing');
         window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       return;
@@ -239,7 +282,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(DEFAULT_PROFILE);
     localStorage.removeItem('taktic_user_profile');
     if (typeof window !== 'undefined') {
-      window.history.replaceState(null, '', window.location.pathname);
+      window.history.replaceState(null, '', '/landing');
       window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   };

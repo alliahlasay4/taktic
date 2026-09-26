@@ -29,6 +29,10 @@ export function useInAppNotifications() {
   }, [userKey]);
 
   const [notifications, setNotifications] = useState<InAppNotification[]>(() => {
+    if (isDemo || userKey === 'demo') {
+      const saved = sessionStorage.getItem('taktic_demo_in_app_notifications');
+      return saved ? JSON.parse(saved) : createInitialNotifications();
+    }
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
@@ -37,17 +41,7 @@ export function useInAppNotifications() {
         console.error(e);
       }
     }
-    return [
-      {
-        id: `welcome-${userKey}`,
-        title: 'Welcome to Taktic!',
-        message: 'Your tactical productivity workspace is ready. Set your daily goals and habits.',
-        type: 'system',
-        read: false,
-        createdAt: new Date().toISOString(),
-        actionTab: 'dashboard',
-      },
-    ];
+    return createInitialNotifications();
   });
 
   const [toasts, setToasts] = useState<ToastItem[]>([]);
@@ -57,6 +51,12 @@ export function useInAppNotifications() {
   useEffect(() => {
     if (isInitialMount.current) {
       isInitialMount.current = false;
+      return;
+    }
+
+    if (isDemo || userKey === 'demo') {
+      const saved = sessionStorage.getItem('taktic_demo_in_app_notifications');
+      setNotifications(saved ? JSON.parse(saved) : createInitialNotifications());
       return;
     }
 
@@ -70,12 +70,16 @@ export function useInAppNotifications() {
       }
     }
     setNotifications(createInitialNotifications());
-  }, [storageKey, createInitialNotifications]);
+  }, [storageKey, isDemo, userKey, createInitialNotifications]);
 
   // Persist notifications for the current user
   useEffect(() => {
-    localStorage.setItem(storageKey, JSON.stringify(notifications));
-  }, [notifications, storageKey]);
+    if (isDemo || userKey === 'demo') {
+      sessionStorage.setItem('taktic_demo_in_app_notifications', JSON.stringify(notifications));
+    } else {
+      localStorage.setItem(storageKey, JSON.stringify(notifications));
+    }
+  }, [notifications, storageKey, isDemo, userKey]);
 
   const notify = useCallback(
     (title: string, message: string, type: InAppNotification['type'] = 'system', actionTab?: ActiveTab) => {

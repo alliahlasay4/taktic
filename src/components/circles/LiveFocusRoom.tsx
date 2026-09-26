@@ -200,30 +200,13 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
   if (!activeRoomCode) {
     return (
       <div className="space-y-6">
-        {/* Quick Launch & Instant Join Action Card */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-4" data-tour="tour-quick-rooms">
-          {/* Card Top Title Header */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3.5 border-b border-[var(--border-subtle)]">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] shrink-0">
-                <KeyRound className="h-4 w-4" />
-              </div>
-              <div>
-                <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
-                  Quick Co-Working & Instant Rooms
-                </h3>
-                <p className="text-[11px] sm:text-xs text-[var(--text-secondary)]">
-                  Enter an invite code to join a session, or launch a new focus room for your circle.
-                </p>
-              </div>
-            </div>
-          </div>
-
+        {/* Quick Launch & Instant Join Action Bar */}
+        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/50 p-3.5 sm:p-4 space-y-3" data-tour="tour-quick-rooms">
           {/* 2 Balanced Columns: Direct Join on Left, Create Space on Right */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-center">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 items-center">
             {/* Left Block: Join Code Input Form */}
             <div className="lg:col-span-7">
-              <label htmlFor="quick-join-room-code" className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+              <label htmlFor="quick-join-room-code" className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
                 Join with Room or Pod Code
               </label>
               <form onSubmit={handleQuickJoinSubmit} className="flex items-center gap-2">
@@ -237,13 +220,13 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
                     onChange={(e) => setQuickCodeInput(e.target.value)}
                     aria-label="Enter 6-digit room code"
                     autoComplete="off"
-                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3.5 py-2.5 text-xs font-mono text-[var(--text-primary)] uppercase placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none min-h-[42px]"
+                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] px-3 py-2 text-xs font-mono text-[var(--text-primary)] uppercase placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none min-h-[38px]"
                   />
                 </div>
                 <button
                   type="submit"
                   disabled={!quickCodeInput.trim()}
-                  className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2.5 text-xs font-bold text-white transition disabled:opacity-40 shrink-0 shadow-xs min-h-[42px] active:scale-95 cursor-pointer"
+                  className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-3.5 py-2 text-xs font-bold text-white transition disabled:opacity-40 shrink-0 shadow-2xs min-h-[38px] active:scale-95 cursor-pointer"
                 >
                   <span>Join Room</span>
                   <ArrowRight className="h-3.5 w-3.5" />
@@ -253,14 +236,14 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
 
             {/* Middle Divider (Desktop only) */}
             <div className="hidden lg:flex lg:col-span-1 items-center justify-center">
-              <span className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider bg-[var(--surface-sunken)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md">
+              <span className="text-[9px] font-bold text-[var(--text-muted)] uppercase tracking-wider bg-[var(--card-surface)] border border-[var(--border-subtle)] px-2 py-0.5 rounded-md">
                 OR
               </span>
             </div>
 
             {/* Right Block: Create Pod & Quick Room */}
             <div className="lg:col-span-4 flex flex-col justify-center">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1.5">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] mb-1">
                 Host a New Space
               </span>
               <div className="grid grid-cols-2 gap-2">
@@ -268,7 +251,7 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
                   <button
                     type="button"
                     onClick={() => setIsCreatePodOpen(true)}
-                    className="flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[var(--accent-terracotta)] hover:bg-[var(--accent-terracotta)] hover:text-white px-3 py-2.5 text-xs font-bold transition active:scale-95 min-h-[42px] cursor-pointer shadow-2xs"
+                    className="flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[var(--accent-terracotta)] hover:bg-[var(--accent-terracotta)] hover:text-white px-3 py-2 text-xs font-bold transition active:scale-95 min-h-[38px] cursor-pointer shadow-2xs"
                     title="Create a 30-day recurring pod"
                   >
                     <Plus className="h-3.5 w-3.5 shrink-0" />
@@ -279,7 +262,7 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsCreateOpen(true)}
-                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] hover:bg-[var(--card-hover)] hover:border-[var(--accent-warm-ochre)]/60 px-3 py-2.5 text-xs font-bold text-[var(--text-primary)] transition active:scale-95 min-h-[42px] cursor-pointer shadow-2xs"
+                  className="flex items-center justify-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] hover:border-[var(--accent-warm-ochre)]/60 px-3 py-2 text-xs font-bold text-[var(--text-primary)] transition active:scale-95 min-h-[38px] cursor-pointer shadow-2xs"
                   title="Start an instant sprint room"
                 >
                   <Zap className="h-3.5 w-3.5 text-[var(--accent-warm-ochre)] shrink-0" />
@@ -291,12 +274,12 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
         </div>
 
         {/* Standing Focus Pods Section */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-5" data-tour="tour-standing-pods">
+        <div className="space-y-4" data-tour="tour-standing-pods">
           {/* Section Header with Segmented Filter Pills */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[var(--border-subtle)]">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)] shrink-0">
-                <Users className="h-4 w-4" />
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-subtle)]">
+            <div className="flex items-center gap-2">
+              <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)] shrink-0">
+                <Users className="h-3.5 w-3.5" />
               </div>
               <div>
                 <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
@@ -333,7 +316,7 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
 
           {/* Pods Grid */}
           {displayedPods.length > 0 ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {displayedPods.map((pod) => (
                 <FocusPodCard
                   key={pod.id}
@@ -346,19 +329,19 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
               ))}
             </div>
           ) : (
-            <div className="rounded-2xl border border-dashed border-[var(--border-subtle)] p-8 text-center space-y-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] mx-auto">
-                <Sparkles className="h-6 w-6" />
+            <div className="rounded-xl border border-dashed border-[var(--border-subtle)] p-6 text-center space-y-2.5">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] mx-auto">
+                <Sparkles className="h-5 w-5" />
               </div>
               <div className="max-w-sm mx-auto">
-                <p className="font-heading font-bold text-sm text-[var(--text-primary)]">
+                <p className="font-heading font-bold text-xs text-[var(--text-primary)]">
                   {podFilter === 'active'
                     ? 'No Active Pods Right Now'
                     : podFilter === 'idle'
                     ? 'No Idle Pods'
                     : 'No Standing Pods Created'}
                 </p>
-                <p className="text-xs text-[var(--text-secondary)] mt-1">
+                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">
                   {podFilter === 'active'
                     ? 'None of your standing pods have active members focusing. Launch a pod session or join a quick room!'
                     : 'Create a standing pod to give your team or circle partners a permanent co-working link with a 30-day lease.'}
@@ -368,7 +351,7 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsCreatePodOpen(true)}
-                  className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2 text-xs font-bold text-white shadow-xs transition active:scale-95"
+                  className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition active:scale-95"
                 >
                   <Plus className="h-3.5 w-3.5" />
                   <span>Create Focus Pod</span>
@@ -379,31 +362,31 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
         </div>
 
         {/* Live Active Co-Workers Overview */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs">
-          <div className="flex items-center justify-between gap-2 mb-4">
+        <div className="pt-4 border-t border-[var(--border-subtle)] space-y-3">
+          <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2">
               <Shield className="h-4 w-4 text-[var(--accent-botanical-sage)]" />
               <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
                 Live Co-Worker Presence
               </h3>
             </div>
-            <span className="flex items-center gap-1 text-[11px] font-bold text-[var(--accent-botanical-sage)] bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2.5 py-0.5 rounded-full">
+            <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--accent-botanical-sage)] bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2 py-0.5 rounded-full">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-botanical-sage)] animate-ping" />
               {members.filter((m) => m.status === 'focusing').length} Focusing Live
             </span>
           </div>
 
           {members.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
               {members.slice(0, 4).map((member) => (
                 <div
                   key={member.id}
-                  className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-main)]/60 border border-[var(--border-subtle)]"
+                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[var(--bg-main)]/50 border border-[var(--border-subtle)]"
                 >
                   <img
                     src={member.avatar}
                     alt={member.name}
-                    className="h-10 w-10 rounded-xl object-cover ring-1 ring-[var(--border-subtle)] shrink-0"
+                    className="h-9 w-9 rounded-xl object-cover ring-1 ring-[var(--border-subtle)] shrink-0"
                   />
                   <div className="min-w-0 flex-1">
                     <p className="font-bold text-xs text-[var(--text-primary)] truncate">{member.name}</p>
@@ -461,7 +444,7 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
   // STATE 2: INSIDE AN ACTIVE CO-WORKING ROOM
   // ==========================================
   return (
-    <div className="relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-5">
+    <div className="relative space-y-5">
       {/* Floating Reaction Overlay */}
       <div className="absolute top-8 right-8 z-20 pointer-events-none flex flex-col gap-2">
         {floatingEmojis.map((item) => (

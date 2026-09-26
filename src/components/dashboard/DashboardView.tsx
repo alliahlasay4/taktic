@@ -1,10 +1,11 @@
 import React from 'react';
-import { Sparkles, ArrowRight, Flame, Clock, CheckCircle2, Users } from 'lucide-react';
+import { Sparkles, ArrowRight, Flame, Clock, CheckCircle2, Users, Check } from 'lucide-react';
 import { Task, Habit, ActiveTab, CircleMember } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { TripleRings } from '../habits/TripleRings';
 import { TaskItem } from '../inbox/TaskItem';
 import { IconRenderer } from '../common/IconRenderer';
+import { soundEngine } from '../../lib/audio';
 
 interface DashboardViewProps {
   tasks: Task[];
@@ -119,7 +120,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               </h3>
               <button
                 onClick={() => setActiveTab('habits')}
-                className="text-xs font-semibold text-[#C87D87] hover:underline"
+                className="text-xs font-semibold text-[#C87D87] hover:underline cursor-pointer"
               >
                 View All
               </button>
@@ -128,19 +129,45 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <div className="space-y-2">
               {habits.slice(0, 3).map((habit) => {
                 const isDone = habit.completedDates.includes(today);
+                const handleToggle = () => {
+                  if (!isDone) {
+                    soundEngine.playCheckoffSound();
+                  }
+                  onToggleHabit(habit.id);
+                };
+
                 return (
                   <div
                     key={habit.id}
-                    onClick={() => onToggleHabit(habit.id)}
-                    className="flex items-center justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2.5 text-xs cursor-pointer hover:border-[#C87D87]/50"
+                    onClick={handleToggle}
+                    className={`flex items-center justify-between rounded-xl border p-2.5 text-xs cursor-pointer transition-all ${
+                      isDone
+                        ? 'border-[var(--border-subtle)] bg-[var(--card-hover)]/40 opacity-75'
+                        : 'border-[var(--border-subtle)] bg-[var(--bg-main)] hover:border-[#C87D87]/60 hover:shadow-2xs'
+                    }`}
                   >
-                    <div className="flex items-center gap-2.5">
-                      <IconRenderer name={habit.icon} className="h-4 w-4 text-[#C87D87]" strokeWidth={1.5} />
-                      <span className={`font-medium ${isDone ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
+                    <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggle();
+                        }}
+                        className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-lg border text-xs transition-all cursor-pointer ${
+                          isDone
+                            ? 'bg-[#C87D87]/20 border-[#C87D87] text-[#C87D87]'
+                            : 'border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-muted)] hover:border-[#C87D87]'
+                        }`}
+                        aria-label={isDone ? `Mark ${habit.title} incomplete` : `Mark ${habit.title} complete`}
+                      >
+                        {isDone ? <Check className="h-3.5 w-3.5 text-[#C87D87] stroke-[3]" /> : null}
+                      </button>
+                      <IconRenderer name={habit.icon} className={`h-4 w-4 shrink-0 ${isDone ? 'text-[var(--text-muted)]' : 'text-[#C87D87]'}`} strokeWidth={1.5} />
+                      <span className={`font-medium truncate ${isDone ? 'line-through text-[var(--text-muted)]' : 'text-[var(--text-primary)]'}`}>
                         {habit.title}
                       </span>
                     </div>
-                    <span className="flex items-center gap-1 font-semibold text-[#C06C4C] text-[11px]">
+                    <span className="flex items-center gap-1 font-semibold text-[#C06C4C] text-[11px] shrink-0 ml-2">
                       <Flame className="h-3 w-3 fill-[#C06C4C]" strokeWidth={1.5} aria-hidden="true" />
                       {habit.streak}d
                     </span>

@@ -27,11 +27,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
   const [isSignUp, setIsSignUp] = useState(defaultSignUp);
   const [isResetPassword, setIsResetPassword] = useState(false);
 
-  useEffect(() => {
-    setIsSignUp(defaultSignUp);
-    setIsResetPassword(false);
-  }, [defaultSignUp, isOpen]);
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -39,6 +34,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  const resetFormFields = () => {
+    setEmail('');
+    setPassword('');
+    setFullName('');
+    setErrorMsg(null);
+    setSuccessMsg(null);
+  };
+
+  useEffect(() => {
+    setIsSignUp(defaultSignUp);
+    setIsResetPassword(false);
+    resetFormFields();
+  }, [defaultSignUp, isOpen]);
 
   if (!isOpen) return null;
 
@@ -178,8 +187,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
                 type="button"
                 onClick={() => {
                   setIsSignUp(false);
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
+                  resetFormFields();
                 }}
                 className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                   !isSignUp
@@ -195,8 +203,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
                 type="button"
                 onClick={() => {
                   setIsSignUp(true);
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
+                  resetFormFields();
                 }}
                 className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
                   isSignUp
@@ -275,13 +282,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
                   <label htmlFor="auth-password" className="block text-xs font-bold text-[var(--text-primary)]">
                     Password
                   </label>
-                  {!isSignUp && (
+                    {!isSignUp && (
                     <button
                       type="button"
                       onClick={() => {
                         setIsResetPassword(true);
-                        setErrorMsg(null);
-                        setSuccessMsg(null);
+                        resetFormFields();
                       }}
                       className="text-[11px] font-semibold text-[#C06C4C] hover:underline cursor-pointer"
                     >
@@ -347,8 +353,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
                 type="button"
                 onClick={() => {
                   setIsResetPassword(false);
-                  setErrorMsg(null);
-                  setSuccessMsg(null);
+                  resetFormFields();
                 }}
                 className="text-xs font-bold text-[#C06C4C] hover:underline cursor-pointer"
               >

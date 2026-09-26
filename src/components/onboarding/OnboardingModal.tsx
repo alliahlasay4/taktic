@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Target, CheckCircle2, Volume2, Bell, ArrowRight, ArrowLeft } from 'lucide-react';
+import { Sparkles, Target, CheckCircle2, Volume2, Bell, ArrowRight, ArrowLeft, CloudRain, Waves, Headphones, Coffee } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { Habit, Task } from '../../types';
@@ -11,6 +11,13 @@ interface OnboardingModalProps {
   onAddTask: (task: Omit<Task, 'id' | 'completed'>) => void;
   requestNotificationPermission: () => Promise<string>;
 }
+
+const SOUNDSCAPES = [
+  { id: 'Gentle Rain', label: 'Gentle Rain', icon: CloudRain, desc: 'Soft rainfall & drops' },
+  { id: 'Ocean Waves', label: 'Ocean Waves', icon: Waves, desc: 'Deep rhythmic swells' },
+  { id: 'Warm Chords', label: 'Warm Chords', icon: Headphones, desc: 'Mellow Rhodes & gentle pads' },
+  { id: 'Coffee Shop Ambience', label: 'Coffee Shop Ambience', icon: Coffee, desc: 'Gentle cafe murmur' },
+];
 
 export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   isOpen,
@@ -27,7 +34,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   const [habitTitle, setHabitTitle] = useState('Morning Focus Warmup');
   const [habitCategory, setHabitCategory] = useState<Habit['category']>('mindset');
   const [taskTitle, setTaskTitle] = useState('Plan top 3 daily priorities');
-  const [soundscape, setSoundscape] = useState('rain');
+  const [soundscape, setSoundscape] = useState('Gentle Rain');
   const [notificationsRequested, setNotificationsRequested] = useState(false);
 
   if (!isOpen) return null;
@@ -249,26 +256,35 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 <div className="flex items-center gap-2 text-xs font-medium text-gray-400 mb-2">
                   <Volume2 className="h-4 w-4 text-emerald-400" /> Favorite Ambient Soundscape
                 </div>
-                <div className="grid grid-cols-2 gap-2">
-                  {[
-                    { id: 'rain', label: 'Cozy Rain' },
-                    { id: 'cafe', label: 'Cyber Cafe' },
-                    { id: 'waves', label: 'Ocean Waves' },
-                    { id: 'binaural', label: 'Alpha Beats' },
-                  ].map((s) => (
-                    <button
-                      key={s.id}
-                      type="button"
-                      onClick={() => setSoundscape(s.id)}
-                      className={`rounded-xl border p-3 text-xs font-medium transition ${
-                        soundscape === s.id
-                          ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400'
-                          : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:text-white'
-                      }`}
-                    >
-                      {s.label}
-                    </button>
-                  ))}
+                <div className="grid grid-cols-2 gap-2.5">
+                  {SOUNDSCAPES.map((s) => {
+                    const Icon = s.icon;
+                    const isSelected = soundscape === s.id;
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => setSoundscape(s.id)}
+                        className={`flex items-center gap-3 rounded-xl border p-3 text-left transition ${
+                          isSelected
+                            ? 'border-emerald-500 bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/30'
+                            : 'border-gray-800 bg-gray-900/40 text-gray-400 hover:text-white hover:border-gray-700'
+                        }`}
+                      >
+                        <div
+                          className={`flex h-8 w-8 items-center justify-center rounded-lg shrink-0 ${
+                            isSelected ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-800/80 text-gray-400'
+                          }`}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="text-xs font-semibold truncate">{s.label}</div>
+                          <div className="text-[10px] opacity-75 truncate">{s.desc}</div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
 

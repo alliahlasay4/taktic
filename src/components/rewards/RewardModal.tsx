@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
 import { Sparkles, Trophy, Flame, CheckCircle, X } from 'lucide-react';
+import { soundEngine } from '../../lib/audio';
 
 interface RewardModalProps {
   isOpen: boolean;
@@ -19,6 +20,9 @@ export const RewardModal: React.FC<RewardModalProps> = ({
 }) => {
   useEffect(() => {
     if (isOpen) {
+      // Play celebratory accomplishment fanfare
+      soundEngine.playCelebrationSound();
+
       // Fire confetti burst!
       confetti({
         particleCount: 80,

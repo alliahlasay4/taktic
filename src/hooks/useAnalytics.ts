@@ -45,59 +45,152 @@ export interface SmartInsight {
   metric: string;
 }
 
+const DEMO_WEEKLY_FOCUS: DailyFocusStat[] = [
+  { day: 'Mon', minutes: 45 },
+  { day: 'Tue', minutes: 90 },
+  { day: 'Wed', minutes: 60 },
+  { day: 'Thu', minutes: 120 },
+  { day: 'Fri', minutes: 75 },
+  { day: 'Sat', minutes: 30 },
+  { day: 'Sun', minutes: 50 },
+];
+
+const DEMO_TIME_OF_DAY: TimeOfDayStat[] = [
+  { slot: 'Morning', minutes: 210, color: 'var(--accent-warm-ochre)' },
+  { slot: 'Afternoon', minutes: 160, color: 'var(--accent-terracotta)' },
+  { slot: 'Evening', minutes: 100, color: 'var(--accent-botanical-sage)' },
+];
+
+const DEMO_QUALITY: FocusQualityStat[] = [
+  { label: 'High Flow', count: 12, pct: 60, color: 'var(--accent-botanical-sage)' },
+  { label: 'Steady Flow', count: 6, pct: 30, color: 'var(--accent-warm-ochre)' },
+  { label: 'Distracted', count: 2, pct: 10, color: 'var(--accent-dusty-rose)' },
+];
+
+const DEMO_CATEGORY: CategoryDistributionStat[] = [
+  { name: 'Deep Work', value: 50, color: 'var(--accent-terracotta)' },
+  { name: 'Habits & Routines', value: 30, color: 'var(--accent-dusty-mauve)' },
+  { name: 'Rest & Recovery', value: 20, color: 'var(--accent-warm-ochre)' },
+];
+
+const DEMO_SESSIONS: FocusSessionLog[] = [
+  { id: '1', durationMinutes: 25, mode: 'pomodoro', quality: 'high_flow', completedAt: 'Today, 2:30 PM', taskTitle: 'Product Architecture Review' },
+  { id: '2', durationMinutes: 50, mode: 'deepWork', quality: 'high_flow', completedAt: 'Today, 11:15 AM', taskTitle: 'Core Engine Refactor' },
+  { id: '3', durationMinutes: 25, mode: 'pomodoro', quality: 'steady', completedAt: 'Yesterday, 4:00 PM', taskTitle: 'Database Schema Migration' },
+  { id: '4', durationMinutes: 25, mode: 'pomodoro', quality: 'high_flow', completedAt: 'Yesterday, 10:00 AM', taskTitle: 'UX Flow Optimization' },
+];
+
+const EMPTY_DAYS: DailyFocusStat[] = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => ({
+  day,
+  minutes: 0,
+}));
+
+const EMPTY_TIME_OF_DAY: TimeOfDayStat[] = [
+  { slot: 'Morning', minutes: 0, color: 'var(--accent-warm-ochre)' },
+  { slot: 'Afternoon', minutes: 0, color: 'var(--accent-terracotta)' },
+  { slot: 'Evening', minutes: 0, color: 'var(--accent-botanical-sage)' },
+];
+
+const EMPTY_QUALITY: FocusQualityStat[] = [
+  { label: 'High Flow', count: 0, pct: 0, color: 'var(--accent-botanical-sage)' },
+  { label: 'Steady Flow', count: 0, pct: 0, color: 'var(--accent-warm-ochre)' },
+  { label: 'Distracted', count: 0, pct: 0, color: 'var(--accent-dusty-rose)' },
+];
+
+const EMPTY_CATEGORY: CategoryDistributionStat[] = [
+  { name: 'Deep Work', value: 0, color: 'var(--accent-terracotta)' },
+  { name: 'Habits & Routines', value: 0, color: 'var(--accent-dusty-mauve)' },
+  { name: 'Rest & Recovery', value: 0, color: 'var(--accent-warm-ochre)' },
+];
+
 export function useAnalytics() {
   const { user, isDemo } = useAuth();
   const [timeHorizon, setTimeHorizon] = useState<TimeHorizon>('week');
-  
-  const [weeklyFocusData, setWeeklyFocusData] = useState<DailyFocusStat[]>([
-    { day: 'Mon', minutes: 45 },
-    { day: 'Tue', minutes: 90 },
-    { day: 'Wed', minutes: 60 },
-    { day: 'Thu', minutes: 120 },
-    { day: 'Fri', minutes: 75 },
-    { day: 'Sat', minutes: 30 },
-    { day: 'Sun', minutes: 50 },
-  ]);
+  const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
 
-  const [timeOfDayData, setTimeOfDayData] = useState<TimeOfDayStat[]>([
-    { slot: 'Morning', minutes: 210, color: 'var(--accent-warm-ochre)' },
-    { slot: 'Afternoon', minutes: 160, color: 'var(--accent-terracotta)' },
-    { slot: 'Evening', minutes: 100, color: 'var(--accent-botanical-sage)' },
-  ]);
+  // Try to load cached user analytics to prevent any flash of false data
+  const getCachedState = useCallback(() => {
+    if (!isRealUser || !user?.id) return null;
+    try {
+      const cached = localStorage.getItem(`taktic_analytics_${user.id}_${timeHorizon}`);
+      if (cached) return JSON.parse(cached);
+    } catch {}
+    return null;
+  }, [isRealUser, user?.id, timeHorizon]);
 
-  const [qualityBreakdown, setQualityBreakdown] = useState<FocusQualityStat[]>([
-    { label: 'High Flow', count: 12, pct: 60, color: 'var(--accent-botanical-sage)' },
-    { label: 'Steady Flow', count: 6, pct: 30, color: 'var(--accent-warm-ochre)' },
-    { label: 'Distracted', count: 2, pct: 10, color: 'var(--accent-dusty-rose)' },
-  ]);
+  const initialCache = useMemo(() => getCachedState(), [getCachedState]);
 
-  const [categoryDistribution, setCategoryDistribution] = useState<CategoryDistributionStat[]>([
-    { name: 'Deep Work', value: 50, color: 'var(--accent-terracotta)' },
-    { name: 'Habits & Routines', value: 30, color: 'var(--accent-dusty-mauve)' },
-    { name: 'Rest & Recovery', value: 20, color: 'var(--accent-warm-ochre)' },
-  ]);
+  const [weeklyFocusData, setWeeklyFocusData] = useState<DailyFocusStat[]>(() => {
+    if (!isRealUser) return DEMO_WEEKLY_FOCUS;
+    return initialCache?.weeklyFocusData || EMPTY_DAYS;
+  });
 
-  const [recentSessions, setRecentSessions] = useState<FocusSessionLog[]>([
-    { id: '1', durationMinutes: 25, mode: 'pomodoro', quality: 'high_flow', completedAt: 'Today, 2:30 PM', taskTitle: 'Product Architecture Review' },
-    { id: '2', durationMinutes: 50, mode: 'deepWork', quality: 'high_flow', completedAt: 'Today, 11:15 AM', taskTitle: 'Core Engine Refactor' },
-    { id: '3', durationMinutes: 25, mode: 'pomodoro', quality: 'steady', completedAt: 'Yesterday, 4:00 PM', taskTitle: 'Database Schema Migration' },
-    { id: '4', durationMinutes: 25, mode: 'pomodoro', quality: 'high_flow', completedAt: 'Yesterday, 10:00 AM', taskTitle: 'UX Flow Optimization' },
-  ]);
+  const [timeOfDayData, setTimeOfDayData] = useState<TimeOfDayStat[]>(() => {
+    if (!isRealUser) return DEMO_TIME_OF_DAY;
+    return initialCache?.timeOfDayData || EMPTY_TIME_OF_DAY;
+  });
 
-  const [totalWeeklyMinutes, setTotalWeeklyMinutes] = useState<number>(470);
-  const [avgSessionDuration, setAvgSessionDuration] = useState<number>(25);
-  const [peakDay, setPeakDay] = useState<string>('Thursday');
-  const [rhythmScore, setRhythmScore] = useState<number>(88);
-  const [rhythmRankTitle, setRhythmRankTitle] = useState<string>('Flow Architect');
-  const [loading, setLoading] = useState<boolean>(false);
+  const [qualityBreakdown, setQualityBreakdown] = useState<FocusQualityStat[]>(() => {
+    if (!isRealUser) return DEMO_QUALITY;
+    return initialCache?.qualityBreakdown || EMPTY_QUALITY;
+  });
+
+  const [categoryDistribution, setCategoryDistribution] = useState<CategoryDistributionStat[]>(() => {
+    if (!isRealUser) return DEMO_CATEGORY;
+    return initialCache?.categoryDistribution || EMPTY_CATEGORY;
+  });
+
+  const [recentSessions, setRecentSessions] = useState<FocusSessionLog[]>(() => {
+    if (!isRealUser) return DEMO_SESSIONS;
+    return initialCache?.recentSessions || [];
+  });
+
+  const [totalWeeklyMinutes, setTotalWeeklyMinutes] = useState<number>(() => {
+    if (!isRealUser) return 470;
+    return initialCache?.totalWeeklyMinutes || 0;
+  });
+
+  const [avgSessionDuration, setAvgSessionDuration] = useState<number>(() => {
+    if (!isRealUser) return 25;
+    return initialCache?.avgSessionDuration || 0;
+  });
+
+  const [peakDay, setPeakDay] = useState<string>(() => {
+    if (!isRealUser) return 'Thursday';
+    return initialCache?.peakDay || 'None';
+  });
+
+  const [rhythmScore, setRhythmScore] = useState<number>(() => {
+    if (!isRealUser) return 88;
+    return initialCache?.rhythmScore || 0;
+  });
+
+  const [rhythmRankTitle, setRhythmRankTitle] = useState<string>(() => {
+    if (!isRealUser) return 'Flow Architect';
+    return initialCache?.rhythmRankTitle || 'Momentum Initiate';
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    return isRealUser && !initialCache;
+  });
 
   const fetchAnalytics = useCallback(async () => {
-    setLoading(true);
-
-    if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
+    if (!isRealUser || !user) {
+      setWeeklyFocusData(DEMO_WEEKLY_FOCUS);
+      setTimeOfDayData(DEMO_TIME_OF_DAY);
+      setQualityBreakdown(DEMO_QUALITY);
+      setCategoryDistribution(DEMO_CATEGORY);
+      setRecentSessions(DEMO_SESSIONS);
+      setTotalWeeklyMinutes(470);
+      setAvgSessionDuration(25);
+      setPeakDay('Thursday');
+      setRhythmScore(88);
+      setRhythmRankTitle('Flow Architect');
       setLoading(false);
       return;
     }
+
+    setLoading(true);
 
     try {
       const cutoffDate = new Date();
@@ -114,6 +207,7 @@ export function useAnalytics() {
       const { data: sessions, error: sessionsErr } = await supabase
         .from('focus_sessions')
         .select('*')
+        .eq('user_id', user.id)
         .gte('completed_at', cutoffDate.toISOString())
         .order('completed_at', { ascending: false });
 
@@ -194,9 +288,7 @@ export function useAnalytics() {
         }
       });
 
-      if (recentList.length > 0) {
-        setRecentSessions(recentList);
-      }
+      setRecentSessions(recentList);
 
       const orderedDays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
       const formattedWeekly = orderedDays.map((day) => ({
@@ -204,8 +296,8 @@ export function useAnalytics() {
         minutes: dayTotals[day] || 0,
       }));
 
-      let maxDayMins = -1;
-      let maxDayName = 'Thu';
+      let maxDayMins = 0;
+      let maxDayName = '';
       orderedDays.forEach((day) => {
         if ((dayTotals[day] || 0) > maxDayMins) {
           maxDayMins = dayTotals[day] || 0;
@@ -215,61 +307,105 @@ export function useAnalytics() {
 
       setWeeklyFocusData(formattedWeekly);
       setTotalWeeklyMinutes(grandTotal);
-      setAvgSessionDuration(totalSessionsCount > 0 ? Math.round(totalDurationSum / totalSessionsCount) : 25);
-      setPeakDay(fullDayNames[maxDayName] || 'Thursday');
+      const calculatedAvg = totalSessionsCount > 0 ? Math.round(totalDurationSum / totalSessionsCount) : 0;
+      setAvgSessionDuration(calculatedAvg);
+      const calculatedPeakDay = maxDayName ? (fullDayNames[maxDayName] || 'None') : 'None';
+      setPeakDay(calculatedPeakDay);
 
-      setTimeOfDayData([
-        { slot: 'Morning', minutes: morningMins || 210, color: 'var(--accent-warm-ochre)' },
-        { slot: 'Afternoon', minutes: afternoonMins || 160, color: 'var(--accent-terracotta)' },
-        { slot: 'Evening', minutes: eveningMins || 100, color: 'var(--accent-botanical-sage)' },
-      ]);
+      const newTimeOfDay: TimeOfDayStat[] = [
+        { slot: 'Morning', minutes: morningMins, color: 'var(--accent-warm-ochre)' },
+        { slot: 'Afternoon', minutes: afternoonMins, color: 'var(--accent-terracotta)' },
+        { slot: 'Evening', minutes: eveningMins, color: 'var(--accent-botanical-sage)' },
+      ];
+      setTimeOfDayData(newTimeOfDay);
 
-      const totalQualityLogged = Math.max(1, highFlowCount + moderateCount + distractedCount);
-      setQualityBreakdown([
-        { label: 'High Flow', count: highFlowCount || 12, pct: Math.round(((highFlowCount || 12) / Math.max(1, totalQualityLogged)) * 100), color: 'var(--accent-botanical-sage)' },
-        { label: 'Steady Flow', count: moderateCount || 6, pct: Math.round(((moderateCount || 6) / Math.max(1, totalQualityLogged)) * 100), color: 'var(--accent-warm-ochre)' },
-        { label: 'Distracted', count: distractedCount || 2, pct: Math.round(((distractedCount || 2) / Math.max(1, totalQualityLogged)) * 100), color: 'var(--accent-dusty-rose)' },
-      ]);
+      const totalQualityLogged = highFlowCount + moderateCount + distractedCount;
+      const newQuality: FocusQualityStat[] = [
+        {
+          label: 'High Flow',
+          count: highFlowCount,
+          pct: totalQualityLogged > 0 ? Math.round((highFlowCount / totalQualityLogged) * 100) : 0,
+          color: 'var(--accent-botanical-sage)',
+        },
+        {
+          label: 'Steady Flow',
+          count: moderateCount,
+          pct: totalQualityLogged > 0 ? Math.round((moderateCount / totalQualityLogged) * 100) : 0,
+          color: 'var(--accent-warm-ochre)',
+        },
+        {
+          label: 'Distracted',
+          count: distractedCount,
+          pct: totalQualityLogged > 0 ? Math.round((distractedCount / totalQualityLogged) * 100) : 0,
+          color: 'var(--accent-dusty-rose)',
+        },
+      ];
+      setQualityBreakdown(newQuality);
 
-      // Category distribution
+      // 2. Fetch habit logs from Supabase
       const { data: habitLogs } = await supabase
         .from('habit_logs')
         .select('*')
+        .eq('user_id', user.id)
         .gte('completed_date', cutoffDate.toISOString().split('T')[0]);
 
       const habitCount = (habitLogs || []).length;
       const estimatedHabitMins = habitCount * 10;
-      const overallTotal = Math.max(1, deepWorkMins + restMins + estimatedHabitMins);
-      const deepWorkPct = Math.round((deepWorkMins / overallTotal) * 100) || 50;
-      const habitPct = Math.round((estimatedHabitMins / overallTotal) * 100) || 30;
-      const restPct = Math.max(0, 100 - deepWorkPct - habitPct);
+      const overallTotal = deepWorkMins + restMins + estimatedHabitMins;
+      const deepWorkPct = overallTotal > 0 ? Math.round((deepWorkMins / overallTotal) * 100) : 0;
+      const habitPct = overallTotal > 0 ? Math.round((estimatedHabitMins / overallTotal) * 100) : 0;
+      const restPct = overallTotal > 0 ? Math.max(0, 100 - deepWorkPct - habitPct) : 0;
 
-      setCategoryDistribution([
+      const newCategory: CategoryDistributionStat[] = [
         { name: 'Deep Work', value: deepWorkPct, color: 'var(--accent-terracotta)' },
         { name: 'Habits & Routines', value: habitPct, color: 'var(--accent-dusty-mauve)' },
         { name: 'Rest & Recovery', value: restPct, color: 'var(--accent-warm-ochre)' },
-      ]);
+      ];
+      setCategoryDistribution(newCategory);
 
-      // Rhythm Score calculation
-      const focusScore = Math.min(40, Math.round((grandTotal / 300) * 40));
-      const habitScore = Math.min(30, Math.round((habitCount / 10) * 30));
-      const flowRatio = (highFlowCount || 12) / Math.max(1, totalQualityLogged);
-      const qualityScore = Math.round(flowRatio * 30) || 20;
+      // 3. Rhythm Score calculation
+      let calculatedScore = 0;
+      let calculatedRank = 'Momentum Initiate';
 
-      const score = Math.min(100, Math.max(60, focusScore + habitScore + qualityScore));
-      setRhythmScore(score);
+      if (grandTotal > 0 || habitCount > 0) {
+        const focusScore = Math.min(40, Math.round((grandTotal / 300) * 40));
+        const habitScore = Math.min(30, Math.round((habitCount / 10) * 30));
+        const flowRatio = totalQualityLogged > 0 ? highFlowCount / totalQualityLogged : 0.5;
+        const qualityScore = Math.round(flowRatio * 30);
 
-      if (score >= 90) setRhythmRankTitle('Flow Master');
-      else if (score >= 75) setRhythmRankTitle('Flow Architect');
-      else if (score >= 50) setRhythmRankTitle('Focus Builder');
-      else setRhythmRankTitle('Momentum Initiate');
+        calculatedScore = Math.min(100, Math.max(20, focusScore + habitScore + qualityScore));
+        if (calculatedScore >= 90) calculatedRank = 'Flow Master';
+        else if (calculatedScore >= 75) calculatedRank = 'Flow Architect';
+        else if (calculatedScore >= 50) calculatedRank = 'Focus Builder';
+      }
 
+      setRhythmScore(calculatedScore);
+      setRhythmRankTitle(calculatedRank);
+
+      // Cache real user analytics
+      try {
+        localStorage.setItem(
+          `taktic_analytics_${user.id}_${timeHorizon}`,
+          JSON.stringify({
+            weeklyFocusData: formattedWeekly,
+            timeOfDayData: newTimeOfDay,
+            qualityBreakdown: newQuality,
+            categoryDistribution: newCategory,
+            recentSessions: recentList,
+            totalWeeklyMinutes: grandTotal,
+            avgSessionDuration: calculatedAvg,
+            peakDay: calculatedPeakDay,
+            rhythmScore: calculatedScore,
+            rhythmRankTitle: calculatedRank,
+          })
+        );
+      } catch {}
     } catch (err: any) {
       console.error('Error fetching Supabase analytics:', err);
     } finally {
       setLoading(false);
     }
-  }, [user, isDemo, timeHorizon]);
+  }, [user, isRealUser, timeHorizon]);
 
   useEffect(() => {
     fetchAnalytics();
@@ -278,15 +414,43 @@ export function useAnalytics() {
   // Derived smart insights
   const smartInsights: SmartInsight[] = useMemo(() => {
     const highestTimeSlot = [...timeOfDayData].sort((a, b) => b.minutes - a.minutes)[0];
-    const highFlowPct = qualityBreakdown.find((q) => q.label === 'High Flow')?.pct || 60;
+    const highFlowPct = qualityBreakdown.find((q) => q.label === 'High Flow')?.pct || 0;
+
+    if (totalWeeklyMinutes === 0 && recentSessions.length === 0) {
+      return [
+        {
+          id: 'peak-window',
+          title: 'Optimal Focus Window',
+          description: 'Log your first deep work session to discover your peak productivity hours.',
+          category: 'timing',
+          metric: 'Pending Data',
+        },
+        {
+          id: 'flow-consistency',
+          title: 'Deep Flow Rate',
+          description: 'Rate your focus flow at the end of sessions to uncover flow consistency.',
+          category: 'quality',
+          metric: '0% Flow',
+        },
+        {
+          id: 'session-duration',
+          title: 'Session Duration Cadence',
+          description: 'Structured Pomodoro intervals help build sustainable focus stamina.',
+          category: 'duration',
+          metric: '25m blocks',
+        },
+      ];
+    }
 
     return [
       {
         id: 'peak-window',
         title: 'Optimal Focus Window',
-        description: `Your highest output occurs in the ${highestTimeSlot.slot.toLowerCase()} with ${highestTimeSlot.minutes} logged minutes.`,
+        description: highestTimeSlot && highestTimeSlot.minutes > 0
+          ? `Your highest output occurs in the ${highestTimeSlot.slot.toLowerCase()} with ${highestTimeSlot.minutes} logged minutes.`
+          : 'Log more sessions across the day to determine your peak energy window.',
         category: 'timing',
-        metric: highestTimeSlot.slot,
+        metric: highestTimeSlot && highestTimeSlot.minutes > 0 ? highestTimeSlot.slot : 'Flexible',
       },
       {
         id: 'flow-consistency',
@@ -298,12 +462,12 @@ export function useAnalytics() {
       {
         id: 'session-duration',
         title: 'Session Duration Cadence',
-        description: `Your optimal focus duration is ${avgSessionDuration} minutes with structured 5-minute recovery intervals.`,
+        description: `Your average focus duration is ${avgSessionDuration || 25} minutes with structured recovery intervals.`,
         category: 'duration',
-        metric: `${avgSessionDuration}m blocks`,
+        metric: `${avgSessionDuration || 25}m blocks`,
       },
     ];
-  }, [timeOfDayData, qualityBreakdown, avgSessionDuration]);
+  }, [timeOfDayData, qualityBreakdown, avgSessionDuration, totalWeeklyMinutes, recentSessions.length]);
 
   return {
     timeHorizon,

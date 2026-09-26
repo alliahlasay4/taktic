@@ -1,59 +1,93 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { AuthPage } from './AuthPage';
 import { LandingPage } from '../landing/LandingPage';
+import {
+  LANDING_PATH,
+  isAuthPath,
+  isLandingPath,
+  normalizePath,
+} from '../../lib/routes';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
 
-  const getInitialAuthState = () => {
+  const getAuthStateFromLocation = () => {
     if (typeof window === 'undefined') return { open: false, signUp: false };
+    const pathname = normalizePath(window.location.pathname);
     const hash = window.location.hash.toLowerCase();
-    if (hash === '#signup' || hash === '#register') return { open: true, signUp: true };
-    if (hash === '#login' || hash === '#signin' || hash === '#auth') return { open: true, signUp: false };
-    return { open: false, signUp: false };
+
+    const isSignUp =
+      pathname === '/signup' ||
+      pathname === '/register' ||
+      hash === '#signup' ||
+      hash === '#register';
+
+    const isSignIn =
+      pathname === '/login' ||
+      pathname === '/signin' ||
+      pathname === '/auth' ||
+      hash === '#login' ||
+      hash === '#signin' ||
+      hash === '#auth';
+
+    return {
+      open: isSignUp || isSignIn,
+      signUp: isSignUp,
+    };
   };
 
-  const initial = getInitialAuthState();
+  const initial = getAuthStateFromLocation();
   const [isAuthOpen, setIsAuthOpen] = useState(initial.open);
   const [defaultSignUp, setDefaultSignUp] = useState(initial.signUp);
   const prevUserRef = React.useRef(user);
 
-  // When user is authenticated, reset auth modal and clean up URL hash
-  React.useEffect(() => {
+  // Sync state with popstate and hashchange events (back/forward buttons)
+  useEffect(() => {
+    const handleLocationChange = () => {
+      if (!user) {
+        const authState = getAuthStateFromLocation();
+        setIsAuthOpen(authState.open);
+        setDefaultSignUp(authState.signUp);
+      }
+    };
+
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
+  }, [user]);
+
+  // When user is authenticated:
+  // Clean up any public/auth URLs (e.g. /login, /signup, /landing, #login) to the canonical app path
+  useEffect(() => {
     if (user) {
       setIsAuthOpen(false);
       prevUserRef.current = user;
-      if (
-        window.location.hash.startsWith('#login') ||
-        window.location.hash.startsWith('#signup') ||
-        window.location.hash.startsWith('#signin') ||
-        window.location.hash.startsWith('#register') ||
-        window.location.hash.startsWith('#auth')
-      ) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
+      if (typeof window !== 'undefined') {
+        const pathname = normalizePath(window.location.pathname);
+        if (isLandingPath(pathname) || isAuthPath(pathname) || window.location.hash) {
+          window.history.replaceState(null, '', '/focushub');
+        }
       }
     } else {
       prevUserRef.current = null;
     }
   }, [user]);
 
-  // Listen to hash changes in browser (e.g. user visits #login directly)
-  React.useEffect(() => {
-    const handleHashChange = () => {
-      const hash = window.location.hash.toLowerCase();
-      if (hash === '#signup' || hash === '#register') {
-        setDefaultSignUp(true);
-        setIsAuthOpen(true);
-      } else if (hash === '#login' || hash === '#signin' || hash === '#auth') {
-        setDefaultSignUp(false);
-        setIsAuthOpen(true);
+  // When user is NOT authenticated:
+  // If they are on a protected tab (e.g. after signout or navigating directly to /focushub),
+  // automatically update the URL to /landing
+  useEffect(() => {
+    if (!loading && !user && typeof window !== 'undefined') {
+      const pathname = normalizePath(window.location.pathname);
+      if (!isLandingPath(pathname) && !isAuthPath(pathname)) {
+        window.history.replaceState(null, '', LANDING_PATH);
       }
-    };
-
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+    }
+  }, [loading, user]);
 
   // Detect immediate logout transition in the current render frame
   const justLoggedOut = Boolean(prevUserRef.current && !user);
@@ -87,14 +121,8 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
         <AuthPage
           onBackToHome={() => {
             setIsAuthOpen(false);
-            if (
-              window.location.hash.startsWith('#login') ||
-              window.location.hash.startsWith('#signup') ||
-              window.location.hash.startsWith('#signin') ||
-              window.location.hash.startsWith('#register') ||
-              window.location.hash.startsWith('#auth')
-            ) {
-              window.history.replaceState(null, '', window.location.pathname + window.location.search);
+            if (typeof window !== 'undefined') {
+              window.history.pushState(null, '', LANDING_PATH);
             }
           }}
           defaultSignUp={defaultSignUp}
@@ -107,7 +135,10 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
         onOpenAuth={(signUpMode = false) => {
           setDefaultSignUp(signUpMode);
           setIsAuthOpen(true);
-          window.location.hash = signUpMode ? '#signup' : '#login';
+          if (typeof window !== 'undefined') {
+            const authPath = signUpMode ? '/signup' : '/login';
+            window.history.pushState(null, '', authPath);
+          }
         }}
       />
     );
@@ -115,3 +146,4 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 
   return <>{children}</>;
 };
+

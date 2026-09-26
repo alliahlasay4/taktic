@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import confetti from 'canvas-confetti';
 import { useAuth } from '../../context/AuthContext';
 import { soundEngine } from '../../lib/audio';
 import {
@@ -38,7 +39,7 @@ interface LandingPageProps {
 const SOUNDSCAPES = [
   { id: 'Gentle Rain', label: 'Rain', icon: CloudRain },
   { id: 'Ocean Waves', label: 'Ocean', icon: Waves },
-  { id: 'Lo-Fi Autumn Beats', label: 'Lo-Fi', icon: Headphones },
+  { id: 'Warm Chords', label: 'Chords', icon: Headphones },
   { id: 'Coffee Shop Ambience', label: 'Cafe', icon: Coffee },
 ];
 
@@ -58,6 +59,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     }
     localStorage.setItem('taktic_dark_mode', String(darkMode));
   }, [darkMode]);
+
+  useEffect(() => {
+    document.title = 'Taktic — Daily Priorities, Habits & Focus';
+  }, []);
 
   // Audio Preview State
   const [activeSound, setActiveSound] = useState<string | null>(null);
@@ -87,6 +92,55 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   const habitPct = Math.min(100, Math.round((demoHabits / 3) * 100));
   const focusPct = Math.min(100, Math.round((demoFocusMins / 100) * 100));
   const allClosed = taskPct >= 100 && habitPct >= 100 && focusPct >= 100;
+
+  const triggerCelebration = () => {
+    soundEngine.playCelebrationSound();
+    confetti({
+      particleCount: 70,
+      spread: 70,
+      origin: { y: 0.6 },
+      colors: ['#6B8E6E', '#C87D87', '#CFA052', '#C06C4C'],
+    });
+  };
+
+  const handleIncrementTask = () => {
+    const next = demoTasks >= 3 ? 1 : demoTasks + 1;
+    const nextTaskPct = Math.min(100, Math.round((next / 3) * 100));
+    const nextAvg = Math.round((nextTaskPct + habitPct + focusPct) / 3);
+
+    if (nextAvg >= 100) {
+      triggerCelebration();
+    } else {
+      soundEngine.playCheckoffSound();
+    }
+    setDemoTasks(next);
+  };
+
+  const handleIncrementHabit = () => {
+    const next = demoHabits >= 3 ? 1 : demoHabits + 1;
+    const nextHabitPct = Math.min(100, Math.round((next / 3) * 100));
+    const nextAvg = Math.round((taskPct + nextHabitPct + focusPct) / 3);
+
+    if (nextAvg >= 100) {
+      triggerCelebration();
+    } else {
+      soundEngine.playCheckoffSound();
+    }
+    setDemoHabits(next);
+  };
+
+  const handleIncrementFocus = () => {
+    const next = demoFocusMins >= 100 ? 25 : demoFocusMins + 25;
+    const nextFocusPct = Math.min(100, Math.round((next / 100) * 100));
+    const nextAvg = Math.round((taskPct + habitPct + nextFocusPct) / 3);
+
+    if (nextAvg >= 100) {
+      triggerCelebration();
+    } else {
+      soundEngine.playCheckoffSound();
+    }
+    setDemoFocusMins(next);
+  };
 
   // Concentric SVG math (200x200 canvas with generous inner clear radius)
   const center = 100;
@@ -385,7 +439,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                   <div className="mt-6 flex items-center gap-2 flex-wrap justify-center relative z-10">
                     <button
                       type="button"
-                      onClick={() => setDemoTasks((prev) => (prev >= 3 ? 1 : prev + 1))}
+                      onClick={handleIncrementTask}
                       className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 dark:border-emerald-500/30 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
@@ -393,7 +447,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDemoHabits((prev) => (prev >= 3 ? 1 : prev + 1))}
+                      onClick={handleIncrementHabit}
                       className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-rose-500/40 bg-rose-500/15 text-rose-800 dark:text-rose-300 dark:border-rose-500/30 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
                     >
                       <Repeat className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
@@ -401,7 +455,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     </button>
                     <button
                       type="button"
-                      onClick={() => setDemoFocusMins((prev) => (prev >= 100 ? 25 : prev + 25))}
+                      onClick={handleIncrementFocus}
                       className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 dark:border-amber-500/30 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
                     >
                       <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
@@ -557,7 +611,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <ul className="space-y-2 text-xs font-medium text-[var(--text-secondary)] pt-2">
                 <li className="flex items-center gap-2">
                   <Headphones className="h-4 w-4 text-[#CFA052] shrink-0" />
-                  <span>Rain, ocean waves, lo-fi beats & cafe ambiance</span>
+                  <span>Rain, ocean waves, warm chords & cafe ambiance</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Lock className="h-4 w-4 text-[#CFA052] shrink-0" />

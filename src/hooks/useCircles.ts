@@ -5,7 +5,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_CIRCLE_MEMBERS, INITIAL_CIRCLE_FEED } from '../lib/mockData';
 
 export function useCircles() {
-  const { user, isDemo } = useAuth();
+  const { user, isDemo, profile } = useAuth();
   const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
   const userKey = user?.id || (isDemo ? 'demo' : 'guest');
 
@@ -63,8 +63,9 @@ export function useCircles() {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
+  const userName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
   const userAvatar =
+    profile?.avatarUrl ||
     user?.user_metadata?.avatar_url ||
     'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
@@ -112,10 +113,13 @@ export function useCircles() {
   const sendCircleInvite = async (email: string, name?: string) => {
     const { token, link } = generateMagicInviteLink(email, name);
     const tempId = `inv-${Date.now()}`;
+    const targetEmail = email.trim().toLowerCase();
+    const partnerName = name?.trim() || targetEmail.split('@')[0];
+
     const newInvite: CircleInvite = {
       id: tempId,
-      email: email.trim(),
-      name: name?.trim() || email.split('@')[0],
+      email: targetEmail,
+      name: partnerName,
       status: 'pending',
       inviteToken: token,
       inviteLink: link,
@@ -123,37 +127,112 @@ export function useCircles() {
       inviterName: userName,
     };
 
-    const updated = [newInvite, ...invites.filter((i) => i.email !== email.trim())];
+    const updated = [newInvite, ...invites.filter((i) => i.email !== targetEmail)];
     saveInvites(updated);
 
-    if (isRealUser && user) {
+    if (isSupabaseConfigured) {
       try {
-        const { data, error: dbErr } = await supabase
-          .from('circle_invites')
-          .insert({
-            user_id: user.id,
-            email: newInvite.email,
-            name: newInvite.name,
-            status: 'pending',
-            invite_token: token,
-            invite_link: link,
-          })
-          .select()
-          .single();
+        const payload = {
+          email: targetEmail,
+          name: partnerName,
+          inviterName: userName || 'A colleague',
+          inviterId: user?.id || null,
+          redirectUrl: link,
+        };
 
-        if (!dbErr && data) {
-          const updatedWithDbId = updated.map((inv) =>
-            inv.id === tempId ? { ...inv, id: data.id } : inv
-          );
-          saveInvites(updatedWithDbId);
+        // 1. Invoke Supabase Edge Function to dispatch Auth Invite Email
+        let { data: edgeData, error: edgeErr } = await supabase.functions.invoke('invite-partner', {
+          body: payload,
+        });
+
+        // If the function slug on Supabase is bright-responder, retry with bright-responder
+        if (edgeErr) {
+          const retryRes = await supabase.functions.invoke('bright-responder', {
+            body: payload,
+          });
+          if (!retryRes.error) {
+            edgeData = retryRes.data;
+            edgeErr = null;
+          }
+        }
+
+        if (edgeErr) {
+          console.warn('Edge function invite dispatch note:', edgeErr.message);
+        } else if (edgeData) {
+          console.log('Invite email dispatched successfully via Supabase:', edgeData);
+        }
+
+        // 2. Persist record to circle_invites table if logged in
+        if (isRealUser && user) {
+          const { data, error: dbErr } = await supabase
+            .from('circle_invites')
+            .insert({
+              user_id: user.id,
+              email: newInvite.email,
+              name: newInvite.name,
+              status: 'pending',
+              invite_token: token,
+              invite_link: link,
+            })
+            .select()
+            .single();
+
+          if (!dbErr && data) {
+            const updatedWithDbId = updated.map((inv) =>
+              inv.id === tempId ? { ...inv, id: data.id } : inv
+            );
+            saveInvites(updatedWithDbId);
+          }
         }
       } catch (err) {
-        console.error('Error inserting invite to Supabase:', err);
+        console.error('Error in sendCircleInvite:', err);
       }
     }
 
-    return { success: true, inviteLink: link, message: `Invite sent to ${email}` };
+    return { success: true, inviteLink: link, message: `Invite email dispatched to ${targetEmail}` };
   };
+
+  // Incoming Magic Link Acceptance Listener
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const urlParams = new URLSearchParams(window.location.search);
+    const inviteToken = urlParams.get('circle_invite');
+    const inviterNameParam = urlParams.get('inviter');
+
+    if (inviteToken && (inviterNameParam || inviteToken === 'accepted')) {
+      const inviterTitle = inviterNameParam ? decodeURIComponent(inviterNameParam) : 'Circle Partner';
+      
+      // Check if already in members
+      const alreadyMember = members.some(
+        (m) => m.name.toLowerCase() === inviterTitle.toLowerCase()
+      );
+
+      if (!alreadyMember) {
+        const partnerMember: CircleMember = {
+          id: `partner-${Date.now()}`,
+          name: inviterTitle,
+          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+          status: 'focusing',
+          statusText: 'Connected via Magic Invite',
+          closedRingsCount: 1,
+          streak: 3,
+          isCirclePartner: true,
+          isMuted: false,
+        };
+
+        saveMembers([partnerMember, ...members]);
+      }
+
+      // Clean URL params gracefully
+      urlParams.delete('circle_invite');
+      urlParams.delete('inviter');
+      urlParams.delete('email');
+      urlParams.delete('name');
+      const newQuery = urlParams.toString();
+      const cleanPath = window.location.pathname + (newQuery ? `?${newQuery}` : '');
+      window.history.replaceState(null, '', cleanPath);
+    }
+  }, [members]);
 
   const cancelCircleInvite = async (inviteId: string) => {
     const updated = invites.filter((i) => i.id !== inviteId);
@@ -510,6 +589,11 @@ export function useCircles() {
     title: string,
     detail: string
   ) => {
+    // Check privacy setting: if disabled, do not broadcast to feed
+    if (profile?.privacySettings && profile.privacySettings.showActivityFeed === false) {
+      return;
+    }
+
     const tempId = `post-${Date.now()}`;
     const newPost: CircleFeedPost = {
       id: tempId,

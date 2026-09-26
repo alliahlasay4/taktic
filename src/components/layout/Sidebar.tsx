@@ -23,12 +23,27 @@ import {
   X,
   ChevronRight,
   Archive,
+  Calendar,
+  Sun,
+  Sunrise,
+  Moon,
+  Zap,
 } from 'lucide-react';
 import { ActiveTab, CircleMember } from '../../types';
 import { useTimer } from '../../context/TimerContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatTime } from '../../lib/utils';
 import { soundEngine } from '../../lib/audio';
+
+export interface QuickTaskPayload {
+  title: string;
+  dueDate?: string;
+  isTodayFocus?: boolean;
+  timeBlock?: 'morning' | 'afternoon' | 'evening';
+  priority?: 'low' | 'medium' | 'high';
+  estimatedMinutes?: number;
+  tags?: string[];
+}
 
 interface SidebarProps {
   activeTab: ActiveTab;
@@ -37,16 +52,226 @@ interface SidebarProps {
   inboxCount: number;
   totalFocusMinutesToday: number;
   members: CircleMember[];
-  onQuickAddTask?: (title: string) => void;
+  onQuickAddTask?: (taskData: QuickTaskPayload) => void;
   onFocusComplete?: (durationMinutes: number, taskTitle?: string) => void;
   activeSoundscape?: string | null;
   setActiveSoundscape?: (sound: string | null) => void;
 }
 
+interface SlashCommand {
+  id: string;
+  token: string;
+  label: string;
+  category: 'Date' | 'Time Block' | 'Priority' | 'Duration';
+  description: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: string;
+}
+
+const SLASH_COMMANDS: SlashCommand[] = [
+  // Schedule / Dates
+  {
+    id: 'today',
+    token: '/today',
+    label: 'Due Today',
+    category: 'Date',
+    description: "Add to today's focus queue",
+    icon: Calendar,
+    color: 'text-[var(--accent-terracotta)]',
+  },
+  {
+    id: 'tomorrow',
+    token: '/tomorrow',
+    label: 'Due Tomorrow',
+    category: 'Date',
+    description: 'Schedule for tomorrow',
+    icon: Calendar,
+    color: 'text-[var(--accent-warm-ochre)]',
+  },
+  {
+    id: 'next-week',
+    token: '/next-week',
+    label: 'Next Week',
+    category: 'Date',
+    description: 'Schedule for next Monday',
+    icon: Calendar,
+    color: 'text-[var(--accent-botanical-sage)]',
+  },
+  // Time Blocks
+  {
+    id: 'morning',
+    token: '/morning',
+    label: 'Morning Block',
+    category: 'Time Block',
+    description: '5:00 AM – 12:00 PM',
+    icon: Sunrise,
+    color: 'text-amber-500',
+  },
+  {
+    id: 'afternoon',
+    token: '/afternoon',
+    label: 'Afternoon Block',
+    category: 'Time Block',
+    description: '12:00 PM – 5:00 PM',
+    icon: Sun,
+    color: 'text-orange-500',
+  },
+  {
+    id: 'evening',
+    token: '/evening',
+    label: 'Evening Block',
+    category: 'Time Block',
+    description: '5:00 PM – 10:00 PM',
+    icon: Moon,
+    color: 'text-indigo-400',
+  },
+  // Priority
+  {
+    id: 'urgent',
+    token: '/urgent',
+    label: 'Urgent / High Priority',
+    category: 'Priority',
+    description: 'Flag as urgent task',
+    icon: Zap,
+    color: 'text-red-500',
+  },
+  {
+    id: 'medium',
+    token: '/medium',
+    label: 'Medium Priority',
+    category: 'Priority',
+    description: 'Standard priority',
+    icon: Target,
+    color: 'text-amber-500',
+  },
+  {
+    id: 'low',
+    token: '/low',
+    label: 'Low Priority',
+    category: 'Priority',
+    description: 'Backlog / low priority',
+    icon: Sparkles,
+    color: 'text-slate-400',
+  },
+  // Sprint Duration
+  {
+    id: '15m',
+    token: '/15m',
+    label: '15 Mins Sprint',
+    category: 'Duration',
+    description: 'Quick micro sprint',
+    icon: Clock,
+    color: 'text-emerald-500',
+  },
+  {
+    id: '25m',
+    token: '/25m',
+    label: '25 Mins (Standard)',
+    category: 'Duration',
+    description: 'Standard Pomodoro sprint',
+    icon: Clock,
+    color: 'text-[var(--accent-warm-ochre)]',
+  },
+  {
+    id: '50m',
+    token: '/50m',
+    label: '50 Mins Deep Work',
+    category: 'Duration',
+    description: 'Extended deep focus sprint',
+    icon: Clock,
+    color: 'text-[var(--accent-terracotta)]',
+  },
+];
+
+export const parseQuickTaskInput = (rawInput: string): QuickTaskPayload => {
+  const currentHour = new Date().getHours();
+  let timeBlock: 'morning' | 'afternoon' | 'evening' =
+    currentHour < 12 ? 'morning' : currentHour < 17 ? 'afternoon' : 'evening';
+
+  const today = new Date();
+  const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
+
+  let dueDate: string = todayStr;
+  let isTodayFocus: boolean = true;
+  let priority: 'low' | 'medium' | 'high' = 'medium';
+  let estimatedMinutes = 25;
+  const tags = ['Quick Capture'];
+
+  let text = rawInput;
+
+  // 1. Scheduled Dates Detection
+  if (/\/(tomorrow|tmrw)\b/i.test(text) || /\b(tomorrow|tmrw)\b/i.test(text)) {
+    const tmrw = new Date();
+    tmrw.setDate(tmrw.getDate() + 1);
+    dueDate = `${tmrw.getFullYear()}-${String(tmrw.getMonth() + 1).padStart(2, '0')}-${String(tmrw.getDate()).padStart(2, '0')}`;
+    isTodayFocus = false;
+    text = text.replace(/\/(tomorrow|tmrw)\b/gi, '').replace(/\b(tomorrow|tmrw)\b/gi, '');
+  } else if (/\/(next-week|nextweek)\b/i.test(text) || /\bnext week\b/i.test(text)) {
+    const nextWk = new Date();
+    const day = nextWk.getDay();
+    const diff = day === 0 ? 1 : 8 - day; // next Monday
+    nextWk.setDate(nextWk.getDate() + diff);
+    dueDate = `${nextWk.getFullYear()}-${String(nextWk.getMonth() + 1).padStart(2, '0')}-${String(nextWk.getDate()).padStart(2, '0')}`;
+    isTodayFocus = false;
+    text = text.replace(/\/(next-week|nextweek)\b/gi, '').replace(/\bnext week\b/gi, '');
+  } else if (/\/(today|tonight)\b/i.test(text) || /\b(today|tonight)\b/i.test(text)) {
+    dueDate = todayStr;
+    isTodayFocus = true;
+    if (/\/(tonight)\b/i.test(text) || /\btonight\b/i.test(text)) {
+      timeBlock = 'evening';
+    }
+    text = text.replace(/\/(today|tonight)\b/gi, '').replace(/\b(today|tonight)\b/gi, '');
+  }
+
+  // 2. Time-of-Day Block Detection
+  if (/\/morning\b/i.test(text) || /\bmorning\b/i.test(text)) {
+    timeBlock = 'morning';
+    text = text.replace(/\/morning\b/gi, '').replace(/\bmorning\b/gi, '');
+  } else if (/\/afternoon\b/i.test(text) || /\bafternoon\b/i.test(text)) {
+    timeBlock = 'afternoon';
+    text = text.replace(/\/afternoon\b/gi, '').replace(/\bafternoon\b/gi, '');
+  } else if (/\/evening\b/i.test(text) || /\bevening\b/i.test(text)) {
+    timeBlock = 'evening';
+    text = text.replace(/\/evening\b/gi, '').replace(/\bevening\b/gi, '');
+  }
+
+  // 3. Priority Detection
+  if (/\/(urgent|high)\b/i.test(text) || /\b(urgent|high priority)\b/i.test(text)) {
+    priority = 'high';
+    text = text.replace(/\/(urgent|high)\b/gi, '').replace(/\b(urgent|high priority)\b/gi, '');
+  } else if (/\/low\b/i.test(text) || /\blow priority\b/i.test(text)) {
+    priority = 'low';
+    text = text.replace(/\/low\b/gi, '').replace(/\blow priority\b/gi, '');
+  } else if (/\/medium\b/i.test(text)) {
+    priority = 'medium';
+    text = text.replace(/\/medium\b/gi, '');
+  }
+
+  // 4. Sprint Duration Detection
+  const estMatch = text.match(/\/(\d+)m\b/i) || text.match(/\b(\d+)\s*(?:mins?|minutes)\b/i);
+  if (estMatch && estMatch[1]) {
+    estimatedMinutes = parseInt(estMatch[1], 10) || 25;
+    text = text.replace(/\/(\d+)m\b/gi, '').replace(/\b(\d+)\s*(?:mins?|minutes)\b/gi, '');
+  }
+
+  // Clean title
+  const cleanTitle = text.replace(/\s+/g, ' ').trim() || rawInput.trim();
+
+  return {
+    title: cleanTitle,
+    dueDate,
+    isTodayFocus,
+    timeBlock,
+    priority,
+    estimatedMinutes,
+    tags,
+  };
+};
+
 const SIDEBAR_SOUNDSCAPES = [
   { id: 'Gentle Rain', label: 'Rain', icon: CloudRain },
   { id: 'Ocean Waves', label: 'Ocean', icon: Waves },
-  { id: 'Lo-Fi Autumn Beats', label: 'Lo-Fi', icon: Headphones },
+  { id: 'Warm Chords', label: 'Chords', icon: Headphones },
   { id: 'Coffee Shop Ambience', label: 'Cafe', icon: Coffee },
 ];
 
@@ -67,9 +292,86 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isSlashMenuOpen, setIsSlashMenuOpen] = useState(false);
+  const [selectedSlashIndex, setSelectedSlashIndex] = useState(0);
+  const inputRef = React.useRef<HTMLInputElement>(null);
 
   const activePartners = members.filter((m) => m.status === 'focusing');
   const ringProgressPercent = Math.min(100, Math.round((totalFocusMinutesToday / 100) * 100));
+
+  // Slash commands calculation
+  const slashIndex = quickTaskTitle.lastIndexOf('/');
+  const isSlashActive = isSlashMenuOpen && slashIndex !== -1;
+  const slashQuery = slashIndex !== -1 ? quickTaskTitle.slice(slashIndex + 1).toLowerCase() : '';
+
+  const filteredCommands = SLASH_COMMANDS.filter(
+    (cmd) =>
+      cmd.token.slice(1).toLowerCase().startsWith(slashQuery) ||
+      cmd.label.toLowerCase().includes(slashQuery) ||
+      cmd.category.toLowerCase().includes(slashQuery)
+  );
+
+  const applySlashCommand = (cmd: SlashCommand) => {
+    if (slashIndex === -1) return;
+    const before = quickTaskTitle.slice(0, slashIndex);
+    const nextValue = `${before}${cmd.token} `;
+    setQuickTaskTitle(nextValue);
+    setIsSlashMenuOpen(false);
+    setSelectedSlashIndex(0);
+    if (inputRef.current) {
+      inputRef.current.focus();
+    }
+  };
+
+  const handleQuickTaskKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (isSlashActive && filteredCommands.length > 0) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedSlashIndex((prev) => (prev + 1) % filteredCommands.length);
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedSlashIndex((prev) => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+        return;
+      }
+      if (e.key === 'Tab') {
+        if (filteredCommands[selectedSlashIndex]) {
+          e.preventDefault();
+          applySlashCommand(filteredCommands[selectedSlashIndex]);
+          return;
+        }
+      }
+      if (e.key === 'Enter') {
+        // If query is actively matching and not exact full token, apply token on Enter
+        if (slashQuery.length > 0 && filteredCommands[selectedSlashIndex]) {
+          const exactTokenTyped = filteredCommands.some((c) => c.token === `/${slashQuery}`);
+          if (!exactTokenTyped) {
+            e.preventDefault();
+            applySlashCommand(filteredCommands[selectedSlashIndex]);
+            return;
+          }
+        }
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        setIsSlashMenuOpen(false);
+        return;
+      }
+    }
+  };
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setQuickTaskTitle(val);
+    const lastSlash = val.lastIndexOf('/');
+    if (lastSlash !== -1 && (lastSlash === 0 || val[lastSlash - 1] === ' ')) {
+      setIsSlashMenuOpen(true);
+      setSelectedSlashIndex(0);
+    } else {
+      setIsSlashMenuOpen(false);
+    }
+  };
 
   const navItems = [
     {
@@ -218,39 +520,96 @@ export const Sidebar: React.FC<SidebarProps> = ({
           <hr className="border-[var(--border-subtle)]" />
 
           {/* Quick Task Capture Widget */}
-          <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-2">
+          <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-2 relative">
             <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--accent-terracotta)]">
               <Sparkles className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} aria-hidden="true" />
               <span>Quick Task Capture</span>
             </div>
+
             <form
               onSubmit={(e) => {
                 e.preventDefault();
                 if (quickTaskTitle.trim() && onQuickAddTask) {
-                  onQuickAddTask(quickTaskTitle.trim());
+                  const parsed = parseQuickTaskInput(quickTaskTitle.trim());
+                  onQuickAddTask(parsed);
                   setQuickTaskTitle('');
+                  setIsSlashMenuOpen(false);
                 }
               }}
-              className="flex items-center gap-1.5"
+              className="relative"
             >
-              <input
-                id="quick-capture-task-input"
-                name="quickTaskTitle"
-                type="text"
-                value={quickTaskTitle}
-                onChange={(e) => setQuickTaskTitle(e.target.value)}
-                placeholder="Capture task..."
-                aria-label="Quick capture task input"
-                className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--card-surface)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:ring-1 focus:ring-[var(--accent-terracotta)] transition-colors min-h-[40px]"
-              />
-              <button
-                type="submit"
-                disabled={!quickTaskTitle.trim()}
-                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-terracotta)] text-white hover:opacity-90 disabled:opacity-40 transition-all shadow-xs min-h-[40px] cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-500"
-                aria-label="Add Quick Task"
-              >
-                <Plus className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-              </button>
+              {/* Slash Command Dropdown Popover */}
+              {isSlashActive && filteredCommands.length > 0 && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsSlashMenuOpen(false)}
+                  />
+                  <div className="absolute bottom-full left-0 mb-2 z-50 w-52 sm:w-56 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-1.5 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150 max-h-64 overflow-y-auto">
+                    <div className="space-y-0.5">
+                      {filteredCommands.map((cmd, idx) => {
+                        const Icon = cmd.icon;
+                        const isSelected = idx === selectedSlashIndex;
+                        return (
+                          <button
+                            key={cmd.id}
+                            type="button"
+                            title={cmd.description}
+                            onClick={() => applySlashCommand(cmd)}
+                            onMouseEnter={() => setSelectedSlashIndex(idx)}
+                            className={`w-full flex items-center justify-between gap-2 rounded-xl px-2.5 py-1.5 text-xs text-left transition cursor-pointer group ${
+                              isSelected
+                                ? 'bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold shadow-xs'
+                                : 'text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+                            }`}
+                          >
+                            <div className="flex items-center gap-2 min-w-0">
+                              <div className={`flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--surface-sunken)] shrink-0 ${cmd.color}`}>
+                                <Icon className="h-3.5 w-3.5" />
+                              </div>
+                              <span className="font-mono font-bold text-xs text-[var(--accent-terracotta)] tracking-tight">
+                                {cmd.token}
+                              </span>
+                            </div>
+
+                            <span className="text-[9px] uppercase font-bold text-[var(--text-muted)] shrink-0 bg-[var(--surface-sunken)] px-1.5 py-0.5 rounded-full border border-[var(--border-subtle)]">
+                              {cmd.category}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </>
+              )}
+
+              <div className="flex items-center gap-1.5">
+                <input
+                  ref={inputRef}
+                  id="quick-capture-task-input"
+                  name="quickTaskTitle"
+                  type="text"
+                  value={quickTaskTitle}
+                  onChange={handleInputChange}
+                  onKeyDown={handleQuickTaskKeyDown}
+                  onFocus={() => {
+                    if (quickTaskTitle.includes('/')) {
+                      setIsSlashMenuOpen(true);
+                    }
+                  }}
+                  placeholder="Add task... (type /)"
+                  aria-label="Quick capture task input"
+                  className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--card-surface)] px-3 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:ring-1 focus:ring-[var(--accent-terracotta)] transition-colors min-h-[40px]"
+                />
+                <button
+                  type="submit"
+                  disabled={!quickTaskTitle.trim()}
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-terracotta)] text-white hover:opacity-90 disabled:opacity-40 transition-all shadow-xs min-h-[40px] cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-500"
+                  aria-label="Add Quick Task"
+                >
+                  <Plus className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
+                </button>
+              </div>
             </form>
           </div>
 
