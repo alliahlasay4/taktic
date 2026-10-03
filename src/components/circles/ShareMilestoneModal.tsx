@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { X, ShieldCheck, Sparkles, Flame, Trophy, Zap, Target, Heart, Eye } from 'lucide-react';
+import { X, ShieldCheck, Sparkles, Flame, Trophy, Zap, Target, Lock, Users, Info, Check } from 'lucide-react';
 import { CircleFeedPost } from '../../types';
 
 interface ShareMilestoneModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onShare: (type: CircleFeedPost['type'], title: string, detail: string) => void;
+  onShare: (type: CircleFeedPost['type'], title: string, detail: string, isPrivate?: boolean) => void;
 }
 
 const CATEGORIES = [
@@ -14,8 +14,8 @@ const CATEGORIES = [
     label: 'Rings Closed',
     sublabel: 'Daily Focus Completion',
     icon: Trophy,
-    presetTitle: 'Closed 3/3 Daily Focus Rings',
-    presetDetail: 'Completed all focus, habit, and deep sprint rings today.',
+    placeholderTitle: 'e.g., Closed 3/3 Daily Focus Rings or Finished deep work goals',
+    placeholderDetail: 'e.g., Completed morning flow block, hit 100% daily focus target...',
     theme: {
       border: 'border-[var(--accent-warm-ochre)]/40',
       bg: 'bg-[var(--accent-warm-ochre)]/10',
@@ -29,8 +29,8 @@ const CATEGORIES = [
     label: 'Streak Milestone',
     sublabel: 'Consistency & Momentum',
     icon: Flame,
-    presetTitle: 'Reached 14-Day Consistency Streak',
-    presetDetail: 'Showing up every day in silent accountability.',
+    placeholderTitle: 'e.g., Reached 14-Day Consistency Streak',
+    placeholderDetail: 'e.g., Showing up every day in silent accountability...',
     theme: {
       border: 'border-[var(--accent-terracotta)]/40',
       bg: 'bg-[var(--accent-terracotta)]/10',
@@ -44,8 +44,8 @@ const CATEGORIES = [
     label: 'Sprint Marathon',
     sublabel: 'Deep Work Session',
     icon: Zap,
-    presetTitle: 'Completed 120-Min Deep Work Sprint',
-    presetDetail: 'Zero distraction silent co-working block.',
+    placeholderTitle: 'e.g., Completed 120-Min Deep Work Sprint',
+    placeholderDetail: 'e.g., Zero distraction flow session on core deliverables...',
     theme: {
       border: 'border-[var(--accent-botanical-sage)]/40',
       bg: 'bg-[var(--accent-botanical-sage)]/10',
@@ -59,8 +59,8 @@ const CATEGORIES = [
     label: 'Habit Mastered',
     sublabel: 'Routine Discipline',
     icon: Target,
-    presetTitle: 'Mastered 5 Daily Routines',
-    presetDetail: 'Completed morning routine and intentional planning.',
+    placeholderTitle: 'e.g., Mastered 5 Daily Routines',
+    placeholderDetail: 'e.g., Completed morning planning and intentional reflection...',
     theme: {
       border: 'border-[var(--accent-dusty-mauve)]/40',
       bg: 'bg-[var(--accent-dusty-mauve)]/10',
@@ -77,28 +77,24 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
   onShare,
 }) => {
   const [type, setType] = useState<CircleFeedPost['type']>('ring_closed');
-  const [title, setTitle] = useState(CATEGORIES[0].presetTitle);
-  const [detail, setDetail] = useState(CATEGORIES[0].presetDetail);
+  const [title, setTitle] = useState('');
+  const [detail, setDetail] = useState('');
+  const [audience, setAudience] = useState<'circle' | 'masked'>('circle');
 
   if (!isOpen) return null;
 
   const currentCategory = CATEGORIES.find((c) => c.id === type) || CATEGORIES[0];
-  const CategoryIcon = currentCategory.icon;
+  const isPrivate = audience === 'masked';
 
   const handleSelectCategory = (selectedType: CircleFeedPost['type']) => {
-    const cat = CATEGORIES.find((c) => c.id === selectedType);
     setType(selectedType);
-    if (cat) {
-      setTitle(cat.presetTitle);
-      setDetail(cat.presetDetail);
-    }
   };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    onShare(type, title.trim(), detail.trim() || 'Achieved in silent focus sprint.');
+    onShare(type, title.trim(), detail.trim(), isPrivate);
     onClose();
   };
 
@@ -108,20 +104,29 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
         {/* Modal Header */}
         <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[var(--border-subtle)] shrink-0 bg-[var(--bg-main)]/50">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] shadow-xs">
-              <Sparkles className="h-5 w-5" />
+            <div className={`flex h-10 w-10 items-center justify-center rounded-2xl shadow-xs transition-colors ${isPrivate
+                ? 'bg-amber-500/15 text-amber-500'
+                : 'bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)]'
+              }`}>
+              {isPrivate ? <Lock className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
             </div>
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)]">
-                  Broadcast Milestone
+                  {isPrivate ? 'Log Masked Milestone' : 'Broadcast Milestone'}
                 </h2>
-                <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-botanical-sage)]">
-                  <ShieldCheck className="h-3 w-3" /> Private Broadcast
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${isPrivate
+                    ? 'bg-amber-500/15 border border-amber-500/30 text-amber-500'
+                    : 'bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 text-[var(--accent-botanical-sage)]'
+                  }`}>
+                  {isPrivate ? <Lock className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}
+                  {isPrivate ? 'Masked / Self Only' : 'Private to Circle'}
                 </span>
               </div>
               <p className="text-xs text-[var(--text-secondary)]">
-                Broadcast an achievement badge to your accountability circle.
+                {isPrivate
+                  ? 'Record a private achievement locked to your personal timeline.'
+                  : 'Broadcast an achievement badge to your accountability circle.'}
               </p>
             </div>
           </div>
@@ -129,7 +134,7 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
+            className="rounded-xl p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition cursor-pointer"
             aria-label="Close dialog"
           >
             <X className="h-5 w-5" />
@@ -139,11 +144,98 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
         {/* Modal Content - Two-column horizontal layout on Tablet & Desktop */}
         <div className="flex-1 overflow-y-auto p-5 sm:p-6">
           <form id="broadcast-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6">
-            {/* Left Column (Category Selection & Live Feed Preview) */}
+            {/* Left Column: Sharing Audience & Category Selection */}
             <div className="md:col-span-6 space-y-4 flex flex-col justify-between">
+              {/* 1. Target Audience / Visibility Selection */}
               <div>
-                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2.5">
-                  1. Choose Milestone Type
+                <div className="flex items-center justify-between mb-2">
+                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
+                    1. Sharing Audience & Privacy
+                  </label>
+
+                  {/* Privacy Info Hover Tooltip */}
+                  <div className="relative group">
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 text-[11px] font-semibold text-[var(--text-muted)] hover:text-[var(--accent-botanical-sage)] transition cursor-help px-1.5 py-0.5 rounded-lg hover:bg-[var(--card-hover)]"
+                      aria-label="Privacy guarantee information"
+                    >
+                      <Info className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)]" />
+                      <span>Privacy Info</span>
+                    </button>
+
+                    <div className="pointer-events-none absolute right-0 top-full mt-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-200 z-50 w-72 rounded-xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--card-surface)] p-3 shadow-xl backdrop-blur-md text-left">
+                      <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--accent-botanical-sage)] mb-1">
+                        <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
+                        <span>Privacy Guaranteed</span>
+                      </div>
+                      <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                        Broadcasts high-level milestone badges to active circle partners. Task names, URLs, and confidential notes stay masked.
+                      </p>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1.5 pt-1.5 border-t border-[var(--border-subtle)]">
+                        <strong className="text-amber-500">Masked mode</strong> keeps posts completely private to your own timeline.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2.5">
+                  {/* Option A: Broadcast to Circle */}
+                  <button
+                    type="button"
+                    onClick={() => setAudience('circle')}
+                    className={`flex flex-col items-start p-3 rounded-2xl border text-left transition-all cursor-pointer relative ${audience === 'circle'
+                        ? 'border-[var(--accent-warm-ochre)]/60 bg-[var(--accent-warm-ochre)]/15 ring-2 ring-[var(--accent-warm-ochre)]/40 shadow-xs scale-[1.01]'
+                        : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] hover:border-[var(--border-subtle)] hover:bg-[var(--card-hover)] text-[var(--text-secondary)]'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1.5">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-[var(--accent-warm-ochre)]/20 text-[var(--accent-warm-ochre)]">
+                        <Users className="h-4 w-4" />
+                      </div>
+                      {audience === 'circle' && (
+                        <Check className="h-3.5 w-3.5 text-[var(--accent-warm-ochre)]" />
+                      )}
+                    </div>
+                    <span className="font-heading font-bold text-xs text-[var(--text-primary)] leading-snug">
+                      Broadcast to Circle
+                    </span>
+                    <span className="text-[10px] text-[var(--text-muted)] mt-0.5 line-clamp-2">
+                      Visible to your circle roster partners.
+                    </span>
+                  </button>
+
+                  {/* Option B: Masked / Own Post */}
+                  <button
+                    type="button"
+                    onClick={() => setAudience('masked')}
+                    className={`flex flex-col items-start p-3 rounded-2xl border text-left transition-all cursor-pointer relative ${audience === 'masked'
+                        ? 'border-amber-500/60 bg-amber-500/15 ring-2 ring-amber-500/40 shadow-xs scale-[1.01]'
+                        : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] hover:border-[var(--border-subtle)] hover:bg-[var(--card-hover)] text-[var(--text-secondary)]'
+                      }`}
+                  >
+                    <div className="flex items-center justify-between w-full mb-1.5">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500/20 text-amber-500">
+                        <Lock className="h-4 w-4" />
+                      </div>
+                      {audience === 'masked' && (
+                        <Check className="h-3.5 w-3.5 text-amber-500" />
+                      )}
+                    </div>
+                    <span className="font-heading font-bold text-xs text-[var(--text-primary)] leading-snug">
+                      Masked
+                    </span>
+                    <span className="text-[10px] text-[var(--text-muted)] mt-0.5 line-clamp-2">
+                      Padlocked. Visible only to you in your feed.
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              {/* 2. Choose Milestone Type (2x2 Grid) */}
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
+                  2. Choose Milestone Type
                 </label>
                 <div className="grid grid-cols-2 gap-2.5">
                   {CATEGORIES.map((cat) => {
@@ -154,11 +246,10 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
                         key={cat.id}
                         type="button"
                         onClick={() => handleSelectCategory(cat.id)}
-                        className={`flex flex-col items-start p-3 rounded-2xl border text-left transition-all relative ${
-                          isSelected
+                        className={`flex flex-col items-start p-3 rounded-2xl border text-left transition-all cursor-pointer relative ${isSelected
                             ? `${cat.theme.border} ${cat.theme.selectedBg} ring-2 ring-[var(--accent-warm-ochre)]/40 shadow-xs scale-[1.01]`
                             : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] hover:border-[var(--border-subtle)] hover:bg-[var(--card-hover)] text-[var(--text-secondary)]'
-                        }`}
+                          }`}
                       >
                         <div className="flex items-center justify-between w-full mb-1.5">
                           <div
@@ -181,65 +272,16 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
                   })}
                 </div>
               </div>
-
-              {/* Live Preview Card */}
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-3.5 space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="flex items-center gap-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                    <Eye className="h-3 w-3 text-[var(--accent-warm-ochre)]" /> Live Feed Preview
-                  </span>
-                  <span className="rounded-full bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] px-2 py-0.5 text-[9px] font-bold">
-                    Clean & Masked
-                  </span>
-                </div>
-
-                <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3 shadow-xs space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <div className="flex h-6 w-6 items-center justify-center rounded-full bg-[var(--accent-terracotta)] text-white text-[10px] font-bold">
-                        Y
-                      </div>
-                      <div>
-                        <p className="text-xs font-bold text-[var(--text-primary)]">You (Broadcaster)</p>
-                        <p className="text-[9px] text-[var(--text-muted)]">Just now • Social Circle</p>
-                      </div>
-                    </div>
-                    <span
-                      className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${currentCategory.theme.bg} ${currentCategory.theme.text}`}
-                    >
-                      <CategoryIcon className="h-2.5 w-2.5" />
-                      <span>{currentCategory.label}</span>
-                    </span>
-                  </div>
-
-                  <p className="text-xs font-bold text-[var(--text-primary)] leading-snug">
-                    {title || 'Achievement Title'}
-                  </p>
-
-                  {detail && (
-                    <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed italic">
-                      "{detail}"
-                    </p>
-                  )}
-
-                  <div className="pt-1.5 border-t border-[var(--border-subtle)] flex items-center justify-between text-[10px] text-[var(--text-muted)]">
-                    <span className="flex items-center gap-1 text-[var(--accent-terracotta)]">
-                      <Heart className="h-3 w-3 fill-[var(--accent-terracotta)]" /> 0 Claps
-                    </span>
-                    <span>Private to Circle</span>
-                  </div>
-                </div>
-              </div>
             </div>
 
-            {/* Right Column (Form Inputs & Privacy Shield) */}
+            {/* Right Column: Title & Reflection Inputs */}
             <div className="md:col-span-6 space-y-4 flex flex-col justify-between">
               <div className="space-y-4">
-                {/* Title Input */}
+                {/* 3. Title Input */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
                     <label htmlFor="broadcast-title" className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                      2. Achievement Title
+                      3. Achievement Title
                     </label>
                     <span className="text-[10px] text-[var(--text-muted)]">{title.length}/60</span>
                   </div>
@@ -250,7 +292,7 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
                     maxLength={60}
                     value={title}
                     onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g., Closed 3/3 Daily Focus Rings"
+                    placeholder={currentCategory.placeholderTitle}
                     required
                     className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-terracotta)]"
                   />
@@ -263,11 +305,10 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
                         key={suggestion}
                         type="button"
                         onClick={() => setTitle(suggestion)}
-                        className={`text-[10px] px-2 py-0.5 rounded-lg border transition ${
-                          title === suggestion
-                            ? 'bg-[var(--accent-terracotta)] text-white border-[var(--accent-terracotta)] font-semibold'
+                        className={`text-[10px] px-2 py-0.5 rounded-lg border transition cursor-pointer ${title === suggestion
+                            ? 'bg-[var(--accent-terracotta)] text-white border-[var(--accent-terracotta)] font-semibold shadow-2xs'
                             : 'border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-terracotta)]/40'
-                        }`}
+                          }`}
                       >
                         {suggestion}
                       </button>
@@ -275,29 +316,20 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
                   </div>
                 </div>
 
-                {/* Optional Detail Note */}
+                {/* 4. Optional Reflection Note */}
                 <div>
                   <label htmlFor="broadcast-detail" className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">
-                    3. Optional Reflection Note
+                    4. Optional Reflection Note
                   </label>
                   <textarea
                     id="broadcast-detail"
                     name="detail"
-                    rows={3}
+                    rows={4}
                     value={detail}
                     onChange={(e) => setDetail(e.target.value)}
-                    placeholder="Add brief context or reflection..."
-                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3.5 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-terracotta)] resize-none"
+                    placeholder={currentCategory.placeholderDetail}
+                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-terracotta)] resize-none"
                   />
-                </div>
-
-                {/* Privacy Guarantee Box */}
-                <div className="rounded-2xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--accent-botanical-sage)]/10 p-3 flex items-start gap-2.5">
-                  <ShieldCheck className="h-4 w-4 text-[var(--accent-botanical-sage)] shrink-0 mt-0.5" />
-                  <p className="text-[11px] text-[var(--text-primary)] leading-snug">
-                    <span className="font-bold text-[var(--accent-botanical-sage)]">Privacy Protected: </span>
-                    Broadcasts high-level milestone badges only. Task names, URLs, and code stay private.
-                  </p>
                 </div>
               </div>
             </div>
@@ -309,7 +341,7 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
           >
             Cancel
           </button>
@@ -317,10 +349,13 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
           <button
             type="submit"
             form="broadcast-form"
-            className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-warm-ochre)] hover:brightness-110 px-5 py-2 text-xs font-bold text-black shadow-md transition active:scale-95"
+            className={`flex items-center gap-1.5 rounded-xl px-5 py-2 text-xs font-bold shadow-md transition active:scale-95 cursor-pointer ${isPrivate
+                ? 'bg-amber-500 hover:brightness-110 text-black'
+                : 'bg-[var(--accent-warm-ochre)] hover:brightness-110 text-black'
+              }`}
           >
-            <Sparkles className="h-4 w-4" />
-            <span>Broadcast to Circle</span>
+            {isPrivate ? <Lock className="h-4 w-4" /> : <Sparkles className="h-4 w-4" />}
+            <span>{isPrivate ? 'Save Masked Milestone' : 'Broadcast to Circle'}</span>
           </button>
         </div>
       </div>

@@ -269,19 +269,24 @@ CREATE TABLE IF NOT EXISTS public.circle_posts (
   type TEXT DEFAULT 'ring_closed' NOT NULL,
   title TEXT NOT NULL,
   detail TEXT,
+  is_private BOOLEAN DEFAULT false NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
--- Enable RLS on Circle Posts (Readable by all authenticated users)
+-- Enable RLS on Circle Posts
 ALTER TABLE public.circle_posts ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Circle posts are viewable by all authenticated users"
+CREATE POLICY "Circle posts select policy"
   ON public.circle_posts FOR SELECT
-  USING (true);
+  USING (is_private IS NOT TRUE OR auth.uid() = user_id);
 
 CREATE POLICY "Users can insert own circle posts"
   ON public.circle_posts FOR INSERT
   WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can update own circle posts"
+  ON public.circle_posts FOR UPDATE
+  USING (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own circle posts"
   ON public.circle_posts FOR DELETE
@@ -293,6 +298,7 @@ CREATE TABLE IF NOT EXISTS public.post_likes (
   id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
   post_id UUID REFERENCES public.circle_posts(id) ON DELETE CASCADE NOT NULL,
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  reaction VARCHAR(30) DEFAULT 'fire' NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL,
   UNIQUE(post_id, user_id)
 );
@@ -308,8 +314,46 @@ CREATE POLICY "Users can insert own post likes"
   ON public.post_likes FOR INSERT
   WITH CHECK (auth.uid() = user_id);
 
+CREATE POLICY "Users can update own post likes"
+  ON public.post_likes FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
 CREATE POLICY "Users can delete own post likes"
   ON public.post_likes FOR DELETE
+  USING (auth.uid() = user_id);
+
+-- 10b. Create Notifications Table
+CREATE TABLE IF NOT EXISTS public.notifications (
+  id UUID DEFAULT uuid_generate_v4() PRIMARY KEY,
+  user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE NOT NULL,
+  title TEXT NOT NULL,
+  message TEXT NOT NULL,
+  type VARCHAR(30) DEFAULT 'circle' NOT NULL,
+  read BOOLEAN DEFAULT false NOT NULL,
+  action_tab VARCHAR(30) DEFAULT 'circles',
+  created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_created ON public.notifications(user_id, created_at DESC);
+
+ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Users can view own notifications"
+  ON public.notifications FOR SELECT
+  USING (auth.uid() = user_id);
+
+CREATE POLICY "Authenticated users can create notifications for others"
+  ON public.notifications FOR INSERT
+  WITH CHECK (auth.role() = 'authenticated');
+
+CREATE POLICY "Users can update own notifications"
+  ON public.notifications FOR UPDATE
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY "Users can delete own notifications"
+  ON public.notifications FOR DELETE
   USING (auth.uid() = user_id);
 
 
@@ -437,4 +481,113 @@ CREATE POLICY "Users can delete own quick notes"
 
 CREATE INDEX IF NOT EXISTS idx_quick_notes_user_pinned 
   ON public.quick_notes(user_id, is_pinned, updated_at DESC);
+
+-- 14. Circle Partner Acceptance RPC & Realtime Sync
+ALTER TABLE public.circle_members
+  ADD COLUMN IF NOT EXISTS partner_user_id UUID REFERENCES auth.users(id) ON DELETE SET NULL;
+
+CREATE OR REPLACE FUNCTION public.accept_circle_invite(p_invite_token text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  v_invite RECORD;
+  v_invitee_id UUID;
+  v_inviter_id UUID;
+  v_inviter_profile RECORD;
+  v_invitee_profile RECORD;
+  v_inviter_name TEXT;
+  v_invitee_name TEXT;
+  v_inviter_avatar TEXT;
+  v_invitee_avatar TEXT;
+BEGIN
+  v_invitee_id := auth.uid();
+  IF v_invitee_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Authentication required to accept invite');
+  END IF;
+
+  -- 1. Locate invite token
+  SELECT * INTO v_invite
+  FROM public.circle_invites
+  WHERE invite_token = p_invite_token
+  LIMIT 1;
+
+  IF v_invite.id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid or expired invitation token');
+  END IF;
+
+  v_inviter_id := v_invite.user_id;
+
+  -- Disallow accepting your own invitation
+  IF v_inviter_id = v_invitee_id THEN
+    RETURN jsonb_build_object('success', false, 'error', 'You cannot accept your own invitation');
+  END IF;
+
+  -- 2. Fetch profiles for display names and avatars
+  SELECT * INTO v_inviter_profile FROM public.profiles WHERE id = v_inviter_id;
+  SELECT * INTO v_invitee_profile FROM public.profiles WHERE id = v_invitee_id;
+
+  v_inviter_name := COALESCE(NULLIF(TRIM(v_inviter_profile.full_name), ''), NULLIF(TRIM(v_inviter_profile.email), ''), 'Circle Partner');
+  v_invitee_name := COALESCE(NULLIF(TRIM(v_invitee_profile.full_name), ''), NULLIF(TRIM(v_invitee_profile.email), ''), NULLIF(TRIM(v_invite.name), ''), 'Circle Partner');
+  
+  v_inviter_avatar := COALESCE(
+    v_inviter_profile.avatar_url,
+    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
+  );
+  v_invitee_avatar := COALESCE(
+    v_invitee_profile.avatar_url,
+    'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
+  );
+
+  -- 3. Upsert into Inviter's circle_members roster (adding the Invitee)
+  INSERT INTO public.circle_members (
+    user_id, partner_user_id, member_name, member_avatar, status, status_text, closed_rings_count, streak, is_circle_partner, is_muted
+  ) VALUES (
+    v_inviter_id, v_invitee_id, v_invitee_name, v_invitee_avatar, 'focusing', 'Active Partner', 0, 1, true, false
+  )
+  ON CONFLICT (user_id, member_name) DO UPDATE SET
+    partner_user_id = EXCLUDED.partner_user_id,
+    member_avatar = EXCLUDED.member_avatar,
+    is_circle_partner = true;
+
+  -- 4. Upsert into Invitee's circle_members roster (adding the Inviter)
+  INSERT INTO public.circle_members (
+    user_id, partner_user_id, member_name, member_avatar, status, status_text, closed_rings_count, streak, is_circle_partner, is_muted
+  ) VALUES (
+    v_invitee_id, v_inviter_id, v_inviter_name, v_inviter_avatar, 'focusing', 'Active Partner', 0, 1, true, false
+  )
+  ON CONFLICT (user_id, member_name) DO UPDATE SET
+    partner_user_id = EXCLUDED.partner_user_id,
+    member_avatar = EXCLUDED.member_avatar,
+    is_circle_partner = true;
+
+  -- 5. Mark invite as accepted in circle_invites
+  UPDATE public.circle_invites
+  SET status = 'accepted'
+  WHERE id = v_invite.id;
+
+  -- 6. Insert celebratory post in circle_posts
+  INSERT INTO public.circle_posts (
+    user_id, user_name, user_avatar, type, title, detail
+  ) VALUES (
+    v_inviter_id,
+    v_inviter_name,
+    v_inviter_avatar,
+    'partner_connected',
+    'New Circle Partner Connected! 🤝',
+    v_inviter_name || ' and ' || v_invitee_name || ' are now accountability partners!'
+  );
+
+  RETURN jsonb_build_object(
+    'success', true,
+    'inviter_name', v_inviter_name,
+    'inviter_id', v_inviter_id,
+    'inviter_avatar', v_inviter_avatar
+  );
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.accept_circle_invite(text) TO authenticated;
 

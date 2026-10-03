@@ -56,6 +56,7 @@ export interface CircleMember {
   isCirclePartner?: boolean;
   isMuted?: boolean;
   microGoal?: string;
+  partnerUserId?: string;
 }
 
 export interface CircleInvite {
@@ -75,13 +76,14 @@ export interface CircleFeedPost {
   userId: string;
   userName: string;
   userAvatar: string;
-  type: 'ring_closed' | 'streak_milestone' | 'habit_mastered' | 'focus_marathon';
+  type: 'ring_closed' | 'streak_milestone' | 'habit_mastered' | 'focus_marathon' | 'partner_connected';
   title: string;
   detail: string;
   timestamp: string;
   likes: number;
   userLiked?: boolean;
   userReaction?: string | null;
+  isPrivate?: boolean;
 }
 
 export interface HeatmapDay {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { AuthProvider } from './context/AuthContext';
+import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Navbar } from './components/layout/Navbar';
 import { Sidebar } from './components/layout/Sidebar';
@@ -14,6 +14,7 @@ import { ArchiveView } from './components/archive/ArchiveView';
 import { RewardModal } from './components/rewards/RewardModal';
 import { EndOfDaySummary } from './components/rewards/EndOfDaySummary';
 import { OnboardingModal } from './components/onboarding/OnboardingModal';
+import { CircleInviteAcceptModal } from './components/circles/CircleInviteAcceptModal';
 
 import { ActiveTab } from './types';
 import { getTabFromPath, getPathFromTab } from './lib/routes';
@@ -172,6 +173,9 @@ function MainLayout() {
     clearAll,
   } = useInAppNotifications();
 
+  const { user, profile } = useAuth();
+  const currentUserName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
+
   // Social Circles & Feed State from Custom Hook (Supabase Realtime + RLS)
   const {
     feedPosts,
@@ -185,9 +189,107 @@ function MainLayout() {
     cancelCircleInvite,
     resendCircleInvite,
     generateMagicInviteLink,
+    acceptCircleInvite,
+    checkMyPendingInvite,
     toggleLikePost,
     broadcastAchievement,
+    deletePost,
   } = useCircles();
+
+  // Pending Circle Partner Invitation State
+  const [pendingCircleInvite, setPendingCircleInvite] = useState<{ token: string; inviter: string } | null>(null);
+
+  // Automatically check Supabase database and local storage for pending invitations from non-members
+  useEffect(() => {
+    const existingMemberNames = new Set(members.map((m) => m.name.toLowerCase()));
+
+    // 1. Check URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlToken = urlParams.get('circle_invite');
+    const urlInviter = urlParams.get('inviter');
+    const inviterTitle = urlInviter ? decodeURIComponent(urlInviter) : 'Circle Partner';
+
+    // 2. Check storage
+    const savedRaw = localStorage.getItem('taktic_pending_circle_invite') || sessionStorage.getItem('taktic_pending_circle_invite');
+    let candidate = urlToken ? { token: urlToken, inviter: inviterTitle } : null;
+
+    if (!candidate && savedRaw) {
+      try {
+        const parsed = JSON.parse(savedRaw);
+        if (parsed?.token) {
+          candidate = { token: parsed.token, inviter: parsed.inviter || 'Circle Partner' };
+        }
+      } catch {}
+    }
+
+    // If candidate exists but is already an active partner, clear and discard
+    if (candidate && existingMemberNames.has(candidate.inviter.toLowerCase())) {
+      localStorage.removeItem('taktic_pending_circle_invite');
+      sessionStorage.removeItem('taktic_pending_circle_invite');
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('circle_invite');
+        url.searchParams.delete('inviter');
+        window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
+      }
+      setPendingCircleInvite(null);
+      return;
+    }
+
+    if (candidate) {
+      setPendingCircleInvite(candidate);
+      return;
+    }
+
+    // 3. If no local candidate, check database via RPC for invites from non-members
+    checkMyPendingInvite().then((invite) => {
+      if (invite && !existingMemberNames.has(invite.inviter.toLowerCase())) {
+        setPendingCircleInvite(invite);
+      } else {
+        setPendingCircleInvite(null);
+      }
+    });
+  }, [members, checkMyPendingInvite]);
+
+  const handleAcceptCircleInvite = async (token: string) => {
+    try {
+      const res = await acceptCircleInvite(token);
+      const inviterName = res?.inviter_name || pendingCircleInvite?.inviter || 'Circle Partner';
+      notify(
+        'Circle Partner Connected!',
+        `You and ${inviterName} are now accountability partners!`,
+        'circle',
+        'circles'
+      );
+      localStorage.removeItem('taktic_pending_circle_invite');
+      sessionStorage.removeItem('taktic_pending_circle_invite');
+      setPendingCircleInvite(null);
+
+      // Clean query parameters from URL gracefully
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('circle_invite');
+        url.searchParams.delete('inviter');
+        window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
+      }
+      setActiveTab('circles');
+    } catch (err: any) {
+      console.error('Failed to accept circle invite:', err);
+      throw err;
+    }
+  };
+
+  const handleDeclineCircleInvite = () => {
+    localStorage.removeItem('taktic_pending_circle_invite');
+    sessionStorage.removeItem('taktic_pending_circle_invite');
+    setPendingCircleInvite(null);
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href);
+      url.searchParams.delete('circle_invite');
+      url.searchParams.delete('inviter');
+      window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
+    }
+  };
 
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
   const userStreak = Math.max(1, overallStreak);
@@ -398,8 +500,11 @@ function MainLayout() {
                     feedPosts={feedPosts}
                     invites={invites}
                     userStreak={userStreak}
+                    currentUserId={user?.id}
+                    currentUserName={currentUserName}
                     onToggleLike={toggleLikePost}
                     onBroadcastAchievement={broadcastAchievement}
+                    onDeletePost={deletePost}
                     onTogglePartner={togglePartner}
                     onToggleMute={toggleMute}
                     onAddMemberByName={addMemberByName}
@@ -470,6 +575,15 @@ function MainLayout() {
           onAddHabit={addHabit}
           onAddTask={handleAddTask}
           requestNotificationPermission={requestPermission}
+        />
+
+        {/* Pending Circle Partner Invitation Acceptance Modal */}
+        <CircleInviteAcceptModal
+          isOpen={Boolean(pendingCircleInvite)}
+          inviterName={pendingCircleInvite?.inviter || 'Circle Partner'}
+          inviteToken={pendingCircleInvite?.token || ''}
+          onAccept={handleAcceptCircleInvite}
+          onDecline={handleDeclineCircleInvite}
         />
 
         {/* Global Quick Notes Floating Trigger */}

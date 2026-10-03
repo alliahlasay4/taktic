@@ -16,6 +16,19 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     if (typeof window === 'undefined') return { open: false, signUp: false };
     const pathname = normalizePath(window.location.pathname);
     const hash = window.location.hash.toLowerCase();
+    const searchParams = new URLSearchParams(window.location.search);
+    const circleInvite = searchParams.get('circle_invite');
+    const inviterParam = searchParams.get('inviter');
+
+    // Automatically capture & preserve invite token across all tabs using localStorage & sessionStorage
+    if (circleInvite) {
+      const inviteData = JSON.stringify({
+        token: circleInvite,
+        inviter: inviterParam ? decodeURIComponent(inviterParam) : 'Circle Partner',
+      });
+      localStorage.setItem('taktic_pending_circle_invite', inviteData);
+      sessionStorage.setItem('taktic_pending_circle_invite', inviteData);
+    }
 
     const isSignUp =
       pathname === '/signup' ||
@@ -32,7 +45,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
       hash === '#auth';
 
     return {
-      open: isSignUp || isSignIn,
+      open: isSignUp || isSignIn || Boolean(circleInvite),
       signUp: isSignUp,
     };
   };
@@ -68,7 +81,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
       prevUserRef.current = user;
       if (typeof window !== 'undefined') {
         const pathname = normalizePath(window.location.pathname);
-        if (isLandingPath(pathname) || isAuthPath(pathname) || window.location.hash) {
+        if (isLandingPath(pathname) || isAuthPath(pathname) || window.location.hash || window.location.search.includes('circle_invite')) {
           window.history.replaceState(null, '', '/focushub');
         }
       }

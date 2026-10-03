@@ -107,7 +107,7 @@ export function useCircles() {
     params.set('inviter', userName);
     if (email) params.set('email', email);
     if (name) params.set('name', name);
-    return { token, link: `${baseUrl}/?${params.toString()}` };
+    return { token, link: `${baseUrl}/login?${params.toString()}` };
   };
 
   const sendCircleInvite = async (email: string, name?: string) => {
@@ -138,6 +138,7 @@ export function useCircles() {
           inviterName: userName || 'A colleague',
           inviterId: user?.id || null,
           redirectUrl: link,
+          inviteToken: token,
         };
 
         // 1. Invoke Supabase Edge Function to dispatch Auth Invite Email
@@ -192,47 +193,55 @@ export function useCircles() {
     return { success: true, inviteLink: link, message: `Invite email dispatched to ${targetEmail}` };
   };
 
-  // Incoming Magic Link Acceptance Listener
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const urlParams = new URLSearchParams(window.location.search);
-    const inviteToken = urlParams.get('circle_invite');
-    const inviterNameParam = urlParams.get('inviter');
+  // Accept Circle Partner Invite (calls PostgreSQL SECURITY DEFINER RPC)
+  const acceptCircleInvite = async (inviteToken: string) => {
+    if (isRealUser && user) {
+      const { data, error: rpcErr } = await supabase.rpc('accept_circle_invite', {
+        p_invite_token: inviteToken,
+      });
 
-    if (inviteToken && (inviterNameParam || inviteToken === 'accepted')) {
-      const inviterTitle = inviterNameParam ? decodeURIComponent(inviterNameParam) : 'Circle Partner';
-      
-      // Check if already in members
-      const alreadyMember = members.some(
-        (m) => m.name.toLowerCase() === inviterTitle.toLowerCase()
-      );
-
-      if (!alreadyMember) {
-        const partnerMember: CircleMember = {
-          id: `partner-${Date.now()}`,
-          name: inviterTitle,
-          avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-          status: 'focusing',
-          statusText: 'Connected via Magic Invite',
-          closedRingsCount: 1,
-          streak: 3,
-          isCirclePartner: true,
-          isMuted: false,
-        };
-
-        saveMembers([partnerMember, ...members]);
+      if (rpcErr) {
+        console.error('accept_circle_invite RPC error:', rpcErr);
+        throw new Error(rpcErr.message || 'Failed to accept invitation');
       }
 
-      // Clean URL params gracefully
-      urlParams.delete('circle_invite');
-      urlParams.delete('inviter');
-      urlParams.delete('email');
-      urlParams.delete('name');
-      const newQuery = urlParams.toString();
-      const cleanPath = window.location.pathname + (newQuery ? `?${newQuery}` : '');
-      window.history.replaceState(null, '', cleanPath);
+      await fetchCirclesData();
+      return data;
+    } else {
+      // Demo mode fallback: add partner locally
+      const inviterTitle = 'Circle Partner';
+      const partnerMember: CircleMember = {
+        id: `partner-${Date.now()}`,
+        name: inviterTitle,
+        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+        status: 'focusing',
+        statusText: 'Connected as Circle Partner',
+        closedRingsCount: 1,
+        streak: 3,
+        isCirclePartner: true,
+        isMuted: false,
+      };
+      saveMembers([partnerMember, ...members]);
+      return { success: true, inviter_name: inviterTitle };
     }
-  }, [members]);
+  };
+
+  // Check database for any pending invitation sent to the logged-in user's email
+  const checkMyPendingInvite = useCallback(async () => {
+    if (!isRealUser || !user) return null;
+    try {
+      const { data, error } = await supabase.rpc('get_my_pending_circle_invite');
+      if (!error && data && data.invite_token) {
+        return {
+          token: data.invite_token,
+          inviter: data.inviter_name || 'Circle Partner',
+        };
+      }
+    } catch (e) {
+      console.warn('Could not check pending invite via RPC:', e);
+    }
+    return null;
+  }, [isRealUser, user]);
 
   const cancelCircleInvite = async (inviteId: string) => {
     const updated = invites.filter((i) => i.id !== inviteId);
@@ -396,6 +405,7 @@ export function useCircles() {
       if (!membersErr && membersData) {
         const dbMembers: CircleMember[] = membersData.map((m) => ({
           id: m.id,
+          partnerUserId: m.partner_user_id || undefined,
           name: m.member_name,
           avatar: m.member_avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
           status: (m.status as CircleMember['status']) || 'focusing',
@@ -409,13 +419,14 @@ export function useCircles() {
         localStorage.setItem(`taktic_circle_members_${user.id}`, JSON.stringify(dbMembers));
       }
 
-      // 2. Fetch user's circle invites from DB
+      // 2. Fetch user's circle invites from DB (only active pending invites for non-members)
       const isInvitesDisabled = localStorage.getItem('taktic_circle_invites_disabled') === 'true';
       if (!isInvitesDisabled) {
         const { data: invitesData, error: invitesErr } = await supabase
           .from('circle_invites')
           .select('*')
           .eq('user_id', user.id)
+          .eq('status', 'pending')
           .order('created_at', { ascending: false });
 
         if (invitesErr) {
@@ -429,16 +440,23 @@ export function useCircles() {
             localStorage.setItem('taktic_circle_invites_disabled', 'true');
           }
         } else if (invitesData) {
-          const dbInvites: CircleInvite[] = invitesData.map((inv) => ({
-            id: inv.id,
-            email: inv.email,
-            name: inv.name,
-            status: (inv.status as CircleInvite['status']) || 'pending',
-            inviteToken: inv.invite_token,
-            inviteLink: inv.invite_link,
-            createdAt: inv.created_at,
-            inviterName: userName,
-          }));
+          const existingNames = new Set(
+            (membersData || []).map((m) => m.member_name.toLowerCase())
+          );
+
+          const dbInvites: CircleInvite[] = invitesData
+            .filter((inv) => inv.status === 'pending' && (!inv.name || !existingNames.has(inv.name.toLowerCase())))
+            .map((inv) => ({
+              id: inv.id,
+              email: inv.email,
+              name: inv.name,
+              status: 'pending',
+              inviteToken: inv.invite_token,
+              inviteLink: inv.invite_link,
+              createdAt: inv.created_at,
+              inviterName: userName,
+            }));
+
           setInvites(dbInvites);
           localStorage.setItem(`taktic_circle_invites_${user.id}`, JSON.stringify(dbInvites));
         }
@@ -449,7 +467,7 @@ export function useCircles() {
         .from('circle_posts')
         .select('*')
         .order('created_at', { ascending: false })
-        .limit(40);
+        .limit(50);
 
       // 4. Fetch post likes
       const { data: likesData } = await supabase
@@ -477,6 +495,7 @@ export function useCircles() {
             likes: likesForPost.length,
             userLiked,
             userReaction,
+            isPrivate: Boolean(p.is_private),
           };
         });
 
@@ -495,52 +514,183 @@ export function useCircles() {
   useEffect(() => {
     fetchCirclesData();
 
-    // Enable Supabase Realtime subscription for live feed updates
+    // Enable Supabase Realtime subscription for live feed updates and live circle member roster changes
     if (isRealUser && user) {
-      const channel = supabase
+      const postsChannel = supabase
         .channel('public:circle_posts')
         .on(
           'postgres_changes',
-          { event: 'INSERT', schema: 'public', table: 'circle_posts' },
+          { event: '*', schema: 'public', table: 'circle_posts' },
           (payload) => {
-            const newPost = payload.new;
-            const formatted: CircleFeedPost = {
-              id: newPost.id,
-              userId: newPost.user_id,
-              userName: newPost.user_name,
-              userAvatar:
-                newPost.user_avatar ||
-                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-              type: (newPost.type as CircleFeedPost['type']) || 'ring_closed',
-              title: newPost.title,
-              detail: newPost.detail || '',
-              timestamp: 'Just now',
-              likes: 0,
-              userLiked: false,
-            };
-            setFeedPosts((prev) => [formatted, ...prev.filter((p) => p.id !== formatted.id)]);
+            if (payload.eventType === 'INSERT') {
+              const newPost = payload.new;
+              const formatted: CircleFeedPost = {
+                id: newPost.id,
+                userId: newPost.user_id,
+                userName: newPost.user_name,
+                userAvatar:
+                  newPost.user_avatar ||
+                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+                type: (newPost.type as CircleFeedPost['type']) || 'ring_closed',
+                title: newPost.title,
+                detail: newPost.detail || '',
+                timestamp: 'Just now',
+                likes: 0,
+                userLiked: false,
+                isPrivate: Boolean(newPost.is_private),
+              };
+              setFeedPosts((prev) => [formatted, ...prev.filter((p) => p.id !== formatted.id)]);
+            } else if (payload.eventType === 'DELETE') {
+              const deletedId = payload.old?.id;
+              if (deletedId) {
+                setFeedPosts((prev) => prev.filter((p) => p.id !== deletedId));
+              }
+            } else if (payload.eventType === 'UPDATE') {
+              const updatedPost = payload.new;
+              setFeedPosts((prev) =>
+                prev.map((p) =>
+                  p.id === updatedPost.id
+                    ? {
+                        ...p,
+                        title: updatedPost.title,
+                        detail: updatedPost.detail || '',
+                        isPrivate: Boolean(updatedPost.is_private),
+                      }
+                    : p
+                )
+              );
+            }
+          }
+        )
+        .subscribe();
+
+      const likesChannel = supabase
+        .channel('public:post_likes')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'post_likes' },
+          () => {
+            fetchCirclesData();
+          }
+        )
+        .subscribe();
+
+      const feedBroadcastChannel = supabase
+        .channel('public:circle_feed_broadcast')
+        .on('broadcast', { event: 'reaction_sync' }, (payload) => {
+          if (payload?.payload?.postId) {
+            const { postId, newLikesCount, reactingUserId, reaction, isRemoving } = payload.payload;
+            setFeedPosts((prev) =>
+              prev.map((p) => {
+                if (p.id !== postId) return p;
+                const isMe = user && reactingUserId === user.id;
+                return {
+                  ...p,
+                  likes: typeof newLikesCount === 'number' ? newLikesCount : p.likes,
+                  ...(isMe ? { userLiked: !isRemoving, userReaction: isRemoving ? null : reaction } : {}),
+                };
+              })
+            );
+          }
+        })
+        .subscribe();
+
+      const membersChannel = supabase
+        .channel(`public:circle_members:${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'circle_members', filter: `user_id=eq.${user.id}` },
+          () => {
+            fetchCirclesData();
+          }
+        )
+        .subscribe();
+
+      const invitesChannel = supabase
+        .channel(`public:circle_invites:${user.id}`)
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'circle_invites', filter: `user_id=eq.${user.id}` },
+          () => {
+            fetchCirclesData();
           }
         )
         .subscribe();
 
       return () => {
-        supabase.removeChannel(channel);
+        supabase.removeChannel(postsChannel);
+        supabase.removeChannel(likesChannel);
+        supabase.removeChannel(feedBroadcastChannel);
+        supabase.removeChannel(membersChannel);
+        supabase.removeChannel(invitesChannel);
       };
     }
   }, [fetchCirclesData, isRealUser, user]);
 
-  // Filter feed posts based on active, unmuted circle partners + user's own posts
-  const activePartnerIds = new Set(
-    members
-      .filter((m) => m.isCirclePartner !== false && !m.isMuted)
-      .map((m) => m.id)
-  );
+  // Filter feed posts strictly to active, unmuted circle partners + user's own posts
+  const partnerUserIds = new Set<string>();
+  const partnerExactNames = new Set<string>();
+  const partnerEmails = new Set<string>();
+
+  members.forEach((m) => {
+    // Only include active, unmuted circle partners
+    if (m.isCirclePartner !== false && !m.isMuted) {
+      if (m.partnerUserId) {
+        partnerUserIds.add(m.partnerUserId.toLowerCase());
+      }
+      if (m.name) {
+        const cleanName = m.name.trim().toLowerCase();
+        // Disallow generic placeholder names from matching non-partners
+        if (
+          cleanName &&
+          cleanName !== 'circle partner' &&
+          cleanName !== 'member' &&
+          cleanName !== 'user' &&
+          cleanName.length >= 2
+        ) {
+          partnerExactNames.add(cleanName);
+        }
+      }
+      if (m.email) {
+        const cleanEmail = m.email.trim().toLowerCase();
+        partnerEmails.add(cleanEmail);
+      }
+    }
+  });
 
   const filteredFeedPosts = feedPosts.filter((post) => {
-    // Current user's own post -> always show
-    if (post.userId === (user?.id || 'user')) return true;
-    // Post from a partner -> show if partner is active in circle and not muted
-    return activePartnerIds.has(post.userId);
+    const isOwnPost = Boolean(user && post.userId && post.userId === user.id) ||
+      (post.userId === 'user' && !isRealUser);
+
+    // 1. Current user's own post -> always show in own feed
+    if (isOwnPost) return true;
+
+    // 2. If another user's post is marked private/masked -> NEVER show to partners
+    if (post.isPrivate) return false;
+
+    // 3. In real user mode, strictly check if post author is an active partner in this user's roster
+    if (isRealUser) {
+      // Check exact partner auth user_id match
+      if (post.userId && partnerUserIds.has(post.userId.toLowerCase())) {
+        return true;
+      }
+
+      // Check exact partner email match
+      if (post.userName && partnerEmails.has(post.userName.trim().toLowerCase())) {
+        return true;
+      }
+
+      // Check exact validated partner name match (only if partner_user_id wasn't set)
+      if (post.userName && partnerExactNames.has(post.userName.trim().toLowerCase())) {
+        return true;
+      }
+
+      // If not authored by current user and not authored by any roster partner -> HIDE
+      return false;
+    }
+
+    // Demo mode: show demo feed posts
+    return true;
   });
 
   // Toggle Like / Reaction on Post
@@ -574,9 +724,42 @@ export function useCircles() {
             { post_id: postId, user_id: user.id, reaction: nextReaction },
             { onConflict: 'post_id,user_id' }
           );
+
+          // If reacting to a partner's post, send an in-app notification to the post author
+          if (post.userId && post.userId !== user.id && post.userId !== 'user') {
+            const reactionEmojiMap: Record<string, string> = {
+              fire: '🔥 Fire',
+              zap: '⚡ Sprint',
+              sparkles: '✨ Sparkle',
+              heart: '❤️ Love',
+            };
+            const emojiLabel = reactionEmojiMap[nextReaction || 'fire'] || 'Cheer';
+
+            await supabase.from('notifications').insert({
+              user_id: post.userId,
+              title: `${userName} cheered your milestone! 🎉`,
+              message: `${userName} reacted with ${emojiLabel} to "${post.title}"`,
+              type: 'circle',
+              read: false,
+              action_tab: 'circles',
+            });
+          }
         } else {
           await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id);
         }
+
+        // Broadcast reaction update across clients via Realtime
+        await supabase.channel('public:circle_feed_broadcast').send({
+          type: 'broadcast',
+          event: 'reaction_sync',
+          payload: {
+            postId,
+            newLikesCount: nextLikesCount,
+            reactingUserId: user.id,
+            reaction: nextReaction,
+            isRemoving,
+          },
+        });
       } catch (err: any) {
         console.error('Error toggling like in Supabase:', err);
       }
@@ -587,10 +770,11 @@ export function useCircles() {
   const broadcastAchievement = async (
     type: CircleFeedPost['type'],
     title: string,
-    detail: string
+    detail: string,
+    isPrivate: boolean = false
   ) => {
-    // Check privacy setting: if disabled, do not broadcast to feed
-    if (profile?.privacySettings && profile.privacySettings.showActivityFeed === false) {
+    // Check privacy setting: if disabled and trying to post public circle broadcast, return
+    if (!isPrivate && profile?.privacySettings && profile.privacySettings.showActivityFeed === false) {
       return;
     }
 
@@ -606,6 +790,7 @@ export function useCircles() {
       timestamp: 'Just now',
       likes: 0,
       userLiked: false,
+      isPrivate,
     };
 
     const updated = [newPost, ...feedPosts];
@@ -622,6 +807,7 @@ export function useCircles() {
             type,
             title,
             detail,
+            is_private: isPrivate,
           })
           .select()
           .single();
@@ -634,6 +820,19 @@ export function useCircles() {
         }
       } catch (err) {
         console.error('Error broadcasting achievement to Supabase:', err);
+      }
+    }
+  };
+
+  const deletePost = async (postId: string) => {
+    const updated = feedPosts.filter((p) => p.id !== postId);
+    saveFeedPosts(updated);
+
+    if (isRealUser && user) {
+      try {
+        await supabase.from('circle_posts').delete().eq('id', postId).eq('user_id', user.id);
+      } catch (err) {
+        console.error('Error deleting post from Supabase:', err);
       }
     }
   };
@@ -653,8 +852,11 @@ export function useCircles() {
     cancelCircleInvite,
     resendCircleInvite,
     generateMagicInviteLink,
+    acceptCircleInvite,
+    checkMyPendingInvite,
     toggleLikePost,
     broadcastAchievement,
+    deletePost,
     refreshFeed: fetchCirclesData,
   };
 }

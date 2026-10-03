@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Sparkles, ShieldCheck, Flame, Lock, Trophy, Zap, Target, Filter, Plus, Settings } from 'lucide-react';
+import { Heart, Sparkles, ShieldCheck, Flame, Lock, Trophy, Zap, Target, Filter, Plus, Settings, Trash2, User } from 'lucide-react';
 import { CircleFeedPost, CircleMember } from '../../types';
 import { ShareMilestoneModal } from './ShareMilestoneModal';
 import { CircleManagerModal } from './CircleManagerModal';
@@ -7,8 +7,11 @@ import { CircleManagerModal } from './CircleManagerModal';
 interface CircleFeedProps {
   feedPosts: CircleFeedPost[];
   members?: CircleMember[];
+  currentUserId?: string;
+  currentUserName?: string;
   onToggleLike: (postId: string, reaction?: string) => void;
-  onBroadcastAchievement?: (type: CircleFeedPost['type'], title: string, detail: string) => void;
+  onBroadcastAchievement?: (type: CircleFeedPost['type'], title: string, detail: string, isPrivate?: boolean) => void;
+  onDeletePost?: (postId: string) => void;
   onTogglePartner?: (memberId: string) => void;
   onToggleMute?: (memberId: string) => void;
   onAddMemberByName?: (name: string) => void;
@@ -18,14 +21,18 @@ interface CircleFeedProps {
 export const CircleFeed: React.FC<CircleFeedProps> = ({
   feedPosts,
   members = [],
+  currentUserId,
+  currentUserName,
   onToggleLike,
   onBroadcastAchievement,
+  onDeletePost,
   onTogglePartner,
   onToggleMute,
   onAddMemberByName,
   onRemoveMember,
 }) => {
   const [activeFilter, setActiveFilter] = useState<'all' | 'ring_closed' | 'streak_milestone' | 'focus_marathon' | 'habit_mastered'>('all');
+  const [audienceFilter, setAudienceFilter] = useState<'all' | 'mine' | 'partners'>('all');
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isManagerOpen, setIsManagerOpen] = useState(false);
 
@@ -36,6 +43,10 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
   };
 
   const filteredPosts = feedPosts.filter((post) => {
+    const isOwnPost = Boolean(currentUserId && post.userId && post.userId === currentUserId) || post.userId === 'user';
+    if (audienceFilter === 'mine' && !isOwnPost) return false;
+    if (audienceFilter === 'partners' && isOwnPost) return false;
+
     if (activeFilter === 'all') return true;
     return post.type === activeFilter;
   });
@@ -124,47 +135,72 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
           </div>
         </div>
 
-        {/* Filter Chips Bar */}
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-          <span className="text-xs font-semibold text-[var(--text-muted)] mr-1 flex items-center gap-1 shrink-0">
-            <Filter className="h-3.5 w-3.5" />
-            <span>Filter:</span>
-          </span>
-
-          {[
-            { id: 'all' as const, label: 'All Activity', icon: Sparkles, count: feedPosts.length },
-            { id: 'ring_closed' as const, label: 'Rings', icon: Trophy, count: feedPosts.filter((p) => p.type === 'ring_closed').length },
-            { id: 'streak_milestone' as const, label: 'Streaks', icon: Flame, count: feedPosts.filter((p) => p.type === 'streak_milestone').length },
-            { id: 'focus_marathon' as const, label: 'Sprints', icon: Zap, count: feedPosts.filter((p) => p.type === 'focus_marathon').length },
-            { id: 'habit_mastered' as const, label: 'Habits', icon: Target, count: feedPosts.filter((p) => p.type === 'habit_mastered').length },
-          ].map((tab) => {
-            const TabIcon = tab.icon;
-            const isSelected = activeFilter === tab.id;
-            return (
+        {/* Audience and Category Filter Chips Bar */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          {/* Audience Filter Pills */}
+          <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)] self-start overflow-x-auto">
+            {[
+              { id: 'all' as const, label: 'All Feed' },
+              { id: 'mine' as const, label: 'My Broadcasts' },
+              { id: 'partners' as const, label: 'Partners Only' },
+            ].map((scope) => (
               <button
-                key={tab.id}
+                key={scope.id}
                 type="button"
-                onClick={() => setActiveFilter(tab.id)}
-                className={`flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-semibold transition shrink-0 whitespace-nowrap min-h-[36px] ${
-                  isSelected
+                onClick={() => setAudienceFilter(scope.id)}
+                className={`px-3 py-1 text-xs font-semibold rounded-lg transition whitespace-nowrap ${
+                  audienceFilter === scope.id
                     ? 'bg-[var(--accent-terracotta)] text-white shadow-xs font-bold'
-                    : 'bg-[var(--surface-sunken)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
-                <TabIcon className="h-3.5 w-3.5" />
-                <span>{tab.label}</span>
-                {tab.count > 0 && (
-                  <span
-                    className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
-                      isSelected ? 'bg-white/25 text-white' : 'bg-[var(--card-surface)] text-[var(--text-muted)]'
-                    }`}
-                  >
-                    {tab.count}
-                  </span>
-                )}
+                {scope.label}
               </button>
-            );
-          })}
+            ))}
+          </div>
+
+          {/* Category Filter Chips */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
+            <span className="text-xs font-semibold text-[var(--text-muted)] mr-1 flex items-center gap-1 shrink-0">
+              <Filter className="h-3.5 w-3.5" />
+              <span>Type:</span>
+            </span>
+
+            {[
+              { id: 'all' as const, label: 'All', icon: Sparkles, count: feedPosts.length },
+              { id: 'ring_closed' as const, label: 'Rings', icon: Trophy, count: feedPosts.filter((p) => p.type === 'ring_closed').length },
+              { id: 'streak_milestone' as const, label: 'Streaks', icon: Flame, count: feedPosts.filter((p) => p.type === 'streak_milestone').length },
+              { id: 'focus_marathon' as const, label: 'Sprints', icon: Zap, count: feedPosts.filter((p) => p.type === 'focus_marathon').length },
+              { id: 'habit_mastered' as const, label: 'Habits', icon: Target, count: feedPosts.filter((p) => p.type === 'habit_mastered').length },
+            ].map((tab) => {
+              const TabIcon = tab.icon;
+              const isSelected = activeFilter === tab.id;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveFilter(tab.id)}
+                  className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-semibold transition shrink-0 whitespace-nowrap min-h-[32px] ${
+                    isSelected
+                      ? 'bg-[var(--accent-terracotta)] text-white shadow-xs font-bold'
+                      : 'bg-[var(--surface-sunken)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+                  }`}
+                >
+                  <TabIcon className="h-3.5 w-3.5" />
+                  <span>{tab.label}</span>
+                  {tab.count > 0 && (
+                    <span
+                      className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
+                        isSelected ? 'bg-white/25 text-white' : 'bg-[var(--card-surface)] text-[var(--text-muted)]'
+                      }`}
+                    >
+                      {tab.count}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
         </div>
       </div>
 
@@ -176,6 +212,8 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
             const BadgeIcon = badge.icon;
             const selectedCheer = post.userReaction || (post.userLiked ? 'fire' : null);
             const totalCheers = post.likes;
+            const isOwnPost = Boolean(currentUserId && post.userId && post.userId === currentUserId) || post.userId === 'user';
+            const displayAuthorName = isOwnPost && currentUserName ? currentUserName : post.userName;
 
             return (
               <div
@@ -187,12 +225,17 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
                   <div className="flex items-center gap-3 min-w-0">
                     <img
                       src={post.userAvatar}
-                      alt={post.userName}
+                      alt={displayAuthorName}
                       className="h-10 w-10 rounded-xl object-cover ring-2 ring-[var(--border-subtle)] shrink-0"
                     />
                     <div className="min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-xs text-[var(--text-primary)]">{post.userName}</span>
+                        <span className="font-bold text-xs text-[var(--text-primary)]">{displayAuthorName}</span>
+                        {isOwnPost && (
+                          <span className="rounded-full bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 px-1.5 py-0.2 text-[9px] font-bold text-[var(--accent-terracotta)]">
+                            You
+                          </span>
+                        )}
                         <span className="text-[11px] text-[var(--text-muted)]">• {post.timestamp}</span>
                       </div>
                       <div className="flex items-center gap-1.5 mt-1 flex-wrap">
@@ -207,11 +250,37 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
                     </div>
                   </div>
 
-                  {/* Privacy Badge */}
-                  <span className="inline-flex items-center gap-1 rounded-full bg-[var(--surface-sunken)] border border-[var(--border-subtle)] px-2 py-0.5 text-[9px] font-medium text-[var(--text-muted)] shrink-0">
-                    <Lock className="h-2.5 w-2.5 text-[var(--accent-botanical-sage)]" />
-                    <span className="hidden sm:inline">Masked</span>
-                  </span>
+                  {/* Privacy / Audience Badge & Actions */}
+                  <div className="flex items-center gap-2 shrink-0">
+                    {post.isPrivate ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold text-amber-500 shrink-0">
+                        <Lock className="h-2.5 w-2.5 text-amber-500" />
+                        <span>Masked (Self)</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2 py-0.5 text-[9px] font-bold text-[var(--accent-botanical-sage)] shrink-0">
+                        <ShieldCheck className="h-2.5 w-2.5 text-[var(--accent-botanical-sage)]" />
+                        <span className="hidden sm:inline">Circle</span>
+                      </span>
+                    )}
+
+                    {/* Delete Post Button (for author only) */}
+                    {isOwnPost && onDeletePost && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (window.confirm('Delete this milestone from your feed?')) {
+                            onDeletePost(post.id);
+                          }
+                        }}
+                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition"
+                        title="Delete Milestone"
+                        aria-label="Delete milestone"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    )}
+                  </div>
                 </div>
 
                 {/* Post Body */}

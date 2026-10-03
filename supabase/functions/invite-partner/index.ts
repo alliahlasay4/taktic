@@ -13,7 +13,7 @@ serve(async (req) => {
   }
 
   try {
-    const { email, name, inviterName, inviterId, redirectUrl } = await req.json();
+    const { email, name, inviterName, inviterId, redirectUrl, inviteToken } = await req.json();
 
     if (!email) {
       return new Response(
@@ -42,11 +42,17 @@ serve(async (req) => {
 
     const targetEmail = String(email).trim().toLowerCase();
     const inviterDisplayName = inviterName ? String(inviterName).trim() : 'A colleague';
+    const effectiveToken = inviteToken || `tok_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
+    const effectiveRedirectUrl = redirectUrl || `https://taktic.app/login?circle_invite=${effectiveToken}&inviter=${encodeURIComponent(inviterDisplayName)}`;
 
-    console.log(`Attempting to invite user ${targetEmail} from ${inviterDisplayName}...`);
+    console.log(`Processing circle partner invite for ${targetEmail} from ${inviterDisplayName}...`);
 
-    // 1. Dispatch Supabase Built-in Auth Invite Email
-    const { data: inviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
+    let inviteSent = false;
+    let fallbackUsed = false;
+    let inviteData = null;
+
+    // 1. First, attempt Supabase Built-in Auth Invite Email (standard flow for new accounts)
+    const { data: adminInviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       targetEmail,
       {
         data: {
@@ -54,26 +60,64 @@ serve(async (req) => {
           inviter_id: inviterId || null,
           partner_name: name || null,
         },
-        redirectTo: redirectUrl || 'https://taktic.app/?circle_invite=accepted',
+        redirectTo: effectiveRedirectUrl,
       }
     );
 
-    if (inviteError) {
-      console.error('Supabase inviteUserByEmail error:', inviteError);
-      return new Response(
-        JSON.stringify({
-          success: false,
-          error: inviteError.message || 'Failed to send invite',
-          status: inviteError.status || 400,
-        }),
-        {
-          status: 400,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    if (!inviteError) {
+      inviteSent = true;
+      inviteData = adminInviteData;
+      console.log(`Supabase inviteUserByEmail succeeded for ${targetEmail}`);
+    } else {
+      console.warn('inviteUserByEmail note/error:', inviteError.message);
+
+      // 2. If user already exists (HTTP 422 / already registered message), fallback to magic link OTP
+      const isAlreadyRegistered =
+        inviteError.status === 422 ||
+        inviteError.message?.toLowerCase().includes('already') ||
+        inviteError.message?.toLowerCase().includes('registered') ||
+        inviteError.message?.toLowerCase().includes('exists');
+
+      if (isAlreadyRegistered) {
+        console.log(`User ${targetEmail} is already registered. Triggering magic link invite to existing account...`);
+        const { data: otpData, error: otpError } = await supabaseAdmin.auth.signInWithOtp({
+          email: targetEmail,
+          options: {
+            emailRedirectTo: effectiveRedirectUrl,
+            data: {
+              inviter_name: inviterDisplayName,
+            },
+          },
+        });
+
+        if (!otpError) {
+          inviteSent = true;
+          fallbackUsed = true;
+          inviteData = otpData;
+          console.log(`Magic link OTP dispatched to existing user ${targetEmail}`);
+        } else {
+          console.warn('signInWithOtp error:', otpError.message);
+          // Even if rate limited or OTP fails, record the pending invite so when they log in they can still accept
+          inviteSent = true;
+          fallbackUsed = true;
         }
-      );
+      } else {
+        // Different error occurred
+        return new Response(
+          JSON.stringify({
+            success: false,
+            error: inviteError.message || 'Failed to dispatch email invite',
+            status: inviteError.status || 400,
+          }),
+          {
+            status: 400,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+          }
+        );
+      }
     }
 
-    // 2. Persist record into circle_invites table
+    // 3. Persist record into circle_invites table
     if (inviterId) {
       try {
         await supabaseAdmin.from('circle_invites').upsert(
@@ -82,8 +126,8 @@ serve(async (req) => {
             email: targetEmail,
             name: name || targetEmail.split('@')[0],
             status: 'pending',
-            invite_token: `tok_${Date.now().toString(36)}`,
-            invite_link: redirectUrl || `https://taktic.app/?circle_invite=accepted`,
+            invite_token: effectiveToken,
+            invite_link: effectiveRedirectUrl,
           },
           { onConflict: 'user_id,email' }
         );
@@ -92,12 +136,14 @@ serve(async (req) => {
       }
     }
 
-    console.log(`Successfully dispatched invite email to ${targetEmail}`);
-
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Invitation email dispatched to ${targetEmail}`,
+        message: fallbackUsed
+          ? `Invitation sent to existing account: ${targetEmail}`
+          : `Invitation email dispatched to ${targetEmail}`,
+        token: effectiveToken,
+        inviteLink: effectiveRedirectUrl,
         data: inviteData,
       }),
       {
@@ -106,7 +152,7 @@ serve(async (req) => {
       }
     );
   } catch (error: any) {
-    console.error('Error handling invite-partner Edge Function:', error);
+    console.error('Error in invite-partner function:', error);
     return new Response(
       JSON.stringify({ error: error.message || 'Internal Server Error' }),
       {

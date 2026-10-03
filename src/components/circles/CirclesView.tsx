@@ -42,8 +42,11 @@ interface CirclesViewProps {
   feedPosts: CircleFeedPost[];
   invites?: CircleInvite[];
   userStreak: number;
+  currentUserId?: string;
+  currentUserName?: string;
   onToggleLike: (postId: string, reaction?: string) => void;
-  onBroadcastAchievement?: (type: CircleFeedPost['type'], title: string, detail: string) => void;
+  onBroadcastAchievement?: (type: CircleFeedPost['type'], title: string, detail: string, isPrivate?: boolean) => void;
+  onDeletePost?: (postId: string) => void;
   onTogglePartner?: (memberId: string) => void;
   onToggleMute?: (memberId: string) => void;
   onAddMemberByName?: (name: string) => void;
@@ -59,8 +62,11 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   feedPosts,
   invites = [],
   userStreak,
+  currentUserId,
+  currentUserName,
   onToggleLike,
   onBroadcastAchievement,
+  onDeletePost,
   onTogglePartner,
   onToggleMute,
   onAddMemberByName,
@@ -462,8 +468,11 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
           <CircleFeed
             feedPosts={feedPosts}
             members={members}
+            currentUserId={currentUserId}
+            currentUserName={currentUserName}
             onToggleLike={onToggleLike}
             onBroadcastAchievement={onBroadcastAchievement}
+            onDeletePost={onDeletePost}
             onTogglePartner={onTogglePartner}
             onToggleMute={onToggleMute}
             onAddMemberByName={onAddMemberByName}
@@ -560,86 +569,97 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
           </div>
 
           {/* Pending Invitations Section (Visible when there are outgoing pending invites) */}
-          {invites && invites.length > 0 && (
-            <div className="rounded-2xl border border-[var(--accent-warm-ochre)]/30 bg-[var(--accent-warm-ochre)]/5 p-5 shadow-xs space-y-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <Mail className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
-                  <h3 className="font-heading font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
-                    Pending Circle Invitations ({invites.length})
-                  </h3>
+          {(() => {
+            const memberNamesSet = new Set(members.map((m) => m.name.toLowerCase()));
+            const pendingInvites = (invites || []).filter(
+              (invite) =>
+                invite.status === 'pending' &&
+                (!invite.name || !memberNamesSet.has(invite.name.toLowerCase()))
+            );
+
+            if (pendingInvites.length === 0) return null;
+
+            return (
+              <div className="rounded-2xl border border-[var(--accent-warm-ochre)]/30 bg-[var(--accent-warm-ochre)]/5 p-5 shadow-xs space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Mail className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
+                    <h3 className="font-heading font-bold text-xs text-[var(--text-primary)] uppercase tracking-wider">
+                      Pending Circle Invitations ({pendingInvites.length})
+                    </h3>
+                  </div>
+                  <span className="text-[10px] font-semibold text-[var(--accent-warm-ochre)]">
+                    Awaiting Acceptance
+                  </span>
                 </div>
-                <span className="text-[10px] font-semibold text-[var(--accent-warm-ochre)]">
-                  Awaiting Acceptance
-                </span>
-              </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                {invites.map((invite) => (
-                  <div
-                    key={invite.id}
-                    className="flex flex-col justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 space-y-2.5 shadow-xs"
-                  >
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs text-[var(--text-primary)] truncate">
-                          {invite.name || invite.email}
-                        </span>
-                        <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold text-amber-500">
-                          Pending
-                        </span>
-                      </div>
-                      {invite.email && (
-                        <p className="text-[11px] text-[var(--text-muted)] truncate mt-0.5">
-                          {invite.email}
-                        </p>
-                      )}
-                      <p className="text-[10px] text-[var(--text-secondary)] mt-1">
-                        Sent {new Date(invite.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-
-                    <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          if (invite.inviteLink) {
-                            navigator.clipboard.writeText(invite.inviteLink);
-                            setCopiedInviteId(invite.id);
-                            setTimeout(() => setCopiedInviteId(null), 2000);
-                          }
-                        }}
-                        className="flex items-center gap-1 text-[11px] font-semibold text-[var(--accent-terracotta)] hover:underline"
-                        title="Copy invitation link to clipboard"
-                      >
-                        {copiedInviteId === invite.id ? (
-                          <>
-                            <Check className="h-3 w-3 text-emerald-500" />
-                            <span className="text-emerald-500">Copied!</span>
-                          </>
-                        ) : (
-                          <>
-                            <Copy className="h-3 w-3" />
-                            <span>Copy Link</span>
-                          </>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {pendingInvites.map((invite) => (
+                    <div
+                      key={invite.id}
+                      className="flex flex-col justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 space-y-2.5 shadow-xs"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-xs text-[var(--text-primary)] truncate">
+                            {invite.name || invite.email}
+                          </span>
+                          <span className="rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold text-amber-500">
+                            Pending
+                          </span>
+                        </div>
+                        {invite.email && (
+                          <p className="text-[11px] text-[var(--text-muted)] truncate mt-0.5">
+                            {invite.email}
+                          </p>
                         )}
-                      </button>
+                        <p className="text-[10px] text-[var(--text-secondary)] mt-1">
+                          Sent {new Date(invite.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
 
-                      {onCancelInvite && (
+                      <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between gap-2">
                         <button
                           type="button"
-                          onClick={() => onCancelInvite(invite.id)}
-                          className="text-[11px] font-semibold text-red-500 hover:underline"
+                          onClick={() => {
+                            if (invite.inviteLink) {
+                              navigator.clipboard.writeText(invite.inviteLink);
+                              setCopiedInviteId(invite.id);
+                              setTimeout(() => setCopiedInviteId(null), 2000);
+                            }
+                          }}
+                          className="flex items-center gap-1 text-[11px] font-semibold text-[var(--accent-terracotta)] hover:underline"
+                          title="Copy invitation link to clipboard"
                         >
-                          Cancel
+                          {copiedInviteId === invite.id ? (
+                            <>
+                              <Check className="h-3 w-3 text-emerald-500" />
+                              <span className="text-emerald-500">Copied!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="h-3 w-3" />
+                              <span>Copy Link</span>
+                            </>
+                          )}
                         </button>
-                      )}
+
+                        {onCancelInvite && (
+                          <button
+                            type="button"
+                            onClick={() => onCancelInvite(invite.id)}
+                            className="text-[11px] font-semibold text-red-500 hover:underline"
+                          >
+                            Cancel
+                          </button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  ))}
+                </div>
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* Members Directory Grid */}
           {(() => {

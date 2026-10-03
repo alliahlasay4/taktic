@@ -73,6 +73,24 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
     return localStorage.getItem('taktic_dark_mode') === 'true';
   });
 
+  // Pending Circle Partner Invite
+  const [pendingInvite] = useState<{ token: string; inviter: string } | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const urlParams = new URLSearchParams(window.location.search);
+    const token = urlParams.get('circle_invite');
+    const inviter = urlParams.get('inviter');
+    if (token) {
+      return { token, inviter: inviter ? decodeURIComponent(inviter) : 'Circle Partner' };
+    }
+    const saved = sessionStorage.getItem('taktic_pending_circle_invite');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch {}
+    }
+    return null;
+  });
+
   useEffect(() => {
     if (darkMode) {
       document.documentElement.classList.add('dark');
@@ -332,6 +350,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                 : 'Welcome back! Please login to your account.'}
             </p>
           </div>
+
+          {/* Pending Circle Partner Invitation Banner */}
+          {pendingInvite && !isResetPassword && (
+            <div className="flex items-start gap-2.5 rounded-2xl border border-[#C06C4C]/35 bg-gradient-to-r from-[#C06C4C]/15 via-[#C87D87]/15 to-[#CFA052]/10 p-3.5 text-xs text-[var(--text-primary)] shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#C06C4C] text-white shrink-0 shadow-xs">
+                <Sparkles className="h-4 w-4" />
+              </div>
+              <div className="leading-snug">
+                <div className="font-bold text-[#C06C4C] text-[11px] uppercase tracking-wider">
+                  Circle Partner Invitation
+                </div>
+                <div className="mt-0.5">
+                  <strong>{pendingInvite.inviter}</strong> invited you to connect! Sign in or register to accept.
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Prominent Segmented Switcher (Sign In vs Create Account) */}
           {!isResetPassword && (

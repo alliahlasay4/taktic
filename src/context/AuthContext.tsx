@@ -224,6 +224,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
     setIsDemo(false);
     localStorage.removeItem('taktic_demo_mode');
+
+    let emailRedirectTo = typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined;
+    const pendingRaw = typeof window !== 'undefined' ? (localStorage.getItem('taktic_pending_circle_invite') || sessionStorage.getItem('taktic_pending_circle_invite')) : null;
+    if (pendingRaw && typeof window !== 'undefined') {
+      try {
+        const parsed = JSON.parse(pendingRaw);
+        if (parsed?.token) {
+          emailRedirectTo = `${window.location.origin}/login?circle_invite=${parsed.token}&inviter=${encodeURIComponent(parsed.inviter || 'Circle Partner')}`;
+        }
+      } catch {}
+    }
+
     const { error } = await supabase.auth.signUp({
       email,
       password,
@@ -231,6 +243,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         data: {
           full_name: fullName,
         },
+        emailRedirectTo,
       },
     });
     return { error };
