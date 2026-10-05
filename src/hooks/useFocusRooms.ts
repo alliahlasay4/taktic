@@ -73,8 +73,10 @@ function getLocalPods(userId?: string, isDemo?: boolean): FocusPod[] {
 }
 
 export function useFocusRooms() {
-  const { user, isDemo } = useAuth();
+  const { user, isDemo, profile } = useAuth();
   const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
+  const userName = profile?.fullName || profile?.username || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
+  const userAvatar = profile?.avatarUrl || user?.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=150';
   
   // Default to null so user is in Lobby mode by default (NOT auto-joined into a room)
   const [activeRoomCode, setActiveRoomCode] = useState<string | null>(() => {
@@ -84,42 +86,20 @@ export function useFocusRooms() {
   const [roomName, setRoomName] = useState<string>('Silent Virtual Co-Working Room');
   const [isHost, setIsHost] = useState<boolean>(false);
   const [roomMembers, setRoomMembers] = useState<CircleMember[]>([]);
+  const [messages, setMessages] = useState<RoomMessage[]>([]);
   const [floatingEmojis, setFloatingEmojis] = useState<FloatingEmoji[]>([]);
   
-  // Safeguard: Solo Invisible Mode
-  const [soloInvisibleMode, setSoloInvisibleMode] = useState<boolean>(() => {
-    return localStorage.getItem('taktic_solo_invisible_mode') === 'true';
-  });
-
   // Standing Pods
   const [focusPods, setFocusPods] = useState<FocusPod[]>(() => {
     return getLocalPods(user?.id, isDemo);
   });
 
-  const [messages, setMessages] = useState<RoomMessage[]>([]);
-
-  const userName = user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
-  const userAvatar =
-    user?.user_metadata?.avatar_url ||
-    'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
-
-  const saveFocusPods = useCallback((updated: FocusPod[]) => {
-    setFocusPods(updated);
-    if (isDemo) {
-      sessionStorage.setItem('taktic_demo_focus_pods', JSON.stringify(updated));
-    } else {
-      const userKey = user?.id || 'local';
-      localStorage.setItem(`taktic_focus_pods_${userKey}`, JSON.stringify(updated));
-      localStorage.setItem('taktic_focus_pods', JSON.stringify(updated));
+  const saveFocusPods = (pods: FocusPod[]) => {
+    setFocusPods(pods);
+    if (user?.id) {
+      localStorage.setItem(`taktic_focus_pods_${user.id}`, JSON.stringify(pods));
     }
-  }, [user, isDemo]);
-
-  const toggleSoloInvisibleMode = () => {
-    setSoloInvisibleMode((prev) => {
-      const next = !prev;
-      localStorage.setItem('taktic_solo_invisible_mode', String(next));
-      return next;
-    });
+    localStorage.setItem('taktic_focus_pods', JSON.stringify(pods));
   };
 
   // Fetch standing pods from Supabase or local cache
@@ -230,39 +210,43 @@ export function useFocusRooms() {
           }
         });
 
-      // 2. Add current user to room_members
-      supabase
-        .from('room_members')
-        .upsert({
-          room_code: activeRoomCode,
-          user_id: user.id,
-          user_name: userName,
-          user_avatar: userAvatar,
-          status: 'focusing',
-        }, { onConflict: 'room_code,user_id' })
-        .then(() => {
-          // Fetch all room members
-          supabase
+      // 2. Add current user to room_members (unless incognito)
+      const isIncognito = Boolean(profile?.privacySettings?.isIncognito);
+      const syncPresencePromise = isIncognito
+        ? supabase.from('room_members').delete().eq('room_code', activeRoomCode).eq('user_id', user.id)
+        : supabase
             .from('room_members')
-            .select('*')
-            .eq('room_code', activeRoomCode)
-            .then(({ data }) => {
-              if (data) {
-                setRoomMembers(
-                  data.map((rm) => ({
-                    id: rm.user_id,
-                    name: rm.user_name,
-                    avatar: rm.user_avatar || userAvatar,
-                    status: (rm.status as CircleMember['status']) || 'focusing',
-                    statusText: rm.current_goal || 'Focusing in Room',
-                    closedRingsCount: 0,
-                    streak: 1,
-                    isCirclePartner: true,
-                  }))
-                );
-              }
-            });
-        });
+            .upsert({
+              room_code: activeRoomCode,
+              user_id: user.id,
+              user_name: userName,
+              user_avatar: userAvatar,
+              status: 'focusing',
+            }, { onConflict: 'room_code,user_id' });
+
+      syncPresencePromise.then(() => {
+        // Fetch all room members
+        supabase
+          .from('room_members')
+          .select('*')
+          .eq('room_code', activeRoomCode)
+          .then(({ data }) => {
+            if (data) {
+              setRoomMembers(
+                data.map((rm) => ({
+                  id: rm.user_id,
+                  name: rm.user_name,
+                  avatar: rm.user_avatar || userAvatar,
+                  status: (rm.status as CircleMember['status']) || 'focusing',
+                  statusText: rm.current_goal || 'Focusing in Room',
+                  closedRingsCount: 0,
+                  streak: 1,
+                  isCirclePartner: true,
+                }))
+              );
+            }
+          });
+      });
 
       // 3. Realtime message listener
       const msgChannel = supabase
@@ -295,7 +279,7 @@ export function useFocusRooms() {
           .then(() => {});
       };
     }
-  }, [activeRoomCode, user, isRealUser, userName, userAvatar]);
+  }, [activeRoomCode, user, isRealUser, userName, userAvatar, profile?.privacySettings?.isIncognito]);
 
   const createFocusPod = async (
     name: string,
@@ -539,12 +523,10 @@ export function useFocusRooms() {
     activeRoomCode,
     roomName,
     isHost,
-    roomMembers: soloInvisibleMode ? [] : roomMembers,
+    roomMembers,
     floatingEmojis,
     messages,
-    soloInvisibleMode,
     focusPods,
-    toggleSoloInvisibleMode,
     createFocusPod,
     renewPodLease,
     deleteFocusPod,

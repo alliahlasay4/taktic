@@ -8,6 +8,8 @@ interface TaskFormModalProps {
   task?: Task | null;
   defaultDate?: string | null;
   defaultIsSomeday?: boolean;
+  defaultIsTodayFocus?: boolean;
+  isFocusQueueFull?: boolean;
   availableTags?: string[];
   onClose: () => void;
   onSave: (taskData: {
@@ -31,6 +33,8 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   task,
   defaultDate,
   defaultIsSomeday = false,
+  defaultIsTodayFocus = false,
+  isFocusQueueFull = false,
   availableTags = [],
   onClose,
   onSave,
@@ -82,7 +86,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
       setTimeBlock('morning');
       setEstimatedMinutes(25);
       setRecurring(null);
-      setIsTodayFocus(defaultDate === todayStr || !defaultDate);
+      setIsTodayFocus(defaultIsTodayFocus);
       setIsSomeday(defaultIsSomeday);
       setTags(['work']);
     }
@@ -93,7 +97,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
       titleInputRef.current?.focus();
     }, 50);
     return () => clearTimeout(timer);
-  }, [isOpen, mode, task, defaultDate, defaultIsSomeday, todayStr, tomorrowStr]);
+  }, [isOpen, mode, task, defaultDate, defaultIsSomeday, defaultIsTodayFocus, todayStr, tomorrowStr]);
 
   // Global keyboard shortcuts (Esc to close, Ctrl/Cmd + Enter to save)
   useEffect(() => {
@@ -149,7 +153,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
       dueDate: dueDate || undefined,
       timeBlock,
       estimatedMinutes: Number(estimatedMinutes) || 25,
-      isTodayFocus: isTodayFocus || dueDate === todayStr,
+      isTodayFocus: Boolean(isTodayFocus),
       isSomeday,
       recurring,
     });
@@ -160,24 +164,24 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-3 sm:p-6 overflow-y-auto animate-in fade-in duration-200"
       onClick={(e) => {
         if (e.target === e.currentTarget) onClose();
       }}
     >
       <div 
-        className="relative w-full max-w-4xl overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-2xl transition-all my-auto text-[var(--text-primary)]"
+        className="relative w-full max-w-4xl max-h-[92dvh] flex flex-col overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-2xl transition-all my-auto text-[var(--text-primary)]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="task-modal-heading"
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-main)]/50">
-          <div className="flex items-center gap-3">
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 px-2.5 py-1 rounded-md">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-main)]/50 shrink-0">
+          <div className="flex items-center gap-2 sm:gap-3 min-w-0 pr-2">
+            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md shrink-0">
               {mode === 'edit' ? 'Edit Task' : 'New Task'}
             </span>
-            <h2 id="task-modal-heading" className="text-sm font-semibold text-[var(--text-primary)]">
+            <h2 id="task-modal-heading" className="text-xs sm:text-sm font-semibold text-[var(--text-primary)] truncate">
               {mode === 'edit' ? 'Modify Task Details & Schedule' : 'Create & Schedule Task'}
             </h2>
           </div>
@@ -185,15 +189,15 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close task modal"
-            className="rounded-xl p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition-colors"
+            className="rounded-xl p-1.5 sm:p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition-colors shrink-0"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>
 
         {/* Modal Form Body */}
-        <form onSubmit={handleFormSubmit}>
-          <div className="p-6 grid grid-cols-1 lg:grid-cols-12 gap-6 max-h-[75vh] overflow-y-auto">
+        <form onSubmit={handleFormSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+          <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 overflow-y-auto flex-1">
             {/* Left Column (60% / 7 cols) - Core Information */}
             <div className="lg:col-span-7 space-y-5">
               {/* Task Title */}
@@ -539,21 +543,44 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                 </label>
 
                 {/* Today Focus Queue */}
-                <label htmlFor="task-modal-is-today-focus" className={`flex items-center justify-between p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/60 transition ${
-                  (!dueDate || dueDate === todayStr) ? 'cursor-pointer hover:bg-[var(--card-hover)]' : 'opacity-50 cursor-not-allowed'
-                }`}>
+                <label
+                  htmlFor="task-modal-is-today-focus"
+                  className={`flex items-center justify-between p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/60 transition ${
+                    isFocusQueueFull && !isTodayFocus
+                      ? 'opacity-60 cursor-not-allowed bg-[var(--card-surface)]/50'
+                      : 'cursor-pointer hover:bg-[var(--card-hover)]'
+                  }`}
+                >
                   <div className="pr-2">
-                    <span className="block text-xs font-semibold text-[var(--text-primary)]">Star for Today Focus</span>
-                    <span className="block text-[11px] text-[var(--text-muted)]">Pin directly into today's action queue</span>
+                    <span className="block text-xs font-semibold text-[var(--text-primary)]">
+                      Star for Today Focus
+                      {isFocusQueueFull && !isTodayFocus && (
+                        <span className="ml-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20">
+                          Queue Full (5/5)
+                        </span>
+                      )}
+                    </span>
+                    <span className="block text-[11px] text-[var(--text-muted)]">
+                      {isFocusQueueFull && !isTodayFocus
+                        ? 'Focus Queue is currently full (5/5). Complete an active task to add more.'
+                        : "Pin directly into today's priority focus queue"}
+                    </span>
                   </div>
                   <input
                     type="checkbox"
                     id="task-modal-is-today-focus"
                     name="isTodayFocus"
-                    disabled={Boolean(dueDate && dueDate !== todayStr)}
-                    checked={(!dueDate || dueDate === todayStr) && isTodayFocus}
-                    onChange={(e) => setIsTodayFocus(e.target.checked)}
-                    className="h-4 w-4 rounded border-[var(--border-subtle)] accent-[var(--accent-terracotta)] cursor-pointer"
+                    disabled={isFocusQueueFull && !isTodayFocus}
+                    checked={isTodayFocus}
+                    onChange={(e) => {
+                      if (isFocusQueueFull && !isTodayFocus) return;
+                      const checked = e.target.checked;
+                      setIsTodayFocus(checked);
+                      if (checked && (!dueDate || dueDate !== todayStr)) {
+                        setDueDate(todayStr);
+                      }
+                    }}
+                    className="h-4 w-4 rounded border-[var(--border-subtle)] accent-[var(--accent-terracotta)] cursor-pointer disabled:cursor-not-allowed"
                   />
                 </label>
               </div>
@@ -561,7 +588,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
           </div>
 
           {/* Sticky Modal Footer */}
-          <div className="flex items-center justify-between px-6 py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-main)]/80">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-main)]/80 shrink-0 flex-wrap gap-2">
             {/* Delete button (Edit mode only) */}
             <div>
               {mode === 'edit' && task && onDelete && (
@@ -573,7 +600,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                       onClose();
                     }
                   }}
-                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 px-3.5 py-2 text-xs font-semibold text-red-500 hover:bg-red-500/20 transition"
+                  className="inline-flex items-center gap-1.5 rounded-xl border border-red-500/20 bg-red-500/10 px-3 py-2 text-xs font-semibold text-red-500 hover:bg-red-500/20 transition"
                 >
                   <Trash2 className="h-3.5 w-3.5" />
                   <span>Delete Task</span>
@@ -582,20 +609,20 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
             </div>
 
             {/* Cancel & Submit buttons */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 sm:gap-3 ml-auto">
               <span className="hidden sm:inline text-[11px] text-[var(--text-muted)]">
                 <kbd className="px-1.5 py-0.5 rounded border border-[var(--border-subtle)] bg-[var(--card-surface)] text-[10px]">Ctrl+Enter</kbd> to save
               </span>
               <button
                 type="button"
                 onClick={onClose}
-                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] px-4 py-2.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
+                className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] px-3.5 sm:px-4 py-2 sm:py-2.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-5 py-2.5 text-xs font-bold shadow-sm transition"
+                className="rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-4 sm:px-5 py-2 sm:py-2.5 text-xs font-bold shadow-sm transition"
               >
                 {mode === 'edit' ? 'Save Changes' : 'Create Task'}
               </button>

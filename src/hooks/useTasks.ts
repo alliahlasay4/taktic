@@ -192,23 +192,49 @@ export function useTasks() {
     }
   };
 
-  // Toggle Today's Focus
-  const toggleTodayFocus = async (id: string) => {
+  // Toggle Today's Focus with 5-task capacity cap
+  const toggleTodayFocus = async (id: string): Promise<{ success: boolean; reason?: 'limit_reached' }> => {
     const targetTask = tasks.find((t) => t.id === id);
-    if (!targetTask) return;
+    if (!targetTask) return { success: false };
 
     const nextFocus = !targetTask.isTodayFocus;
 
+    // Enforce 5-task cap for active (uncompleted) focus tasks
+    if (nextFocus && !targetTask.completed) {
+      const activeFocusCount = tasks.filter(
+        (t) => !t.archived && !t.isSomeday && t.isTodayFocus && !t.completed
+      ).length;
+
+      if (activeFocusCount >= 5) {
+        return { success: false, reason: 'limit_reached' };
+      }
+    }
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const shouldClearSomeday = nextFocus && targetTask.isSomeday;
+    const nextDueDate = (nextFocus && !targetTask.dueDate) ? todayStr : targetTask.dueDate;
+
+    const updatedTask: Task = {
+      ...targetTask,
+      isTodayFocus: nextFocus,
+      isSomeday: shouldClearSomeday ? false : targetTask.isSomeday,
+      dueDate: nextDueDate,
+    };
+
     // Optimistic Update
     setTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, isTodayFocus: nextFocus } : t))
+      prev.map((t) => (t.id === id ? updatedTask : t))
     );
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
       try {
+        const dbPayload: Record<string, any> = { is_today_focus: nextFocus };
+        if (shouldClearSomeday) dbPayload.is_someday = false;
+        if (nextDueDate !== targetTask.dueDate) dbPayload.due_date = nextDueDate;
+
         const { error } = await supabase
           .from('tasks')
-          .update({ is_today_focus: nextFocus })
+          .update(dbPayload)
           .eq('id', id)
           .eq('user_id', user.id);
 
@@ -216,10 +242,12 @@ export function useTasks() {
       } catch (err: any) {
         console.error('Error updating task focus in Supabase:', err);
         setTasks((prev) =>
-          prev.map((t) => (t.id === id ? { ...t, isTodayFocus: targetTask.isTodayFocus } : t))
+          prev.map((t) => (t.id === id ? targetTask : t))
         );
       }
     }
+
+    return { success: true };
   };
 
   // Update Time Block Slot

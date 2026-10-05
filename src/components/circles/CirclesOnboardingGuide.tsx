@@ -75,7 +75,7 @@ const TOUR_STEPS: TourStep[] = [
     title: 'Accountability Network & Privacy',
     badge: 'Step 4: Friends & Partners',
     description:
-      'Invite partners via magic link or email. Only approved Circle Partners receive your activity broadcasts. Use Solo Ghost Mode anytime to focus invisibly.',
+      'Invite partners via magic link or email. Only approved Circle Partners receive your activity broadcasts. Turn on Incognito Mode in your profile anytime to go invisible.',
     icon: UserPlus,
     accentColor: 'from-[#C87D87] to-[#6B8E6E]',
     badgeColor: 'bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)] border-[var(--accent-dusty-rose)]/30',
@@ -281,10 +281,10 @@ export const CirclesOnboardingGuide: React.FC<CirclesOnboardingGuideProps> = ({
               </div>
               <div>
                 <h4 className="font-heading font-bold text-[11px] sm:text-xs text-[var(--text-primary)]">
-                  Privacy & Ghost Mode
+                  Privacy & Incognito Mode
                 </h4>
                 <p className="text-[10px] sm:text-[11px] text-[var(--text-secondary)] mt-0.5 leading-snug">
-                  Task details stay masked; toggle Solo Ghost Mode anytime to go invisible.
+                  Task details stay masked; toggle Incognito Mode in your profile anytime to go invisible.
                 </p>
               </div>
             </div>

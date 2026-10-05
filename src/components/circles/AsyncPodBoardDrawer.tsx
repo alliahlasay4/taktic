@@ -19,8 +19,8 @@ export const AsyncPodBoardDrawer: React.FC<AsyncPodBoardDrawerProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 overflow-hidden bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
-      <div className="absolute inset-y-0 right-0 flex max-w-full pl-10">
-        <div className="w-screen max-w-md bg-[var(--card-surface)] border-l border-[var(--border-subtle)] p-6 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300">
+      <div className="absolute inset-y-0 right-0 flex max-w-full pl-0 sm:pl-10 w-full sm:w-auto">
+        <div className="w-full sm:w-[420px] max-w-full bg-[var(--card-surface)] border-l border-[var(--border-subtle)] p-4 sm:p-6 shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-300">
           
           {/* Drawer Header */}
           <div>

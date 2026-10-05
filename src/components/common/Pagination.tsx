@@ -102,7 +102,7 @@ export const Pagination: React.FC<PaginationProps> = ({
 
       {/* Right side: Page Navigation Controls */}
       {totalPages > 1 && (
-        <nav className="flex items-center gap-1" aria-label="Pagination">
+        <nav className="flex items-center gap-1 flex-wrap justify-center" aria-label="Pagination">
           {/* First Page Button */}
           <button
             type="button"

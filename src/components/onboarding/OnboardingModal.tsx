@@ -86,8 +86,8 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-4 animate-in fade-in duration-200">
-      <div className="relative w-full max-w-xl overflow-hidden rounded-3xl border border-emerald-500/30 bg-[var(--bg-card,#121824)] p-8 shadow-2xl shadow-emerald-950/50 text-white">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-3 sm:p-4 overflow-y-auto animate-in fade-in duration-200">
+      <div className="relative w-full max-w-xl overflow-hidden rounded-2xl sm:rounded-3xl border border-emerald-500/30 bg-[var(--bg-card,#121824)] p-5 sm:p-8 shadow-2xl shadow-emerald-950/50 text-white my-auto">
         {/* Glow */}
         <div className="absolute -top-24 -left-24 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-teal-500/20 blur-3xl pointer-events-none" />
@@ -288,9 +288,9 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                 </div>
               </div>
 
-              <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-4 flex items-center justify-between">
+              <div className="rounded-2xl border border-gray-800 bg-gray-900/60 p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-400 shrink-0">
                     <Bell className="h-5 w-5" />
                   </div>
                   <div>
@@ -304,7 +304,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
                     await requestNotificationPermission();
                     setNotificationsRequested(true);
                   }}
-                  className={`rounded-xl px-3 py-2 text-xs font-semibold transition ${
+                  className={`w-full sm:w-auto rounded-xl px-3 py-2 text-xs font-semibold transition shrink-0 ${
                     notificationsRequested
                       ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
                       : 'bg-emerald-500 text-black hover:bg-emerald-400'

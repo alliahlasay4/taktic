@@ -25,7 +25,7 @@ export const NotificationToastOverlay: React.FC<NotificationToastOverlayProps> =
   };
 
   return (
-    <div className="fixed bottom-5 right-5 z-50 flex flex-col gap-3 max-w-sm w-full pointer-events-none">
+    <div className="fixed bottom-4 sm:bottom-5 left-3 right-3 sm:left-auto sm:right-5 z-50 flex flex-col gap-2.5 sm:gap-3 max-w-sm mx-auto sm:mx-0 w-auto sm:w-full pointer-events-none">
       <AnimatePresence>
         {toasts.map((toast) => (
           <motion.div

@@ -15,10 +15,8 @@ class SoundEngine {
   private currentSoundscape: string | null = null;
   private volume: number = 0.7;
   private sessionCounter: number = 0;
-  private isUnlocked: boolean = false;
 
   constructor() {
-    // Attempt auto-unlock on first user interaction if in browser
     if (typeof window !== 'undefined') {
       const savedVol = localStorage.getItem('taktic_ambient_volume');
       if (savedVol !== null) {
@@ -27,20 +25,6 @@ class SoundEngine {
           this.volume = parsed;
         }
       }
-
-      const unlock = () => {
-        if (!this.isUnlocked) {
-          this.initCtx();
-          if (this.ctx && this.ctx.state === 'suspended') {
-            this.ctx.resume().catch(() => { });
-          }
-          this.isUnlocked = true;
-        }
-        window.removeEventListener('pointerdown', unlock);
-        window.removeEventListener('keydown', unlock);
-      };
-      window.addEventListener('pointerdown', unlock, { passive: true });
-      window.addEventListener('keydown', unlock, { passive: true });
     }
   }
 
@@ -52,22 +36,54 @@ class SoundEngine {
         const AudioCtx =
           window.AudioContext ||
           (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+        if (!AudioCtx) return null;
         this.ctx = new AudioCtx();
 
         this.masterGain = this.ctx.createGain();
         this.masterGain.gain.setValueAtTime(this.volume, this.ctx.currentTime);
         this.masterGain.connect(this.ctx.destination);
       } catch (err) {
-        console.warn('Web Audio API not supported or blocked:', err);
         return null;
       }
     }
 
-    if (this.ctx.state === 'suspended') {
+    if (this.ctx && this.ctx.state === 'suspended') {
       this.ctx.resume().catch(() => { });
     }
 
     return this.ctx;
+  }
+
+  // Subtle notification chime (safely ignored if AudioContext is not yet unlocked)
+  public playNotificationChime() {
+    if (!this.ctx && typeof window !== 'undefined') {
+      // Don't force initialize on passive background notifications if not user-activated
+      return;
+    }
+    const ctx = this.initCtx();
+    if (!ctx || ctx.state === 'suspended') return;
+
+    try {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      const t = ctx.currentTime;
+
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(587.33, t); // D5
+      osc.frequency.exponentialRampToValueAtTime(880, t + 0.1); // A5
+
+      const targetGain = Math.max(0.03, this.volume * 0.15);
+      gain.gain.setValueAtTime(targetGain, t);
+      gain.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+
+      osc.connect(gain);
+      gain.connect(this.masterGain || ctx.destination);
+
+      osc.start(t);
+      osc.stop(t + 0.36);
+    } catch {
+      // Non-critical
+    }
   }
 
   public getVolume(): number {

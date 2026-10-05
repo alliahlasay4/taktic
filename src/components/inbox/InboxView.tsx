@@ -43,6 +43,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
   const [taskModalMode, setTaskModalMode] = useState<'create' | 'edit'>('create');
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
+  const [defaultIsTodayFocus, setDefaultIsTodayFocus] = useState(false);
 
   // Ideal UX Feature States
   const [activeInboxTab, setActiveInboxTab] = useState<'active' | 'someday'>('active');
@@ -56,6 +57,8 @@ export const InboxView: React.FC<InboxViewProps> = ({
   // Filter out archived tasks for active view
   const activeInboxTasks = tasks.filter((t) => !t.archived);
   const completedUnarchivedCount = activeInboxTasks.filter((t) => t.completed).length;
+  const activeFocusCount = tasks.filter((t) => !t.archived && !t.isSomeday && t.isTodayFocus && !t.completed).length;
+  const isFocusQueueFull = activeFocusCount >= 5;
 
   // Extract unique tags
   const allTags = Array.from(new Set(activeInboxTasks.flatMap((t) => t.tags)));
@@ -140,7 +143,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
       dueDate: selectedCalendarDate || todayStr,
       timeBlock: 'morning',
       estimatedMinutes: 15,
-      isTodayFocus: selectedCalendarDate === todayStr || !selectedCalendarDate,
+      isTodayFocus: false, // Intentional: newly added tasks go to the backlog; starring is user-selected
       isSomeday: activeInboxTab === 'someday',
       recurring: null,
     });
@@ -148,9 +151,10 @@ export const InboxView: React.FC<InboxViewProps> = ({
     setQuickAddTitle('');
   };
 
-  const handleOpenCreateModal = () => {
+  const handleOpenCreateModal = (focusMode: boolean = false) => {
     setTaskToEdit(null);
     setTaskModalMode('create');
+    setDefaultIsTodayFocus(focusMode);
     setIsTaskModalOpen(true);
   };
 
@@ -182,7 +186,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
             onToggleTodayFocus={onToggleTodayFocus}
             onDeleteTask={onDeleteTask}
             onEditTask={handleStartEditTask}
-            onOpenNewTaskModal={handleOpenCreateModal}
+            onOpenNewTaskModal={() => handleOpenCreateModal(true)}
           />
 
           {/* Master Backlog Inbox Card */}
@@ -238,7 +242,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
               {/* Right: + New Task Button */}
               <button
                 type="button"
-                onClick={handleOpenCreateModal}
+                onClick={() => handleOpenCreateModal(false)}
                 className="flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-4 py-2.5 text-xs font-semibold shadow-xs transition-all min-h-[44px] shrink-0 sm:ml-auto"
               >
                 <Plus className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
@@ -645,6 +649,8 @@ export const InboxView: React.FC<InboxViewProps> = ({
         task={taskToEdit}
         defaultDate={selectedCalendarDate || todayStr}
         defaultIsSomeday={activeInboxTab === 'someday'}
+        defaultIsTodayFocus={defaultIsTodayFocus}
+        isFocusQueueFull={isFocusQueueFull}
         availableTags={allTags}
         onClose={() => {
           setIsTaskModalOpen(false);

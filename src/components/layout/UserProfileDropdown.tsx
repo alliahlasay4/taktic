@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { User, Sun, Moon, LogOut, ShieldCheck, Sparkles, Settings } from 'lucide-react';
+import { User, Sun, Moon, LogOut, ShieldCheck, Sparkles, Settings, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface UserProfileDropdownProps {
@@ -19,7 +19,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   onOpenProfile,
   onOpenSummary,
 }) => {
-  const { user, profile, isDemo, signOut } = useAuth();
+  const { user, profile, isDemo, updateProfile, signOut } = useAuth();
   const menuRef = useRef<HTMLDivElement>(null);
 
   const userName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
@@ -46,7 +46,7 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   return (
     <div
       ref={menuRef}
-      className="absolute right-0 top-11 sm:top-12 z-50 w-[calc(100vw-28px)] max-w-xs sm:w-72 overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/95 backdrop-blur-xl p-3 shadow-2xl text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150"
+      className="fixed sm:absolute top-14 sm:top-12 left-3 right-3 sm:left-auto sm:right-0 z-50 w-auto sm:w-72 max-w-xs sm:max-w-none mx-auto sm:mx-0 overflow-hidden rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/95 backdrop-blur-xl p-3 shadow-2xl text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150"
     >
       {/* User Header Identity Card */}
       <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] mb-2">
@@ -56,7 +56,9 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
           ) : (
             userName.substring(0, 2).toUpperCase()
           )}
-          <span className="absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full bg-emerald-500 ring-2 ring-[var(--card-surface)]">
+          <span className={`absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full ring-2 ring-[var(--card-surface)] ${
+            profile?.privacySettings?.isIncognito ? 'bg-amber-500' : 'bg-emerald-500'
+          }`}>
             <ShieldCheck className="h-2.5 w-2.5 text-white" />
           </span>
         </div>
@@ -99,6 +101,46 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
             <span>Daily Reflection Recap</span>
           </button>
         )}
+
+        {/* Incognito / Stealth Mode Switch */}
+        <div className="flex items-center justify-between rounded-xl px-3 py-2 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)] transition">
+          <div className="flex items-center gap-2.5">
+            {profile?.privacySettings?.isIncognito ? (
+              <EyeOff className="h-4 w-4 text-amber-500" />
+            ) : (
+              <Eye className="h-4 w-4 text-emerald-500" />
+            )}
+            <div>
+              <span className="block font-medium">Incognito / Stealth</span>
+              <span className="block text-[10px] text-[var(--text-muted)] leading-tight">
+                {profile?.privacySettings?.isIncognito ? 'Invisible to Circles' : 'Visible to Circle Partners'}
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={async () => {
+              const current = Boolean(profile?.privacySettings?.isIncognito);
+              await updateProfile({
+                privacySettings: {
+                  ...profile.privacySettings,
+                  isIncognito: !current,
+                },
+              });
+            }}
+            className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors cursor-pointer ${
+              profile?.privacySettings?.isIncognito ? 'bg-amber-500' : 'bg-gray-300 dark:bg-gray-700'
+            }`}
+            title={profile?.privacySettings?.isIncognito ? 'Disable Incognito Mode' : 'Enable Incognito Mode'}
+          >
+            <span
+              className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white dark:bg-black transition-transform ${
+                profile?.privacySettings?.isIncognito ? 'translate-x-4' : 'translate-x-1'
+              }`}
+            />
+          </button>
+        </div>
 
         {/* Dark / Light Mode Switch */}
         <div className="flex items-center justify-between rounded-xl px-3 py-2.5 text-xs font-medium text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)] transition">

@@ -3,6 +3,7 @@ import { Habit } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_HABITS } from '../lib/mockData';
+import { calculateConsecutiveStreak } from '../lib/streak';
 
 export function useHabits() {
   const { user, isDemo } = useAuth();
@@ -12,13 +13,22 @@ export function useHabits() {
   const [habits, setHabits] = useState<Habit[]>(() => {
     if (isDemo || userKey === 'demo') {
       const saved = sessionStorage.getItem('taktic_demo_habits');
-      return saved ? JSON.parse(saved) : INITIAL_HABITS;
+      const loaded: Habit[] = saved ? JSON.parse(saved) : INITIAL_HABITS;
+      return loaded.map((h) => ({
+        ...h,
+        streak: calculateConsecutiveStreak(h.completedDates, h.freezeShieldsRemaining),
+      }));
     }
     const saved = localStorage.getItem(`taktic_habits_${userKey}`);
     if (saved) {
       try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        const parsed: Habit[] = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((h) => ({
+            ...h,
+            streak: calculateConsecutiveStreak(h.completedDates, h.freezeShieldsRemaining),
+          }));
+        }
       } catch (e) {
         console.error(e);
       }
@@ -37,7 +47,13 @@ export function useHabits() {
     // Demo Mode -> sessionStorage
     if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
       const saved = sessionStorage.getItem('taktic_demo_habits');
-      setHabits(saved ? JSON.parse(saved) : INITIAL_HABITS);
+      const loaded: Habit[] = saved ? JSON.parse(saved) : INITIAL_HABITS;
+      setHabits(
+        loaded.map((h) => ({
+          ...h,
+          streak: calculateConsecutiveStreak(h.completedDates, h.freezeShieldsRemaining),
+        }))
+      );
       setLoading(false);
       return;
     }
@@ -69,25 +85,27 @@ export function useHabits() {
         growth: '🌱',
       };
 
-      // Map to frontend Habit type
+      // Map to frontend Habit type with dynamically computed streak
       const mapped: Habit[] = (dbHabits || []).map((h) => {
         const logsForHabit = (dbLogs || [])
           .filter((l) => l.habit_id === h.id)
           .map((l) => l.completed_date);
 
         const categoryKey = (h.category || 'wellness') as Habit['category'];
+        const freezeShields = h.freeze_shields !== undefined && h.freeze_shields !== null ? h.freeze_shields : 3;
+        const computedStreak = calculateConsecutiveStreak(logsForHabit, freezeShields);
 
         return {
           id: h.id,
           title: h.title,
           category: CATEGORY_ICONS[categoryKey] ? categoryKey : 'health',
           icon: CATEGORY_ICONS[categoryKey] || '✨',
-          streak: h.streak || 0,
+          streak: computedStreak,
           completedDates: logsForHabit,
           frequency: (h.target_days_per_week && h.target_days_per_week < 7) ? 'weekly' : 'daily',
           targetDaysPerWeek: h.target_days_per_week || 7,
           timeOfDay: (h.time_of_day as Habit['timeOfDay']) || 'morning',
-          freezeShieldsRemaining: h.freeze_shields !== undefined && h.freeze_shields !== null ? h.freeze_shields : 3,
+          freezeShieldsRemaining: freezeShields,
           createdAt: h.created_at ? h.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
         };
       });
@@ -100,7 +118,13 @@ export function useHabits() {
       const saved = localStorage.getItem(`taktic_habits_${user?.id}`);
       if (saved) {
         try {
-          setHabits(JSON.parse(saved));
+          const parsed: Habit[] = JSON.parse(saved);
+          setHabits(
+            parsed.map((h) => ({
+              ...h,
+              streak: calculateConsecutiveStreak(h.completedDates, h.freezeShieldsRemaining),
+            }))
+          );
         } catch {}
       }
     } finally {
@@ -121,7 +145,7 @@ export function useHabits() {
     }
   }, [habits, isDemo, userKey, user]);
 
-  // Toggle Habit Completion (Optimistic UI)
+  // Toggle Habit Completion (Optimistic UI with Dynamic Streak Evaluation)
   const toggleHabit = async (id: string) => {
     const today = new Date().toISOString().split('T')[0];
     const habitToToggle = habits.find((h) => h.id === id);
@@ -131,7 +155,7 @@ export function useHabits() {
     const newDates = isDone
       ? habitToToggle.completedDates.filter((d) => d !== today)
       : [...habitToToggle.completedDates, today];
-    const newStreak = isDone ? Math.max(0, habitToToggle.streak - 1) : habitToToggle.streak + 1;
+    const newStreak = calculateConsecutiveStreak(newDates, habitToToggle.freezeShieldsRemaining ?? 3);
 
     // 1. Optimistic Update
     setHabits((prev) =>

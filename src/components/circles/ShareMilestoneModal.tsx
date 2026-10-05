@@ -100,30 +100,30 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-5 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md md:max-w-3xl lg:max-w-4xl max-h-[90vh] flex flex-col rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+      <div className="relative w-full max-w-md md:max-w-3xl lg:max-w-4xl max-h-[92dvh] flex flex-col rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[var(--border-subtle)] shrink-0 bg-[var(--bg-main)]/50">
-          <div className="flex items-center gap-3">
-            <div className={`flex h-10 w-10 items-center justify-center rounded-2xl shadow-xs transition-colors ${isPrivate
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[var(--border-subtle)] shrink-0 bg-[var(--bg-main)]/50">
+          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
+            <div className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl shadow-xs transition-colors shrink-0 ${isPrivate
                 ? 'bg-amber-500/15 text-amber-500'
                 : 'bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)]'
               }`}>
-              {isPrivate ? <Lock className="h-5 w-5" /> : <Sparkles className="h-5 w-5" />}
+              {isPrivate ? <Lock className="h-4 w-4 sm:h-5 sm:w-5" /> : <Sparkles className="h-4 w-4 sm:h-5 sm:w-5" />}
             </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <h2 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)]">
+            <div className="min-w-0">
+              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <h2 className="font-heading font-bold text-sm sm:text-lg text-[var(--text-primary)] truncate">
                   {isPrivate ? 'Log Masked Milestone' : 'Broadcast Milestone'}
                 </h2>
-                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-bold ${isPrivate
+                <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] sm:text-[10px] font-bold shrink-0 ${isPrivate
                     ? 'bg-amber-500/15 border border-amber-500/30 text-amber-500'
                     : 'bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 text-[var(--accent-botanical-sage)]'
                   }`}>
-                  {isPrivate ? <Lock className="h-3 w-3" /> : <ShieldCheck className="h-3 w-3" />}
+                  {isPrivate ? <Lock className="h-2.5 w-2.5 sm:h-3 sm:w-3" /> : <ShieldCheck className="h-2.5 w-2.5 sm:h-3 sm:w-3" />}
                   {isPrivate ? 'Masked / Self Only' : 'Private to Circle'}
                 </span>
               </div>
-              <p className="text-xs text-[var(--text-secondary)]">
+              <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] truncate sm:whitespace-normal">
                 {isPrivate
                   ? 'Record a private achievement locked to your personal timeline.'
                   : 'Broadcast an achievement badge to your accountability circle.'}
@@ -134,15 +134,15 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition cursor-pointer"
+            className="rounded-xl p-1.5 sm:p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition cursor-pointer shrink-0"
             aria-label="Close dialog"
           >
-            <X className="h-5 w-5" />
+            <X className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
         </div>
 
         {/* Modal Content - Two-column horizontal layout on Tablet & Desktop */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <form id="broadcast-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6">
             {/* Left Column: Sharing Audience & Category Selection */}
             <div className="md:col-span-6 space-y-4 flex flex-col justify-between">
@@ -164,7 +164,7 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
                       <span>Privacy Info</span>
                     </button>
 
-                    <div className="pointer-events-none absolute right-0 top-full mt-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-200 z-50 w-72 rounded-xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--card-surface)] p-3 shadow-xl backdrop-blur-md text-left">
+                    <div className="pointer-events-none absolute right-0 top-full mt-1.5 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-all duration-200 z-50 w-64 sm:w-72 max-w-[calc(100vw-2.5rem)] rounded-xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--card-surface)] p-3 shadow-xl backdrop-blur-md text-left">
                       <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--accent-botanical-sage)] mb-1">
                         <ShieldCheck className="h-3.5 w-3.5 shrink-0" />
                         <span>Privacy Guaranteed</span>
@@ -337,7 +337,7 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
         </div>
 
         {/* Modal Footer Actions */}
-        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-main)]/50 shrink-0">
+        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-main)]/50 shrink-0 flex-wrap gap-2">
           <button
             type="button"
             onClick={onClose}
@@ -349,7 +349,7 @@ export const ShareMilestoneModal: React.FC<ShareMilestoneModalProps> = ({
           <button
             type="submit"
             form="broadcast-form"
-            className={`flex items-center gap-1.5 rounded-xl px-5 py-2 text-xs font-bold shadow-md transition active:scale-95 cursor-pointer ${isPrivate
+            className={`flex items-center gap-1.5 rounded-xl px-4 sm:px-5 py-2 text-xs font-bold shadow-md transition active:scale-95 cursor-pointer ${isPrivate
                 ? 'bg-amber-500 hover:brightness-110 text-black'
                 : 'bg-[var(--accent-warm-ochre)] hover:brightness-110 text-black'
               }`}

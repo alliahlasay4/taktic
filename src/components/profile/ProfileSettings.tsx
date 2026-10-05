@@ -341,6 +341,11 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
         <div className="divide-y divide-[var(--border-subtle)]">
           {[
             {
+              key: 'isIncognito',
+              label: 'Incognito / Stealth Mode',
+              desc: 'Appear offline to Circle partners and hide live focus presence and active badges.',
+            },
+            {
               key: 'showFocusHours',
               label: 'Display Total Deep Focus Hours',
               desc: 'Share your total focused hours on your public profile banner.',
@@ -363,11 +368,18 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
           ].map((item) => (
             <div key={item.key} className="flex items-center justify-between py-3.5 first:pt-1 last:pb-0">
               <div className="pr-4">
-                <div className="text-sm font-medium text-[var(--text-primary)]">{item.label}</div>
+                <div className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2">
+                  <span>{item.label}</span>
+                  {item.key === 'isIncognito' && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                      Privacy
+                    </span>
+                  )}
+                </div>
                 <div className="text-xs text-[var(--text-secondary)] mt-0.5">{item.desc}</div>
               </div>
               <ToggleSwitch
-                checked={(privacySettings as any)[item.key]}
+                checked={Boolean((privacySettings as any)[item.key])}
                 onChange={(checked) =>
                   setPrivacySettings((prev) => ({
                     ...prev,

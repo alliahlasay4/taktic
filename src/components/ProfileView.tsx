@@ -3,26 +3,50 @@ import { useAuth } from '../context/AuthContext';
 import { ProfileOverview } from './profile/ProfileOverview';
 import { ProfileSettings } from './profile/ProfileSettings';
 import { fetchProfileStatsFromSupabase, RealProfileStats } from '../lib/profileSupabase';
-import { Flame, Clock, ShieldCheck, Volume2, Sparkles, Target, Edit3, User, Settings, Camera, Copy, Check } from 'lucide-react';
+import { Flame, Clock, ShieldCheck, Volume2, Sparkles, Target, Edit3, User, Settings, Camera, Copy, Check, EyeOff } from 'lucide-react';
 
 export const ProfileView: React.FC = () => {
   const { profile, updateProfile } = useAuth();
   const [activeSubTab, setActiveSubTab] = useState<'overview' | 'settings'>('overview');
   const [copiedHandle, setCopiedHandle] = useState(false);
-  const [stats, setStats] = useState<RealProfileStats>({
-    totalFocusHours: 34.5,
-    totalFocusSessions: 14,
-    completedHabitsCount: 68,
-    currentStreak: 7,
-    ringsRatePercent: 88,
+  const [stats, setStats] = useState<RealProfileStats>(() => {
+    if (profile?.id) {
+      const cached = localStorage.getItem(`taktic_profile_stats_${profile.id}`);
+      if (cached) {
+        try {
+          return JSON.parse(cached);
+        } catch {}
+      }
+    }
+    return {
+      totalFocusHours: 0,
+      totalFocusSessions: 0,
+      completedHabitsCount: 0,
+      currentStreak: 0,
+      ringsRatePercent: 0,
+    };
   });
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let isMounted = true;
+    if (!profile?.id) return;
+
+    // Check cached stats for fast hydration
+    const cached = localStorage.getItem(`taktic_profile_stats_${profile.id}`);
+    if (cached) {
+      try {
+        const parsed = JSON.parse(cached);
+        if (parsed) setStats(parsed);
+      } catch {}
+    }
+
     const loadStats = async () => {
       const realStats = await fetchProfileStatsFromSupabase(profile.id);
-      if (isMounted) setStats(realStats);
+      if (isMounted) {
+        setStats(realStats);
+        localStorage.setItem(`taktic_profile_stats_${profile.id}`, JSON.stringify(realStats));
+      }
     };
     loadStats();
     return () => {
@@ -89,16 +113,23 @@ export const ProfileView: React.FC = () => {
                   onChange={handleHeaderAvatarUpload}
                   className="hidden"
                 />
-                <div className="absolute -bottom-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full border-2 border-[var(--card-surface)] flex items-center gap-1 shadow-xs pointer-events-none">
-                  <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                  ACTIVE
-                </div>
+                {profile.privacySettings?.isIncognito ? (
+                  <div className="absolute -bottom-1 -right-1 bg-[var(--card-surface)]/95 backdrop-blur-sm text-[var(--accent-warm-ochre)] border border-[var(--accent-warm-ochre)]/40 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs pointer-events-none uppercase tracking-wider">
+                    <EyeOff className="w-2.5 h-2.5 text-[var(--accent-warm-ochre)]" />
+                    <span>Incognito</span>
+                  </div>
+                ) : (
+                  <div className="absolute -bottom-1 -right-1 bg-[var(--card-surface)]/95 backdrop-blur-sm text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/40 text-[9px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs pointer-events-none uppercase tracking-wider">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-botanical-sage)] animate-pulse" />
+                    <span>Active</span>
+                  </div>
+                )}
               </div>
 
               <div className="pb-1">
                 <div className="flex items-center gap-2.5 flex-wrap">
                   <h1 className="text-2xl font-bold font-heading text-[var(--text-primary)] tracking-tight">{profile.fullName}</h1>
-                  
+
                   {/* Copyable username badge */}
                   <button
                     type="button"
@@ -212,11 +243,10 @@ export const ProfileView: React.FC = () => {
           role="tab"
           aria-selected={activeSubTab === 'overview'}
           onClick={() => setActiveSubTab('overview')}
-          className={`flex items-center gap-2 pb-3 pt-2 text-sm font-medium transition-all relative min-h-[44px] cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-            activeSubTab === 'overview'
+          className={`flex items-center gap-2 pb-3 pt-2 text-sm font-medium transition-all relative min-h-[44px] cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-500 ${activeSubTab === 'overview'
               ? 'text-[var(--accent-terracotta)] font-semibold'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
+            }`}
         >
           <User className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
           <span>Overview & Activity</span>
@@ -230,11 +260,10 @@ export const ProfileView: React.FC = () => {
           role="tab"
           aria-selected={activeSubTab === 'settings'}
           onClick={() => setActiveSubTab('settings')}
-          className={`flex items-center gap-2 pb-3 pt-2 text-sm font-medium transition-all relative min-h-[44px] cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-            activeSubTab === 'settings'
+          className={`flex items-center gap-2 pb-3 pt-2 text-sm font-medium transition-all relative min-h-[44px] cursor-pointer focus-visible:ring-2 focus-visible:ring-emerald-500 ${activeSubTab === 'settings'
               ? 'text-[var(--accent-terracotta)] font-semibold'
               : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-          }`}
+            }`}
         >
           <Settings className="w-4 h-4" strokeWidth={1.5} aria-hidden="true" />
           <span>Account & Preferences</span>

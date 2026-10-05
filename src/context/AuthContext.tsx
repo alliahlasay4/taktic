@@ -24,7 +24,7 @@ interface AuthContextType {
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   loginAsDemo: () => void;
   signOut: () => Promise<void>;
-  updateProfile: (updates: Partial<UserProfile>) => void;
+  updateProfile: (updates: Partial<UserProfile>) => Promise<UserProfile>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -46,6 +46,7 @@ const DEFAULT_PROFILE: UserProfile = {
     showMicroGoal: true,
     showActivityFeed: true,
     showStreak: true,
+    isIncognito: false,
   },
 };
 
@@ -56,6 +57,55 @@ const DEMO_USER: DemoUser = {
     full_name: 'Portfolio Reviewer',
     avatar_url: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   },
+};
+
+export const hasIncomingAuthLink = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const hash = window.location.hash;
+  const search = window.location.search;
+  return (
+    hash.includes('access_token') ||
+    hash.includes('type=signup') ||
+    hash.includes('type=recovery') ||
+    hash.includes('type=invite') ||
+    hash.includes('type=magiclink') ||
+    hash.includes('type=email_change') ||
+    search.includes('code=')
+  );
+};
+
+export const extractEmailFromUrl = (): string => {
+  if (typeof window === 'undefined') return '';
+  const hash = window.location.hash;
+  const search = window.location.search;
+
+  const searchParams = new URLSearchParams(search);
+  if (searchParams.get('email')) {
+    return searchParams.get('email') || '';
+  }
+
+  if (hash.includes('access_token')) {
+    try {
+      const match = hash.match(/access_token=([^&]+)/);
+      if (match && match[1]) {
+        const base64Url = match[1].split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(
+          atob(base64)
+            .split('')
+            .map((c) => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2))
+            .join('')
+        );
+        const payload = JSON.parse(jsonPayload);
+        if (payload?.email) {
+          return payload.email;
+        }
+      }
+    } catch (e) {
+      console.warn('Could not decode access_token payload:', e);
+    }
+  }
+  return '';
 };
 
 export const clearDemoData = () => {
@@ -90,11 +140,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | DemoUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [isDemo, setIsDemo] = useState<boolean>(() => {
+    if (hasIncomingAuthLink()) {
+      clearDemoData();
+      localStorage.removeItem('taktic_demo_mode');
+      return false;
+    }
     return localStorage.getItem('taktic_demo_mode') === 'true';
   });
   const [loading, setLoading] = useState<boolean>(true);
 
   const [profile, setProfile] = useState<UserProfile>(() => {
+    if (hasIncomingAuthLink()) {
+      return DEFAULT_PROFILE;
+    }
     if (localStorage.getItem('taktic_demo_mode') === 'true') {
       const demoSaved = sessionStorage.getItem('taktic_demo_profile');
       if (demoSaved) {
@@ -115,43 +173,73 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return DEFAULT_PROFILE;
   });
 
-  const updateProfile = (updates: Partial<UserProfile>) => {
-    setProfile((prev) => {
-      const updated = {
-        ...prev,
-        ...updates,
-        privacySettings: updates.privacySettings
-          ? { ...prev.privacySettings, ...updates.privacySettings }
-          : prev.privacySettings,
-      };
+  const updateProfile = async (updates: Partial<UserProfile>): Promise<UserProfile> => {
+    const realUserId = (!isDemo && user?.id && user.id !== 'demo-user-123') ? user.id : undefined;
+    const targetId = realUserId || profile.id || 'demo-user-123';
 
-      if (isDemo || user?.id === 'demo-user-123') {
-        sessionStorage.setItem('taktic_demo_profile', JSON.stringify(updated));
-      } else if (user?.id) {
-        localStorage.setItem(`taktic_user_profile_${user.id}`, JSON.stringify(updated));
-      } else {
-        localStorage.setItem('taktic_user_profile', JSON.stringify(updated));
-      }
+    const updated: UserProfile = {
+      ...profile,
+      ...updates,
+      id: targetId,
+      privacySettings: updates.privacySettings
+        ? {
+            showFocusHours: updates.privacySettings.showFocusHours ?? profile.privacySettings?.showFocusHours ?? true,
+            showMicroGoal: updates.privacySettings.showMicroGoal ?? profile.privacySettings?.showMicroGoal ?? true,
+            showActivityFeed: updates.privacySettings.showActivityFeed ?? profile.privacySettings?.showActivityFeed ?? true,
+            showStreak: updates.privacySettings.showStreak ?? profile.privacySettings?.showStreak ?? true,
+            isIncognito: updates.privacySettings.isIncognito !== undefined
+              ? Boolean(updates.privacySettings.isIncognito)
+              : Boolean(profile.privacySettings?.isIncognito),
+          }
+        : profile.privacySettings,
+    };
 
-      // Asynchronously sync profile changes to Supabase table if logged in
-      if (!isDemo && isSupabaseConfigured && updated.id && updated.id !== 'demo-user-123') {
-        saveUserProfileToSupabase(updated);
-      }
+    setProfile(updated);
 
-      return updated;
-    });
+    if (isDemo || targetId === 'demo-user-123') {
+      sessionStorage.setItem('taktic_demo_profile', JSON.stringify(updated));
+    } else {
+      localStorage.setItem(`taktic_user_profile_${targetId}`, JSON.stringify(updated));
+      localStorage.setItem('taktic_user_profile', JSON.stringify(updated));
+    }
+
+    if (!isDemo && isSupabaseConfigured && targetId && targetId !== 'demo-user-123') {
+      await saveUserProfileToSupabase(updated, targetId);
+    }
+
+    return updated;
   };
 
   const syncSupabaseProfile = async (currentSession: Session | null) => {
     if (!currentSession?.user) return;
     const userId = currentSession.user.id;
 
+    // Check local cached profile for this user ID to immediately render without delay
+    const cachedStr = localStorage.getItem(`taktic_user_profile_${userId}`);
+    let cachedProfile: UserProfile | null = null;
+    if (cachedStr) {
+      try {
+        cachedProfile = JSON.parse(cachedStr);
+      } catch {}
+    }
+
+    if (cachedProfile) {
+      setProfile(cachedProfile);
+    }
+
     const dbProfile = await fetchUserProfileFromSupabase(userId);
     if (dbProfile) {
-      setProfile(dbProfile);
-      localStorage.setItem(`taktic_user_profile_${userId}`, JSON.stringify(dbProfile));
+      const finalProfile: UserProfile = {
+        ...dbProfile,
+        privacySettings: {
+          ...dbProfile.privacySettings,
+          isIncognito: dbProfile.privacySettings?.isIncognito ?? cachedProfile?.privacySettings?.isIncognito ?? false,
+        },
+      };
+      setProfile(finalProfile);
+      localStorage.setItem(`taktic_user_profile_${userId}`, JSON.stringify(finalProfile));
+      localStorage.setItem('taktic_user_profile', JSON.stringify(finalProfile));
     } else {
-      // Initialize initial profile state for new session cleanly
       const userMetaName = currentSession.user.user_metadata?.full_name?.trim();
       const emailPrefix = currentSession.user.email ? currentSession.user.email.split('@')[0] : 'user';
       const fallbackName = userMetaName || (emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)) || 'New User';
@@ -162,41 +250,126 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         fullName: fallbackName,
         username: `@${emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '')}`,
         avatarUrl: currentSession.user.user_metadata?.avatar_url || DEFAULT_PROFILE.avatarUrl,
+        privacySettings: cachedProfile?.privacySettings || DEFAULT_PROFILE.privacySettings,
       };
       setProfile(initialProfile);
       localStorage.setItem(`taktic_user_profile_${userId}`, JSON.stringify(initialProfile));
-      saveUserProfileToSupabase(initialProfile);
+      localStorage.setItem('taktic_user_profile', JSON.stringify(initialProfile));
+      await saveUserProfileToSupabase(initialProfile, userId);
     }
   };
 
   useEffect(() => {
-    if (isDemo) {
-      setUser(DEMO_USER);
-      setLoading(false);
-      return;
-    }
+    // Process incoming auth links (Email Confirmation, Password Reset, Magic Link)
+    const handleIncomingAuthLink = async () => {
+      if (typeof window === 'undefined') return;
 
-    if (!isSupabaseConfigured) {
-      setLoading(false);
-      return;
-    }
+      const hash = window.location.hash;
+      const search = window.location.search;
+      const isAuthCallback = hasIncomingAuthLink();
+      const hasAuthError = hash.includes('error=') || search.includes('error=');
 
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        syncSupabaseProfile(session);
+      if (isAuthCallback && !hasAuthError) {
+        // 1. Immediately purge demo state & cached profiles
+        clearDemoData();
+        localStorage.removeItem('taktic_demo_mode');
+        localStorage.removeItem('taktic_user_profile');
+        setIsDemo(false);
+
+        // 2. Cleanly sign out Account A FIRST before doing anything with the new link
+        if (isSupabaseConfigured) {
+          try {
+            await supabase.auth.signOut({ scope: 'local' });
+          } catch {}
+        }
+
+        // 3. Extract confirmed email from URL token payload
+        let confirmedEmail = extractEmailFromUrl();
+
+        // 4. If PKCE code is present, exchange it with Supabase to finalize Account B's verification
+        if (isSupabaseConfigured && search.includes('code=')) {
+          try {
+            const searchParams = new URLSearchParams(search);
+            const code = searchParams.get('code');
+            if (code) {
+              const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+              if (!error && data?.user?.email) {
+                confirmedEmail = data.user.email;
+              }
+              // Sign out immediately so Account B is NOT automatically logged in
+              await supabase.auth.signOut({ scope: 'local' });
+            }
+          } catch (err) {
+            console.error('Error handling auth confirmation:', err);
+          }
+        }
+
+        const notice = {
+          email: confirmedEmail,
+          message: 'Your email has been verified! Please sign in with your password to continue.',
+        };
+
+        // 5. Save confirmation notice into sessionStorage for AuthPage
+        sessionStorage.setItem('taktic_auth_confirmation_notice', JSON.stringify(notice));
+
+        // 6. Clean URL to /login and broadcast events to open AuthPage and pre-fill form
+        window.history.replaceState(null, '', '/login');
+        window.dispatchEvent(new CustomEvent('taktic_auth_notice', { detail: notice }));
+        window.dispatchEvent(new Event('popstate'));
+
+        setUser(null);
+        setSession(null);
+        setProfile(DEFAULT_PROFILE);
+        setLoading(false);
+        return;
       }
-      setLoading(false);
-    });
+
+      if (hasAuthError) {
+        // Clean error hash and navigate to /login to display error
+        window.history.replaceState(null, '', '/login' + search + hash);
+        window.dispatchEvent(new Event('popstate'));
+        setUser(null);
+        setSession(null);
+        setLoading(false);
+        return;
+      }
+
+      if (isDemo) {
+        setUser(DEMO_USER);
+        setLoading(false);
+        return;
+      }
+
+      if (!isSupabaseConfigured) {
+        setLoading(false);
+        return;
+      }
+
+      // Get initial session
+      supabase.auth.getSession().then(({ data: { session } }) => {
+        setSession(session);
+        setUser(session?.user ?? null);
+        if (session?.user) {
+          syncSupabaseProfile(session);
+        }
+        setLoading(false);
+      });
+    };
+
+    handleIncomingAuthLink();
+
+    if (!isSupabaseConfigured) return;
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      // If we are currently handling an email confirmation redirect, do not auto-login
+      if (hasIncomingAuthLink()) return;
+
       setSession(session);
       setUser(session?.user ?? null);
+
       if (session?.user) {
-        syncSupabaseProfile(session);
+        await syncSupabaseProfile(session);
       } else if (!isDemo) {
         setProfile(DEFAULT_PROFILE);
       }

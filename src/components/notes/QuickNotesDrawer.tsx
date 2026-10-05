@@ -191,10 +191,10 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
       />
 
       {/* Slide-Over Drawer Container */}
-      <div className="fixed inset-y-0 right-0 max-w-full flex pl-10">
-        <div className="w-screen max-w-md bg-[var(--bg-main)] border-l border-[var(--border-subtle)] shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-200">
+      <div className="fixed inset-y-0 right-0 max-w-full flex pl-0 sm:pl-10 w-full sm:w-auto">
+        <div className="w-full sm:w-[420px] max-w-full bg-[var(--bg-main)] border-l border-[var(--border-subtle)] shadow-2xl flex flex-col justify-between animate-in slide-in-from-right duration-200">
           {/* Drawer Header */}
-          <div className="px-5 py-4 border-b border-[var(--border-subtle)] bg-[var(--card-surface)] flex items-center justify-between">
+          <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[var(--border-subtle)] bg-[var(--card-surface)] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
               <div className="p-2 rounded-xl bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)]">
                 <StickyNote className="w-4 h-4" />
@@ -227,7 +227,7 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
           </div>
 
           {/* Search & Quick Action Toolbar */}
-          <div className="p-4 border-b border-[var(--border-subtle)] bg-[var(--card-surface)]/50 space-y-3">
+          <div className="p-3.5 sm:p-4 border-b border-[var(--border-subtle)] bg-[var(--card-surface)]/50 space-y-3">
             <div className="flex items-center gap-2">
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--text-muted)]" />
@@ -243,7 +243,7 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
               {!isCreating && (
                 <button
                   onClick={() => setIsCreating(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 transition-opacity shadow-xs"
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 transition-opacity shadow-xs shrink-0"
                 >
                   <Plus className="w-3.5 h-3.5" />
                   <span>New Note</span>
@@ -277,8 +277,8 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
                   />
 
                   {/* Color Pills & Pin Control */}
-                  <div className="flex items-center justify-between pt-1">
-                    <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <div className="flex items-center gap-1.5">
                         {(Object.keys(COLOR_THEMES) as NoteColor[]).map((c) => (
                           <button
@@ -299,7 +299,7 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 ml-auto">
                       <button
                         type="button"
                         onClick={() => setNewPinned(!newPinned)}

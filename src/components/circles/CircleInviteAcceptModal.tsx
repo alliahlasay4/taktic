@@ -42,29 +42,29 @@ export const CircleInviteAcceptModal: React.FC<CircleInviteAcceptModalProps> = (
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-200 text-left">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3.5 sm:p-4 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-md rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-200 text-left">
         {/* Close / Decline Button */}
         <button
           type="button"
           onClick={onDecline}
           disabled={loading}
-          className="absolute top-5 right-5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition p-1 cursor-pointer"
+          className="absolute top-4 sm:top-5 right-4 sm:right-5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition p-1 cursor-pointer"
           aria-label="Decline invitation"
         >
           <X className="h-5 w-5" />
         </button>
 
         {/* Modal Header Icon */}
-        <div className="flex items-center gap-3.5 mb-5">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-lg shadow-[#C06C4C]/25 shrink-0">
-            <Sparkles className="h-6 w-6" />
+        <div className="flex items-center gap-3 sm:gap-3.5 mb-4 sm:mb-5">
+          <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-lg shadow-[#C06C4C]/25 shrink-0">
+            <Sparkles className="h-5 w-5 sm:h-6 sm:w-6" />
           </div>
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--accent-terracotta)]">
               Circle Partner Request
             </span>
-            <h3 className="font-heading font-extrabold text-xl text-[var(--text-primary)] leading-tight">
+            <h3 className="font-heading font-extrabold text-lg sm:text-xl text-[var(--text-primary)] leading-tight">
               Connect with {inviterName}?
             </h3>
           </div>

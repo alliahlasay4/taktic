@@ -24,15 +24,63 @@ const HEATMAP_COLORS = [
 type BadgeCategoryFilter = 'all' | 'unlocked' | 'focus' | 'streak' | 'habit' | 'social';
 
 export const ProfileOverview: React.FC<ProfileOverviewProps> = ({ profile }) => {
-  const [heatmapData, setHeatmapData] = useState<HeatmapDay[]>([]);
-  const [badges, setBadges] = useState<Badge[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [heatmapData, setHeatmapData] = useState<HeatmapDay[]>(() => {
+    if (profile?.id) {
+      const cached = localStorage.getItem(`taktic_profile_heatmap_${profile.id}`);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return [];
+  });
+
+  const [badges, setBadges] = useState<Badge[]>(() => {
+    if (profile?.id) {
+      const cached = localStorage.getItem(`taktic_profile_badges_${profile.id}`);
+      if (cached) {
+        try {
+          const parsed = JSON.parse(cached);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch {}
+      }
+    }
+    return [];
+  });
+
+  const [loading, setLoading] = useState<boolean>(() => {
+    if (profile?.id) {
+      const cachedH = localStorage.getItem(`taktic_profile_heatmap_${profile.id}`);
+      const cachedB = localStorage.getItem(`taktic_profile_badges_${profile.id}`);
+      if (cachedH && cachedB) return false;
+    }
+    return true;
+  });
+
   const [selectedFilter, setSelectedFilter] = useState<BadgeCategoryFilter>('all');
 
   useEffect(() => {
     let isMounted = true;
+    if (!profile?.id) return;
+
+    // Fast hydrate from local storage
+    const cachedH = localStorage.getItem(`taktic_profile_heatmap_${profile.id}`);
+    const cachedB = localStorage.getItem(`taktic_profile_badges_${profile.id}`);
+    if (cachedH && cachedB) {
+      try {
+        const parsedH = JSON.parse(cachedH);
+        const parsedB = JSON.parse(cachedB);
+        if (Array.isArray(parsedH) && Array.isArray(parsedB)) {
+          setHeatmapData(parsedH);
+          setBadges(parsedB);
+          setLoading(false);
+        }
+      } catch {}
+    }
+
     const loadOverviewData = async () => {
-      setLoading(true);
       try {
         const stats: RealProfileStats = await fetchProfileStatsFromSupabase(profile.id);
         const [heatmap, badgeList] = await Promise.all([
@@ -43,6 +91,8 @@ export const ProfileOverview: React.FC<ProfileOverviewProps> = ({ profile }) => 
         if (isMounted) {
           setHeatmapData(heatmap);
           setBadges(badgeList);
+          localStorage.setItem(`taktic_profile_heatmap_${profile.id}`, JSON.stringify(heatmap));
+          localStorage.setItem(`taktic_profile_badges_${profile.id}`, JSON.stringify(badgeList));
         }
       } catch (err) {
         console.error('Error loading profile overview data:', err);

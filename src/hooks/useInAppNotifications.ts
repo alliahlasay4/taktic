@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { InAppNotification, ActiveTab } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { soundEngine } from '../lib/audio';
 
 export interface ToastItem {
   id: string;
@@ -10,11 +11,42 @@ export interface ToastItem {
   type: InAppNotification['type'];
 }
 
+/**
+ * Deduplicate a list of notifications by unique ID and by identical content (title+message)
+ * created within a close time threshold (6 seconds).
+ */
+export function dedupeNotifications(list: InAppNotification[]): InAppNotification[] {
+  const seenIds = new Set<string>();
+  const seenContent = new Set<string>();
+  const result: InAppNotification[] = [];
+
+  for (const item of list) {
+    if (!item || !item.id) continue;
+    if (seenIds.has(item.id)) continue;
+    seenIds.add(item.id);
+
+    // Group close events into 6-second buckets to remove rapid duplicate emissions
+    const timeBucket = Math.floor(new Date(item.createdAt || Date.now()).getTime() / 6000);
+    const contentKey = `${item.title.trim()}:::${item.message.trim()}:::${timeBucket}`;
+    if (seenContent.has(contentKey)) continue;
+    seenContent.add(contentKey);
+
+    result.push(item);
+  }
+
+  return result;
+}
+
 export function useInAppNotifications() {
   const { user, isDemo } = useAuth();
   const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
   const userKey = user?.id || (isDemo ? 'demo' : 'guest');
   const storageKey = `taktic_in_app_notifications_${userKey}`;
+
+  // Keep track of locally dispatched notifications to ignore their Realtime echo
+  const locallyDispatchedIds = useRef<Map<string, number>>(new Map());
+  const recentlyDispatchedContent = useRef<Map<string, number>>(new Map());
+  const recentToastsRef = useRef<Map<string, number>>(new Map());
 
   const createInitialNotifications = useCallback((): InAppNotification[] => {
     return [
@@ -33,13 +65,13 @@ export function useInAppNotifications() {
   const [notifications, setNotifications] = useState<InAppNotification[]>(() => {
     if (isDemo || userKey === 'demo') {
       const saved = sessionStorage.getItem('taktic_demo_in_app_notifications');
-      return saved ? JSON.parse(saved) : createInitialNotifications();
+      return saved ? dedupeNotifications(JSON.parse(saved)) : createInitialNotifications();
     }
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
         const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
+        if (Array.isArray(parsed)) return dedupeNotifications(parsed);
       } catch (e) {
         console.error(e);
       }
@@ -50,35 +82,32 @@ export function useInAppNotifications() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
   const isInitialMount = useRef(true);
 
-  // Trigger toast with sound and automatic dismissal
+  // Trigger toast with sound and automatic dismissal (with deduplication)
   const showToast = useCallback((title: string, message: string, type: InAppNotification['type'] = 'system') => {
-    const toastId = `toast-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+    const toastKey = `${title.trim()}:::${message.trim()}`;
+    const now = Date.now();
+    const lastSeen = recentToastsRef.current.get(toastKey);
+
+    // Debounce/deduplicate: don't show identical toast within 2.5s
+    if (lastSeen && now - lastSeen < 2500) {
+      return;
+    }
+    recentToastsRef.current.set(toastKey, now);
+
+    const toastId = `toast-${now}-${Math.random().toString(36).substring(2, 6)}`;
     const newToast: ToastItem = { id: toastId, title, message, type };
 
-    setToasts((prev) => [...prev, newToast]);
+    setToasts((prev) => {
+      // Check if identical toast is already active in the overlay
+      if (prev.some((t) => t.title === title && t.message === message)) {
+        return prev;
+      }
+      return [...prev, newToast];
+    });
 
     // Play subtle notification chime for social or milestone events
-    try {
-      if (typeof window !== 'undefined' && (type === 'circle' || type === 'streak')) {
-        const AudioCtx = window.AudioContext || (window as any).webkitAudioContext;
-        if (AudioCtx) {
-          const ctx = new AudioCtx();
-          const osc = ctx.createOscillator();
-          const gain = ctx.createGain();
-          const now = ctx.currentTime;
-          osc.type = 'sine';
-          osc.frequency.setValueAtTime(587.33, now); // D5
-          osc.frequency.exponentialRampToValueAtTime(880, now + 0.1); // A5
-          gain.gain.setValueAtTime(0.04, now);
-          gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
-          osc.connect(gain);
-          gain.connect(ctx.destination);
-          osc.start(now);
-          osc.stop(now + 0.36);
-        }
-      }
-    } catch (e) {
-      // Audio playback non-critical
+    if (type === 'circle' || type === 'streak') {
+      soundEngine.playNotificationChime();
     }
 
     setTimeout(() => {
@@ -108,8 +137,9 @@ export function useInAppNotifications() {
           actionTab: (n.action_tab as ActiveTab) || 'circles',
         }));
 
-        setNotifications(mapped);
-        localStorage.setItem(storageKey, JSON.stringify(mapped));
+        const deduped = dedupeNotifications(mapped);
+        setNotifications(deduped);
+        localStorage.setItem(storageKey, JSON.stringify(deduped));
       }
     } catch (e) {
       console.warn('Could not fetch notifications from Supabase:', e);
@@ -124,14 +154,14 @@ export function useInAppNotifications() {
 
     if (isDemo || userKey === 'demo') {
       const saved = sessionStorage.getItem('taktic_demo_in_app_notifications');
-      setNotifications(saved ? JSON.parse(saved) : createInitialNotifications());
+      setNotifications(saved ? dedupeNotifications(JSON.parse(saved)) : createInitialNotifications());
       return;
     }
 
     const saved = localStorage.getItem(storageKey);
     if (saved) {
       try {
-        setNotifications(JSON.parse(saved));
+        setNotifications(dedupeNotifications(JSON.parse(saved)));
       } catch (e) {
         console.error(e);
       }
@@ -161,6 +191,36 @@ export function useInAppNotifications() {
         (payload) => {
           if (payload.eventType === 'INSERT') {
             const newRow = payload.new;
+            const notifId = newRow.id;
+
+            // Check if this notification was just dispatched locally by this client
+            const dispatchTime = locallyDispatchedIds.current.get(notifId);
+            const contentKey = `${newRow.title?.trim()}:::${newRow.message?.trim()}`;
+            const contentTime = recentlyDispatchedContent.current.get(contentKey);
+            const isRecentSelfDispatch =
+              (dispatchTime && Date.now() - dispatchTime < 15000) ||
+              (contentTime && Date.now() - contentTime < 15000);
+
+            if (isRecentSelfDispatch) {
+              // Ensure local notification has the exact DB ID without re-toasting or duplicating
+              setNotifications((prev) => {
+                if (prev.some((n) => n.id === notifId)) return prev;
+                return dedupeNotifications([
+                  {
+                    id: notifId,
+                    title: newRow.title,
+                    message: newRow.message,
+                    type: (newRow.type as InAppNotification['type']) || 'circle',
+                    read: Boolean(newRow.read),
+                    createdAt: newRow.created_at || new Date().toISOString(),
+                    actionTab: (newRow.action_tab as ActiveTab) || 'circles',
+                  },
+                  ...prev,
+                ]);
+              });
+              return;
+            }
+
             const newNotif: InAppNotification = {
               id: newRow.id,
               title: newRow.title,
@@ -171,7 +231,7 @@ export function useInAppNotifications() {
               actionTab: (newRow.action_tab as ActiveTab) || 'circles',
             };
 
-            setNotifications((prev) => [newNotif, ...prev.filter((n) => n.id !== newNotif.id)]);
+            setNotifications((prev) => dedupeNotifications([newNotif, ...prev]));
             showToast(newNotif.title, newNotif.message, newNotif.type);
           } else if (payload.eventType === 'UPDATE') {
             const updatedRow = payload.new;
@@ -195,17 +255,22 @@ export function useInAppNotifications() {
 
   // Persist notifications for the current user
   useEffect(() => {
+    const cleanList = dedupeNotifications(notifications);
     if (isDemo || userKey === 'demo') {
-      sessionStorage.setItem('taktic_demo_in_app_notifications', JSON.stringify(notifications));
+      sessionStorage.setItem('taktic_demo_in_app_notifications', JSON.stringify(cleanList));
     } else {
-      localStorage.setItem(storageKey, JSON.stringify(notifications));
+      localStorage.setItem(storageKey, JSON.stringify(cleanList));
     }
   }, [notifications, storageKey, isDemo, userKey]);
 
   // Local or cross-client in-app notify
   const notify = useCallback(
     async (title: string, message: string, type: InAppNotification['type'] = 'system', actionTab?: ActiveTab) => {
-      const id = `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+      const id =
+        typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
+          ? crypto.randomUUID()
+          : `notif-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`;
+
       const newNotif: InAppNotification = {
         id,
         title,
@@ -216,12 +281,18 @@ export function useInAppNotifications() {
         actionTab,
       };
 
-      setNotifications((prev) => [newNotif, ...prev]);
+      // Register local dispatch to suppress realtime duplicate echo
+      const now = Date.now();
+      locallyDispatchedIds.current.set(id, now);
+      recentlyDispatchedContent.current.set(`${title.trim()}:::${message.trim()}`, now);
+
+      setNotifications((prev) => dedupeNotifications([newNotif, ...prev]));
       showToast(title, message, type);
 
       if (isRealUser && user) {
         try {
           await supabase.from('notifications').insert({
+            id,
             user_id: user.id,
             title,
             message,
@@ -308,6 +379,7 @@ export function useInAppNotifications() {
     notifications,
     toasts,
     unreadCount,
+    showToast,
     notify,
     sendPartnerNotification,
     dismissToast,

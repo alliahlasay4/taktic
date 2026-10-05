@@ -6,8 +6,6 @@ import {
   ShieldCheck,
   Plus,
   KeyRound,
-  EyeOff,
-  Eye,
   UserPlus,
   Volume2,
   VolumeX,
@@ -126,9 +124,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
     isHost,
     floatingEmojis,
     messages,
-    soloInvisibleMode,
     focusPods,
-    toggleSoloInvisibleMode,
     createFocusPod,
     renewPodLease,
     deleteFocusPod,
@@ -153,7 +149,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
     setNewPartnerName('');
   };
 
-  const activeFocusingCount = members.filter((m) => m.status === 'focusing').length;
+  const activeFocusingCount = members.filter((m) => m.status === 'focusing' && !m.isIncognito).length;
   const partnerMembers = members.filter((m) => m.isCirclePartner !== false);
   const activePodsCount = focusPods.filter((p) => (p.activeMembersCount || 0) > 0).length;
 
@@ -184,56 +180,6 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
 
           {/* Quick Actions & Unified Controls Bar */}
           <div className="flex items-center gap-1.5 sm:gap-2 w-full lg:w-auto justify-end flex-wrap sm:flex-nowrap">
-            {/* Ghost Mode Toggle */}
-            <div className="relative group shrink-0">
-              <button
-                type="button"
-                onClick={toggleSoloInvisibleMode}
-                className={`flex items-center gap-1.5 sm:gap-2 rounded-xl border px-2.5 py-1.5 text-xs font-semibold transition-all h-9 cursor-pointer ${
-                  soloInvisibleMode
-                    ? 'border-[var(--accent-dusty-rose)]/60 bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)] shadow-xs'
-                    : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)]'
-                }`}
-                aria-label="Toggle Ghost Mode"
-              >
-                {soloInvisibleMode ? (
-                  <EyeOff className="h-4 w-4 text-[var(--accent-dusty-rose)] shrink-0" />
-                ) : (
-                  <Eye className="h-4 w-4 text-[var(--text-muted)] shrink-0" />
-                )}
-                <span className="text-[11px] sm:text-xs font-medium">
-                  {soloInvisibleMode ? 'Ghost' : 'Visible'}
-                </span>
-                <div
-                  className={`relative inline-flex h-3.5 w-6 shrink-0 rounded-full transition-colors duration-200 ease-in-out ${
-                    soloInvisibleMode ? 'bg-[var(--accent-dusty-rose)]' : 'bg-[var(--border-subtle)]'
-                  }`}
-                >
-                  <span
-                    className={`pointer-events-none inline-block h-2.5 w-2.5 transform rounded-full bg-white shadow-xs transition duration-200 ease-in-out ${
-                      soloInvisibleMode ? 'translate-x-2.5' : 'translate-x-0.5'
-                    } mt-[2px]`}
-                  />
-                </div>
-              </button>
-
-              {/* Hover Tooltip Info Popover */}
-              <div className="pointer-events-none absolute top-full mt-2 right-0 sm:left-1/2 sm:-translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-200 z-50 w-56 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3 text-left shadow-xl backdrop-blur-md">
-                <div className="flex items-center gap-1.5 text-xs font-bold text-[var(--text-primary)] mb-1">
-                  {soloInvisibleMode ? (
-                    <EyeOff className="h-3.5 w-3.5 text-[var(--accent-dusty-rose)]" />
-                  ) : (
-                    <Eye className="h-3.5 w-3.5 text-[var(--accent-terracotta)]" />
-                  )}
-                  <span>Ghost Mode {soloInvisibleMode ? '• Active' : '• Off'}</span>
-                </div>
-                <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                  Hides your live timer and status from pods and roster partners.
-                </p>
-                <div className="absolute bottom-full right-4 sm:left-1/2 sm:-translate-x-1/2 -mb-1 border-4 border-transparent border-b-[var(--card-surface)]" />
-              </div>
-            </div>
-
             {/* Quick Actions Dropdown Menu */}
             <div className="relative" ref={actionsMenuRef}>
               <button
@@ -446,9 +392,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
             isHost={isHost}
             floatingEmojis={floatingEmojis}
             messages={messages}
-            soloInvisibleMode={soloInvisibleMode}
             focusPods={focusPods}
-            onToggleSoloInvisibleMode={toggleSoloInvisibleMode}
             onCreatePod={createFocusPod}
             onRenewPodLease={renewPodLease}
             onDeletePod={deleteFocusPod}
@@ -731,7 +675,11 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                             />
                             <div className="min-w-0">
                               <h3 className="font-bold text-xs text-[var(--text-primary)] truncate">{member.name}</h3>
-                              <p className="text-[10px] text-[var(--text-secondary)] truncate">{member.statusText || 'Focus member'}</p>
+                              <p className="text-[10px] text-[var(--text-secondary)] truncate">
+                                {member.isIncognito || member.statusText === 'Offline'
+                                  ? 'Offline'
+                                  : (member.statusText || 'Online')}
+                              </p>
                               <div className="flex items-center gap-1.5 mt-1">
                                 {isPartner ? (
                                   <span className="rounded-full bg-[var(--accent-dusty-rose)]/15 border border-[var(--accent-dusty-rose)]/30 px-2 py-0.5 text-[9px] font-bold text-[var(--accent-dusty-rose)]">
@@ -747,27 +695,49 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                           </div>
 
                           {/* Status Dot */}
-                          <span
-                            className={`h-2.5 w-2.5 rounded-full shrink-0 ${
-                              member.status === 'focusing'
-                                ? 'bg-[var(--accent-botanical-sage)] animate-ping'
-                                : member.status === 'completed_day'
-                                ? 'bg-[var(--accent-warm-ochre)]'
-                                : 'bg-amber-400'
-                            }`}
-                            title={`Status: ${member.status}`}
-                          />
+                          {(() => {
+                            const isOffline = Boolean(
+                              member.isIncognito ||
+                              member.statusText === 'Offline'
+                            );
+                            const statusLabel = isOffline ? 'Offline' : (member.statusText || 'Online');
+
+                            return (
+                              <span
+                                className={`h-2.5 w-2.5 rounded-full shrink-0 ${
+                                  isOffline
+                                    ? 'bg-slate-400 dark:bg-slate-500 opacity-60'
+                                    : member.status === 'focusing'
+                                    ? 'bg-[var(--accent-botanical-sage)] animate-ping'
+                                    : member.status === 'completed_day'
+                                    ? 'bg-[var(--accent-warm-ochre)]'
+                                    : statusLabel === 'Online'
+                                    ? 'bg-emerald-500'
+                                    : 'bg-slate-400 dark:bg-slate-500 opacity-60'
+                                }`}
+                                title={`Status: ${statusLabel}`}
+                              />
+                            );
+                          })()}
                         </div>
 
                         {/* Stats Overview */}
                         <div className="grid grid-cols-2 gap-2 my-3 p-2.5 rounded-xl bg-[var(--bg-main)]/60 border border-[var(--border-subtle)] text-[11px]">
                           <div className="flex items-center gap-1.5 font-semibold text-[var(--accent-terracotta)]">
                             <Flame className="h-3.5 w-3.5 fill-[var(--accent-terracotta)]" />
-                            <span>{member.streak}d Streak</span>
+                            <span>
+                              {member.showStreak === false
+                                ? '— Streak'
+                                : `${member.streak || 0}d Streak`}
+                            </span>
                           </div>
                           <div className="flex items-center gap-1.5 font-semibold text-[var(--accent-warm-ochre)]">
                             <Trophy className="h-3.5 w-3.5" />
-                            <span>{member.closedRingsCount || 0}/3 Rings</span>
+                            <span>
+                              {member.closedRingsCount !== undefined
+                                ? `${member.closedRingsCount}/3 Rings`
+                                : '0/3 Rings'}
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -781,12 +751,12 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                               <button
                                 type="button"
                                 onClick={() => onToggleMute(member.id)}
-                                className={`flex items-center gap-1 rounded-xl border px-3 py-1.5 text-xs font-semibold transition min-h-[36px] ${
+                                className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition min-h-[36px] ${
                                   member.isMuted
                                     ? 'border-amber-500/40 bg-amber-500/15 text-amber-700 dark:text-amber-400'
                                     : 'border-[var(--accent-dusty-rose)]/30 bg-[var(--accent-dusty-rose)]/10 text-[var(--accent-dusty-rose)] hover:bg-[var(--accent-dusty-rose)]/20'
                                 }`}
-                                title={member.isMuted ? 'Unmute feed updates' : 'Mute feed updates'}
+                                title={member.isMuted ? 'Unmute feed notifications for this partner' : 'Mute feed notifications for this partner'}
                               >
                                 {member.isMuted ? (
                                   <>
@@ -796,7 +766,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                                 ) : (
                                   <>
                                     <Volume2 className="h-3.5 w-3.5" />
-                                    <span>Active</span>
+                                    <span>Alerts On</span>
                                   </>
                                 )}
                               </button>

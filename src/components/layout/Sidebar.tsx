@@ -192,12 +192,18 @@ export const parseQuickTaskInput = (rawInput: string): QuickTaskPayload => {
   const todayStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, '0')}-${String(today.getDate()).padStart(2, '0')}`;
 
   let dueDate: string = todayStr;
-  let isTodayFocus: boolean = true;
+  let isTodayFocus: boolean = false;
   let priority: 'low' | 'medium' | 'high' = 'medium';
   let estimatedMinutes = 25;
   const tags = ['Quick Capture'];
 
   let text = rawInput;
+
+  // Check for explicit focus / star command
+  if (/\/(focus|star|starred)\b/i.test(text) || /\b(focus|star this)\b/i.test(text)) {
+    isTodayFocus = true;
+    text = text.replace(/\/(focus|star|starred)\b/gi, '').replace(/\b(focus|star this)\b/gi, '');
+  }
 
   // 1. Scheduled Dates Detection
   if (/\/(tomorrow|tmrw)\b/i.test(text) || /\b(tomorrow|tmrw)\b/i.test(text)) {
@@ -216,7 +222,6 @@ export const parseQuickTaskInput = (rawInput: string): QuickTaskPayload => {
     text = text.replace(/\/(next-week|nextweek)\b/gi, '').replace(/\bnext week\b/gi, '');
   } else if (/\/(today|tonight)\b/i.test(text) || /\b(today|tonight)\b/i.test(text)) {
     dueDate = todayStr;
-    isTodayFocus = true;
     if (/\/(tonight)\b/i.test(text) || /\btonight\b/i.test(text)) {
       timeBlock = 'evening';
     }
@@ -296,7 +301,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const activePartners = members.filter((m) => m.status === 'focusing');
+  const activePartners = members.filter((m) => m.status === 'focusing' && !m.isIncognito);
   const ringProgressPercent = Math.min(100, Math.round((totalFocusMinutesToday / 100) * 100));
 
   // Slash commands calculation
@@ -471,7 +476,59 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </button>
           </div>
 
-          <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider px-2 font-heading">
+          {/* User Profile Workspace Identity Card (Prominent Top Placement) */}
+          <button
+            type="button"
+            onClick={() => handleTabClick('profile')}
+            className={`w-full flex items-center justify-between p-3 rounded-2xl border transition-all cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 group ${
+              activeTab === 'profile'
+                ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--text-primary)] shadow-xs ring-1 ring-[var(--accent-terracotta)]/30'
+                : 'border-[var(--border-subtle)] bg-[var(--bg-main)] hover:bg-[var(--card-hover)] hover:border-[var(--accent-terracotta)]/40 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+            }`}
+            title="View or Edit Profile"
+            aria-label="Go to My Profile"
+          >
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="relative shrink-0">
+                <img
+                  src={profile.avatarUrl}
+                  alt={profile.fullName}
+                  className="w-10 h-10 rounded-xl object-cover border border-[var(--border-subtle)] shadow-xs transition-transform group-hover:scale-105"
+                />
+                <span
+                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 border-2 border-[var(--card-surface)] rounded-full ${
+                    profile.privacySettings?.isIncognito
+                      ? 'bg-amber-500 ring-1 ring-amber-500/40'
+                      : 'bg-emerald-500 ring-1 ring-emerald-500/40'
+                  }`}
+                />
+              </div>
+              <div className="min-w-0">
+                <p className="text-xs font-bold text-[var(--text-primary)] truncate">{profile.fullName}</p>
+                <div className="flex items-center gap-1.5 mt-0.5">
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      profile.privacySettings?.isIncognito ? 'bg-amber-500' : 'bg-emerald-500'
+                    }`}
+                  />
+                  <span className="text-[11px] text-[var(--text-muted)] font-medium">
+                    {profile.privacySettings?.isIncognito ? 'Incognito' : 'Online'}
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors shrink-0 ${
+              activeTab === 'profile'
+                ? 'border-[var(--accent-terracotta)]/40 bg-[var(--accent-terracotta)]/20 text-[var(--accent-terracotta)]'
+                : 'border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-muted)] group-hover:text-[var(--text-primary)]'
+            }`}>
+              <ChevronRight className={`w-3.5 h-3.5 transition-transform ${
+                activeTab === 'profile' ? 'translate-x-0.5' : 'group-hover:translate-x-0.5'
+              }`} />
+            </div>
+          </button>
+
+          <div className="text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider px-2 font-heading pt-1">
             Navigation
           </div>
 
@@ -767,39 +824,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               </div>
             </div>
           )}
-
-          <hr className="border-[var(--border-subtle)]" />
-
-          {/* Pinned User Profile Identity Footer Card (Intuitive Bottom Placement) */}
-          <button
-            type="button"
-            onClick={() => handleTabClick('profile')}
-            className={`w-full flex items-center justify-between p-2.5 rounded-xl border transition-all cursor-pointer text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-              activeTab === 'profile'
-                ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--text-primary)] shadow-xs'
-                : 'border-[var(--border-subtle)] bg-[var(--bg-main)] hover:bg-[var(--card-hover)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-            }`}
-            title="View or Edit Profile"
-            aria-label="Go to My Profile"
-          >
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="relative shrink-0">
-                <img
-                  src={profile.avatarUrl}
-                  alt={profile.fullName}
-                  className="w-8 h-8 rounded-lg object-cover border border-[var(--border-subtle)]"
-                />
-                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 bg-emerald-500 border-2 border-[var(--card-surface)] rounded-full" />
-              </div>
-              <div className="min-w-0">
-                <p className="text-xs font-semibold text-[var(--text-primary)] truncate">{profile.fullName}</p>
-                <p className="text-[10px] font-mono text-[var(--text-muted)] truncate">{profile.username}</p>
-              </div>
-            </div>
-            <ChevronRight className={`w-4 h-4 shrink-0 transition-transform ${
-              activeTab === 'profile' ? 'text-[var(--accent-terracotta)] translate-x-0.5' : 'text-[var(--text-muted)]'
-            }`} />
-          </button>
         </div>
       </aside>
     </>

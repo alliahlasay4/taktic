@@ -168,7 +168,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               ) : (
                 userName.substring(0, 2).toUpperCase()
               )}
-              <span className="absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 sm:h-3 sm:w-3 items-center justify-center rounded-full bg-emerald-500 ring-1 sm:ring-2 ring-[var(--card-surface)]">
+              <span className={`absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 sm:h-3 sm:w-3 items-center justify-center rounded-full ring-1 sm:ring-2 ring-[var(--card-surface)] ${
+                profile?.privacySettings?.isIncognito ? 'bg-amber-500' : 'bg-emerald-500'
+              }`}>
                 <ShieldCheck className="h-1.5 w-1.5 sm:h-2 sm:w-2 text-white" strokeWidth={1.5} aria-hidden="true" />
               </span>
             </button>

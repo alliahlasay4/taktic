@@ -13,6 +13,11 @@ export const fetchUserProfileFromSupabase = async (userId: string): Promise<User
 
     if (error || !data) return null;
 
+    const rawPrivacy = data.privacy_settings;
+    const dbPrivacy = typeof rawPrivacy === 'string'
+      ? (() => { try { return JSON.parse(rawPrivacy); } catch { return {}; } })()
+      : (rawPrivacy || {});
+
     return {
       id: data.id,
       fullName: data.full_name || 'Taktic Member',
@@ -25,11 +30,12 @@ export const fetchUserProfileFromSupabase = async (userId: string): Promise<User
       workHoursStart: data.work_hours_start || '09:00',
       workHoursEnd: data.work_hours_end || '17:00',
       favoriteSoundscape: data.favorite_soundscape || 'Gentle Rain',
-      privacySettings: data.privacy_settings || {
-        showFocusHours: true,
-        showMicroGoal: true,
-        showActivityFeed: true,
-        showStreak: true,
+      privacySettings: {
+        showFocusHours: dbPrivacy.showFocusHours !== false,
+        showMicroGoal: dbPrivacy.showMicroGoal !== false,
+        showActivityFeed: dbPrivacy.showActivityFeed !== false,
+        showStreak: dbPrivacy.showStreak !== false,
+        isIncognito: Boolean(dbPrivacy.isIncognito),
       },
     };
   } catch (err) {
@@ -38,34 +44,82 @@ export const fetchUserProfileFromSupabase = async (userId: string): Promise<User
   }
 };
 
-export const saveUserProfileToSupabase = async (profile: UserProfile): Promise<{ error: Error | null }> => {
-  if (!isSupabaseConfigured || !profile.id || profile.id === 'demo-user-123') {
+export const saveUserProfileToSupabase = async (
+  profile: UserProfile,
+  fallbackUserId?: string
+): Promise<{ error: Error | null }> => {
+  const targetId = (profile.id && profile.id !== 'demo-user-123') ? profile.id : fallbackUserId;
+  if (!isSupabaseConfigured || !targetId || targetId === 'demo-user-123') {
     return { error: null };
   }
 
   try {
-    const payload = {
-      id: profile.id,
+    const rawPrivacy = profile.privacySettings || {};
+    const normalizedPrivacy = {
+      showFocusHours: rawPrivacy.showFocusHours !== false,
+      showMicroGoal: rawPrivacy.showMicroGoal !== false,
+      showActivityFeed: rawPrivacy.showActivityFeed !== false,
+      showStreak: rawPrivacy.showStreak !== false,
+      isIncognito: Boolean(rawPrivacy.isIncognito),
+    };
+
+    const payload: Record<string, any> = {
+      id: targetId,
       full_name: profile.fullName,
       username: profile.username,
       avatar_url: profile.avatarUrl,
-      bio: profile.bio,
-      micro_goal: profile.microGoal,
-      status_message: profile.statusMessage,
-      timezone: profile.timezone,
-      work_hours_start: profile.workHoursStart,
-      work_hours_end: profile.workHoursEnd,
-      favorite_soundscape: profile.favoriteSoundscape,
-      privacy_settings: profile.privacySettings,
+      bio: profile.bio || '',
+      micro_goal: profile.microGoal || '',
+      status_message: profile.statusMessage || '',
+      timezone: profile.timezone || 'GMT+8 (Asia/Manila)',
+      work_hours_start: profile.workHoursStart || '09:00',
+      work_hours_end: profile.workHoursEnd || '17:00',
+      favorite_soundscape: profile.favoriteSoundscape || 'Gentle Rain',
+      privacy_settings: normalizedPrivacy,
     };
 
-    const { error } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
-    return { error: error ? new Error(error.message) : null };
+    // 1. Try direct UPDATE on profiles table
+    const { data: updateData, error: updateErr } = await supabase
+      .from('profiles')
+      .update({
+        full_name: profile.fullName,
+        username: profile.username,
+        avatar_url: profile.avatarUrl,
+        bio: profile.bio || '',
+        micro_goal: profile.microGoal || '',
+        status_message: profile.statusMessage || '',
+        timezone: profile.timezone || 'GMT+8 (Asia/Manila)',
+        work_hours_start: profile.workHoursStart || '09:00',
+        work_hours_end: profile.workHoursEnd || '17:00',
+        favorite_soundscape: profile.favoriteSoundscape || 'Gentle Rain',
+        privacy_settings: normalizedPrivacy,
+      })
+      .eq('id', targetId)
+      .select();
+
+    if (!updateErr && updateData && updateData.length > 0) {
+      return { error: null };
+    }
+
+    // 2. If update didn't match a row or errored, try UPSERT with email included
+    const authUser = (await supabase.auth.getUser())?.data?.user;
+    if (authUser?.email) {
+      payload.email = authUser.email;
+    }
+
+    const { error: upsertErr } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
+    if (upsertErr) {
+      console.error('Supabase profile save error:', upsertErr);
+      return { error: new Error(upsertErr.message) };
+    }
+    return { error: null };
   } catch (err: any) {
     console.error('Error saving user profile to Supabase:', err);
     return { error: err };
   }
 };
+
+import { calculateGlobalActivityStreak } from './streak';
 
 export interface RealProfileStats {
   totalFocusHours: number;
@@ -90,7 +144,7 @@ export const fetchProfileStatsFromSupabase = async (userId: string): Promise<Rea
     // 1. Fetch total focus sessions & sum duration
     const { data: focusSessions } = await supabase
       .from('focus_sessions')
-      .select('duration_minutes')
+      .select('duration_minutes, completed_at')
       .eq('user_id', userId);
 
     const totalMinutes = focusSessions
@@ -99,29 +153,53 @@ export const fetchProfileStatsFromSupabase = async (userId: string): Promise<Rea
     const totalFocusHours = Math.round((totalMinutes / 60) * 10) / 10;
     const totalFocusSessions = focusSessions ? focusSessions.length : 0;
 
-    // 2. Fetch completed habits log count
-    const { count: habitLogsCount } = await supabase
+    // 2. Fetch completed habits logs
+    const { data: habitLogs, count: habitLogsCount } = await supabase
       .from('habit_logs')
-      .select('*', { count: 'exact', head: true })
+      .select('completed_date', { count: 'exact' })
       .eq('user_id', userId);
 
-    // 3. Fetch user streak from profile table
-    const { data: profileRow } = await supabase
-      .from('profiles')
-      .select('current_streak')
-      .eq('id', userId)
-      .maybeSingle();
-
-    const currentStreak = profileRow?.current_streak || (totalFocusSessions > 0 ? 1 : 0);
-
-    // 4. Calculate ring rate approximation based on completed tasks/focus
-    const { count: completedTasksCount } = await supabase
+    // 3. Fetch completed tasks
+    const { data: completedTasks, count: completedTasksCount } = await supabase
       .from('tasks')
-      .select('*', { count: 'exact', head: true })
+      .select('completed_at', { count: 'exact' })
       .eq('user_id', userId)
       .eq('completed', true);
 
-    const ringsRatePercent = Math.min(100, Math.max(50, Math.round(75 + (completedTasksCount || 0) * 2)));
+    // 4. Calculate authentic streak across all 3 core productivity pillars
+    const focusDates = (focusSessions || [])
+      .map((s) => (s.completed_at ? s.completed_at.split('T')[0] : ''))
+      .filter(Boolean);
+    const habitDates = (habitLogs || [])
+      .map((l) => l.completed_date)
+      .filter(Boolean);
+    const taskDates = (completedTasks || [])
+      .map((t) => (t.completed_at ? t.completed_at.split('T')[0] : ''))
+      .filter(Boolean);
+
+    const currentStreak = calculateGlobalActivityStreak(habitDates, focusDates, taskDates);
+
+    // 5. Calculate consistency / ring completion rate over active days in the last 30 days
+    const activeDatesLast30 = new Set<string>();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const thirtyDaysAgoStr = thirtyDaysAgo.toISOString().split('T')[0];
+
+    [...focusDates, ...habitDates, ...taskDates].forEach((d) => {
+      if (d >= thirtyDaysAgoStr) {
+        activeDatesLast30.add(d);
+      }
+    });
+
+    const totalEvents = totalFocusSessions + (habitLogsCount || 0) + (completedTasksCount || 0);
+    const ringsRatePercent = totalEvents === 0 ? 0 : Math.min(100, Math.round((activeDatesLast30.size / 30) * 100));
+
+    // Persist computed streak to profiles table in background
+    supabase
+      .from('profiles')
+      .update({ current_streak: currentStreak })
+      .eq('id', userId)
+      .then();
 
     return {
       totalFocusHours,

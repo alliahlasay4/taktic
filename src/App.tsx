@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Navbar } from './components/layout/Navbar';
@@ -19,6 +19,7 @@ import { CircleInviteAcceptModal } from './components/circles/CircleInviteAccept
 import { ActiveTab } from './types';
 import { getTabFromPath, getPathFromTab } from './lib/routes';
 import { soundEngine } from './lib/audio';
+import { calculateGlobalActivityStreak } from './lib/streak';
 import { useHabits } from './hooks/useHabits';
 import { useFocusSessions } from './hooks/useFocusSessions';
 import { useTasks } from './hooks/useTasks';
@@ -108,7 +109,7 @@ function MainLayout() {
   const { habits, overallStreak, loading: habitsLoading, error: habitsError, addHabit, toggleHabit, deleteHabit } = useHabits();
 
   // Focus Sessions State from Custom Hook (Supabase + RLS + Demo mode)
-  const { addFocusSession, totalFocusMinutesToday } = useFocusSessions();
+  const { addFocusSession, totalFocusMinutesToday, focusSessions } = useFocusSessions();
 
   // Tasks State from Custom Hook (Supabase + RLS + Demo mode)
   const {
@@ -166,6 +167,7 @@ function MainLayout() {
     notifications,
     toasts,
     unreadCount,
+    showToast,
     notify,
     dismissToast,
     markAsRead,
@@ -292,7 +294,15 @@ function MainLayout() {
   };
 
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
-  const userStreak = Math.max(1, overallStreak);
+  const userStreak = useMemo(() => {
+    const habitDates = habits.flatMap((h) => h.completedDates);
+    const focusDates = (focusSessions || []).map((s) => s.completedAt);
+    const taskDates = tasks
+      .filter((t) => t.completed && t.completedAt)
+      .map((t) => t.completedAt as string);
+
+    return calculateGlobalActivityStreak(habitDates, focusDates, taskDates);
+  }, [habits, focusSessions, tasks]);
 
   // Onboarding Modal State
   const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(() => {
@@ -371,6 +381,20 @@ function MainLayout() {
   const habitsCompletedToday = habits.filter((h) => h.completedDates.includes(todayStr)).length;
   const isImmersiveFocusMode = activeTab === 'focus';
 
+  const handleToggleTodayFocusWithToast = React.useCallback(
+    async (id: string) => {
+      const res = await handleToggleTodayFocus(id);
+      if (res && !res.success && res.reason === 'limit_reached') {
+        showToast(
+          'Focus Queue Full (5/5)',
+          'Complete or unstar an active focus task to add this one ✨',
+          'system'
+        );
+      }
+    },
+    [handleToggleTodayFocus, showToast]
+  );
+
   return (
     <TimerProvider onFocusComplete={handleFocusComplete}>
       <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)]">
@@ -432,7 +456,7 @@ function MainLayout() {
                     priority: taskData.priority || 'medium',
                     tags: taskData.tags || ['Quick Capture'],
                     dueDate: taskData.dueDate,
-                    isTodayFocus: taskData.isTodayFocus ?? true,
+                    isTodayFocus: taskData.isTodayFocus ?? false,
                     timeBlock: taskData.timeBlock || 'morning',
                     estimatedMinutes: taskData.estimatedMinutes || 25,
                   })
@@ -450,7 +474,7 @@ function MainLayout() {
                     userStreak={userStreak}
                     members={members}
                     onToggleComplete={handleToggleCompleteTask}
-                    onToggleTodayFocus={handleToggleTodayFocus}
+                    onToggleTodayFocus={handleToggleTodayFocusWithToast}
                     onDeleteTask={handleDeleteTask}
                     onToggleHabit={handleToggleHabitWithNotification}
                     setActiveTab={setActiveTab}
@@ -464,7 +488,7 @@ function MainLayout() {
                     onAddTask={handleAddTask}
                     onUpdateTask={handleUpdateTask}
                     onToggleComplete={handleToggleCompleteTask}
-                    onToggleTodayFocus={handleToggleTodayFocus}
+                    onToggleTodayFocus={handleToggleTodayFocusWithToast}
                     onDeleteTask={handleDeleteTask}
                     onArchiveTask={handleArchiveTask}
                     onSweepCompleted={handleSweepCompletedTasks}

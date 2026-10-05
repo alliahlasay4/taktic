@@ -55,7 +55,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             Welcome back, {firstName}.
           </h1>
           <p className="text-xs sm:text-sm text-white/90 leading-relaxed">
-            You're on a <strong className="underline decoration-white/40">{userStreak}-day streak</strong>! Keep your momentum steady by executing your 3 focus priorities today.
+            {userStreak > 0 ? (
+              <>
+                You're on a <strong className="underline decoration-white/40">{userStreak}-day streak</strong>! Keep your momentum steady by executing your daily priorities.
+              </>
+            ) : (
+              <>
+                Build your momentum today! Complete a habit, task, or focus sprint to start your daily streak.
+              </>
+            )}
           </p>
         </div>
       </div>
@@ -196,16 +204,29 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
 
             {members.length > 0 ? (
               <div className="flex items-center gap-2 overflow-x-auto py-1">
-                {members.map((m) => (
-                  <div key={m.id} className="relative group shrink-0" title={`${m.name}: ${m.statusText}`}>
-                    <img
-                      src={m.avatar}
-                      alt={m.name}
-                      className="h-9 w-9 rounded-xl object-cover ring-2 ring-emerald-500/50"
-                    />
-                    <span className="absolute -bottom-1 -right-1 flex h-2.5 w-2.5 rounded-full bg-emerald-500 ring-1 ring-[var(--card-surface)]" />
-                  </div>
-                ))}
+                {members.map((m) => {
+                  const isOffline = Boolean(m.isIncognito || m.statusText === 'Offline');
+                  return (
+                    <div
+                      key={m.id}
+                      className="relative group shrink-0"
+                      title={`${m.name}: ${isOffline ? 'Offline' : (m.statusText || 'Online')}`}
+                    >
+                      <img
+                        src={m.avatar}
+                        alt={m.name}
+                        className={`h-9 w-9 rounded-xl object-cover ring-2 ${
+                          isOffline ? 'ring-[var(--border-subtle)] opacity-70' : 'ring-emerald-500/50'
+                        }`}
+                      />
+                      <span
+                        className={`absolute -bottom-1 -right-1 flex h-2.5 w-2.5 rounded-full ring-1 ring-[var(--card-surface)] ${
+                          isOffline ? 'bg-slate-400 opacity-60' : 'bg-emerald-500'
+                        }`}
+                      />
+                    </div>
+                  );
+                })}
               </div>
             ) : (
               <div className="rounded-xl border border-dashed border-[var(--border-subtle)] p-3 text-center">

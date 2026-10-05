@@ -43,9 +43,7 @@ interface LiveFocusRoomProps {
   isHost: boolean;
   floatingEmojis: FloatingEmoji[];
   messages: RoomMessage[];
-  soloInvisibleMode?: boolean;
   focusPods?: FocusPod[];
-  onToggleSoloInvisibleMode?: () => void;
   onCreatePod?: (name: string, selectedMemberIds: string[], selectedMemberNames: string[], durationMinutes: number) => void;
   onRenewPodLease?: (podId: string) => void;
   onDeletePod?: (podId: string) => void;
@@ -362,51 +360,60 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
         </div>
 
         {/* Live Active Co-Workers Overview */}
-        <div className="pt-4 border-t border-[var(--border-subtle)] space-y-3">
-          <div className="flex items-center justify-between gap-2">
-            <div className="flex items-center gap-2">
-              <Shield className="h-4 w-4 text-[var(--accent-botanical-sage)]" />
-              <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
-                Live Co-Worker Presence
-              </h3>
-            </div>
-            <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--accent-botanical-sage)] bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2 py-0.5 rounded-full">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-botanical-sage)] animate-ping" />
-              {members.filter((m) => m.status === 'focusing').length} Focusing Live
-            </span>
-          </div>
+        {(() => {
+          const liveFocusingMembers = members.filter((m) => m.status === 'focusing' && !m.isIncognito);
+          const visibleMembers = members.filter((m) => !m.isIncognito);
 
-          {members.length > 0 ? (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
-              {members.slice(0, 4).map((member) => (
-                <div
-                  key={member.id}
-                  className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[var(--bg-main)]/50 border border-[var(--border-subtle)]"
-                >
-                  <img
-                    src={member.avatar}
-                    alt={member.name}
-                    className="h-9 w-9 rounded-xl object-cover ring-1 ring-[var(--border-subtle)] shrink-0"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-bold text-xs text-[var(--text-primary)] truncate">{member.name}</p>
-                    <p className="text-[10px] text-[var(--text-secondary)] truncate">{member.statusText || 'Focusing'}</p>
-                    <div className="flex items-center gap-1 mt-0.5 text-[10px] font-semibold text-[var(--accent-terracotta)]">
-                      <Flame className="h-3 w-3 fill-[var(--accent-terracotta)]" />
-                      <span>{member.streak}d Streak</span>
-                    </div>
-                  </div>
+          return (
+            <div className="pt-4 border-t border-[var(--border-subtle)] space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-[var(--accent-botanical-sage)]" />
+                  <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
+                    Live Co-Worker Presence
+                  </h3>
                 </div>
-              ))}
+                <span className="flex items-center gap-1 text-[10px] font-bold text-[var(--accent-botanical-sage)] bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2 py-0.5 rounded-full">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-botanical-sage)] animate-ping" />
+                  {liveFocusingMembers.length} Focusing Live
+                </span>
+              </div>
+
+              {liveFocusingMembers.length > 0 ? (
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5">
+                  {liveFocusingMembers.slice(0, 4).map((member) => (
+                    <div
+                      key={member.id}
+                      className="flex items-center gap-2.5 p-2.5 rounded-xl bg-[var(--bg-main)]/50 border border-[var(--border-subtle)]"
+                    >
+                      <img
+                        src={member.avatar}
+                        alt={member.name}
+                        className="h-9 w-9 rounded-xl object-cover ring-1 ring-[var(--border-subtle)] shrink-0"
+                      />
+                      <div className="min-w-0 flex-1">
+                        <p className="font-bold text-xs text-[var(--text-primary)] truncate">{member.name}</p>
+                        <p className="text-[10px] text-[var(--text-secondary)] truncate">{member.statusText || 'Focusing'}</p>
+                        {member.showStreak !== false && (
+                          <div className="flex items-center gap-1 mt-0.5 text-[10px] font-semibold text-[var(--accent-terracotta)]">
+                            <Flame className="h-3 w-3 fill-[var(--accent-terracotta)]" />
+                            <span>{member.streak}d Streak</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-xl border border-dashed border-[var(--border-subtle)] p-4 text-center">
+                  <p className="text-xs text-[var(--text-secondary)]">
+                    No active circle partners focusing right now. Start a session or invite friends to join!
+                  </p>
+                </div>
+              )}
             </div>
-          ) : (
-            <div className="rounded-xl border border-dashed border-[var(--border-subtle)] p-4 text-center">
-              <p className="text-xs text-[var(--text-secondary)]">
-                No circle partners added yet. Invite friends from the Roster tab to track live co-worker presence!
-              </p>
-            </div>
-          )}
-        </div>
+          );
+        })()}
 
         {/* Modals & Drawers */}
         <CreateRoomModal

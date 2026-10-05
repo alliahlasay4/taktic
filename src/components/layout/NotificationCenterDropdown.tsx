@@ -72,7 +72,7 @@ export const NotificationCenterDropdown: React.FC<NotificationCenterDropdownProp
   return (
     <div
       ref={dropdownRef}
-      className="absolute right-0 top-11 sm:top-12 z-50 w-[calc(100vw-28px)] max-w-sm sm:w-96 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/95 backdrop-blur-xl p-4 shadow-2xl text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150"
+      className="fixed sm:absolute top-14 sm:top-12 left-3 right-3 sm:left-auto sm:right-0 z-50 w-auto sm:w-96 max-w-sm sm:max-w-none mx-auto sm:mx-0 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/95 backdrop-blur-xl p-3.5 sm:p-4 shadow-2xl text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150"
     >
       {/* Header */}
       <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] mb-3">

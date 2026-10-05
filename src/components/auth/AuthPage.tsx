@@ -57,13 +57,23 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
     }
   }, [isSignUp, isResetPassword]);
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState<string>('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
-  const [successMsg, setSuccessMsg] = useState<string | null>(null);
+  const [successMsg, setSuccessMsg] = useState<string | null>(() => {
+    if (typeof window === 'undefined') return null;
+    const noticeData = sessionStorage.getItem('taktic_auth_confirmation_notice');
+    if (noticeData) {
+      try {
+        const parsed = JSON.parse(noticeData);
+        if (parsed?.message) return parsed.message;
+      } catch {}
+    }
+    return null;
+  });
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
@@ -99,6 +109,57 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
     }
     localStorage.setItem('taktic_dark_mode', String(darkMode));
   }, [darkMode]);
+
+  // Check URL parameters or hash for auth error messages (e.g., expired verification/reset link)
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const hash = window.location.hash;
+    const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+
+    const error = searchParams.get('error') || hashParams.get('error');
+    const errorCode = searchParams.get('error_code') || hashParams.get('error_code');
+    const errorDescription = searchParams.get('error_description') || hashParams.get('error_description');
+
+    if (error || errorCode || errorDescription) {
+      if (errorCode === 'otp_expired' || errorDescription?.toLowerCase().includes('expired')) {
+        setErrorMsg('The email confirmation or reset link has expired or has already been used. Please request a new one.');
+      } else if (errorDescription) {
+        setErrorMsg(decodeURIComponent(errorDescription.replace(/\+/g, ' ')));
+      } else {
+        setErrorMsg('Authentication failed or the link is invalid.');
+      }
+    }
+
+    // Check for post-confirmation notices (e.g., email verified, ready to sign in)
+    const handleAuthNotice = (e: CustomEvent<{ message?: string }>) => {
+      if (e.detail?.message) {
+        setSuccessMsg(e.detail.message);
+      }
+      setIsSignUp(false);
+      setIsResetPassword(false);
+    };
+
+    window.addEventListener('taktic_auth_notice' as any, handleAuthNotice as any);
+
+    const noticeData = sessionStorage.getItem('taktic_auth_confirmation_notice');
+    if (noticeData) {
+      try {
+        const parsed = JSON.parse(noticeData);
+        if (parsed?.message) {
+          setSuccessMsg(parsed.message);
+        }
+        setIsSignUp(false);
+        setIsResetPassword(false);
+      } catch (err) {
+        console.warn('Error reading auth notice:', err);
+      }
+    }
+
+    return () => {
+      window.removeEventListener('taktic_auth_notice' as any, handleAuthNotice as any);
+    };
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

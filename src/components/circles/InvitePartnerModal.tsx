@@ -51,12 +51,12 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
   const shareText = `Join my private accountability circle on Taktic! Let's hit our focus goals together: ${defaultLink}`;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-4 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-lg rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3.5 sm:p-5 backdrop-blur-md animate-in fade-in duration-200">
+      <div className="relative w-full max-w-lg rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-7 shadow-2xl animate-in zoom-in-95 duration-200">
         <button
           type="button"
           onClick={onClose}
-          className="absolute top-5 right-5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition p-1"
+          className="absolute top-4 sm:top-5 right-4 sm:right-5 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition p-1"
           aria-label="Close modal"
         >
           <X className="h-5 w-5" />

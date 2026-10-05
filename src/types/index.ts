@@ -57,6 +57,11 @@ export interface CircleMember {
   isMuted?: boolean;
   microGoal?: string;
   partnerUserId?: string;
+  isIncognito?: boolean;
+  showStreak?: boolean;
+  showFocusHours?: boolean;
+  showMicroGoal?: boolean;
+  showActivityFeed?: boolean;
 }
 
 export interface CircleInvite {
@@ -121,6 +126,7 @@ export interface UserProfile {
     showMicroGoal: boolean;
     showActivityFeed: boolean;
     showStreak: boolean;
+    isIncognito?: boolean;
   };
 }
 

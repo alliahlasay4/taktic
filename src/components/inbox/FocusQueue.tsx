@@ -1,5 +1,5 @@
 import React from 'react';
-import { Star, AlertCircle, Plus } from 'lucide-react';
+import { Star, AlertCircle, Plus, CheckCircle2 } from 'lucide-react';
 import { Task } from '../../types';
 import { TaskItem } from './TaskItem';
 
@@ -20,9 +20,13 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
   onEditTask,
   onOpenNewTaskModal,
 }) => {
-  const focusTasks = tasks.filter((t) => t.isTodayFocus);
-  const isOverlimit = focusTasks.length > 5;
-  const isOptimal = focusTasks.length >= 3 && focusTasks.length <= 5;
+  // Only consider active, unarchived, non-someday focus tasks
+  const focusTasks = tasks.filter((t) => !t.archived && !t.isSomeday && t.isTodayFocus);
+  const activeFocusTasks = focusTasks.filter((t) => !t.completed);
+  const completedFocusTasks = focusTasks.filter((t) => t.completed);
+
+  const isOverlimit = activeFocusTasks.length > 5;
+  const isOptimal = activeFocusTasks.length >= 3 && activeFocusTasks.length <= 5;
 
   return (
     <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs transition-colors duration-300">
@@ -42,16 +46,24 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
         </div>
 
         {/* Counter Badge */}
-        <div
-          className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${
-            isOverlimit
-              ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
-              : isOptimal
-              ? 'bg-[var(--accent-botanical-sage)]/15 text-[#4D6C4F] dark:text-[#7B9E7E] border border-[var(--accent-botanical-sage)]/30'
-              : 'bg-[var(--card-hover)] text-[var(--text-secondary)] border-[var(--border-subtle)]'
-          }`}
-        >
-          <span>{focusTasks.length} / 5 Max</span>
+        <div className="flex items-center gap-2">
+          {completedFocusTasks.length > 0 && (
+            <div className="flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 px-2.5 py-1 text-xs font-bold text-[#4D6C4F] dark:text-[#7B9E7E] border border-[var(--accent-botanical-sage)]/30">
+              <CheckCircle2 className="h-3 w-3" />
+              <span>{completedFocusTasks.length} Done</span>
+            </div>
+          )}
+          <div
+            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${
+              isOverlimit
+                ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
+                : isOptimal
+                ? 'bg-[var(--accent-botanical-sage)]/15 text-[#4D6C4F] dark:text-[#7B9E7E] border border-[var(--accent-botanical-sage)]/30'
+                : 'bg-[var(--card-hover)] text-[var(--text-secondary)] border-[var(--border-subtle)]'
+            }`}
+          >
+            <span>{activeFocusTasks.length} / 5 Active Focus</span>
+          </div>
         </div>
       </div>
 
@@ -60,7 +72,7 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
         <div className="mb-4 flex items-center gap-2.5 rounded-xl border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-700 dark:text-rose-400 font-medium">
           <AlertCircle className="h-4 w-4 shrink-0" />
           <span>
-            <strong>Overload Warning:</strong> You have selected {focusTasks.length} focus tasks. Research shows focusing on 3–5 items maximizes output and clarity.
+            <strong>Overload Warning:</strong> You have {activeFocusTasks.length} active focus tasks queued. Research shows focusing on 3–5 items maximizes output and clarity.
           </span>
         </div>
       )}
@@ -84,17 +96,43 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
           </button>
         </div>
       ) : (
-        <div className="space-y-2.5">
-          {focusTasks.map((task) => (
-            <TaskItem
-              key={task.id}
-              task={task}
-              onToggleComplete={onToggleComplete}
-              onToggleTodayFocus={onToggleTodayFocus}
-              onDeleteTask={onDeleteTask}
-              onEditTask={onEditTask}
-            />
-          ))}
+        <div className="space-y-3">
+          {/* Active Focus Tasks */}
+          {activeFocusTasks.length > 0 && (
+            <div className="space-y-2">
+              {activeFocusTasks.map((task) => (
+                <TaskItem
+                  key={task.id}
+                  task={task}
+                  onToggleComplete={onToggleComplete}
+                  onToggleTodayFocus={onToggleTodayFocus}
+                  onDeleteTask={onDeleteTask}
+                  onEditTask={onEditTask}
+                />
+              ))}
+            </div>
+          )}
+
+          {/* Completed Focus Tasks in subtle section */}
+          {completedFocusTasks.length > 0 && (
+            <div className="space-y-2 pt-2 border-t border-[var(--border-subtle)]">
+              <div className="text-[11px] font-bold text-[var(--text-muted)] uppercase tracking-wider px-1">
+                Completed Focus ({completedFocusTasks.length})
+              </div>
+              <div className="space-y-2 opacity-75">
+                {completedFocusTasks.map((task) => (
+                  <TaskItem
+                    key={task.id}
+                    task={task}
+                    onToggleComplete={onToggleComplete}
+                    onToggleTodayFocus={onToggleTodayFocus}
+                    onDeleteTask={onDeleteTask}
+                    onEditTask={onEditTask}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
