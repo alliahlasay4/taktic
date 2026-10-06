@@ -385,7 +385,7 @@ ${
           <!-- Top Header -->
           <div class="header">
             <div class="logo-wrap">
-              <div class="logo-icon">T</div>
+              <img src="${window.location.origin}/logo.png" style="width: 32px; height: 32px; border-radius: 8px; object-fit: contain;" alt="Taktic Logo" />
               <div>
                 <div class="logo-title">Taktic</div>
                 <p style="font-size: 11px; color: #8A7B73;">Productivity, Trends & Energy Telemetry Recap</p>

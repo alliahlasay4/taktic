@@ -58,9 +58,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           onClick={() => onSelectTab?.('dashboard')}
           className="flex items-center gap-2.5 sm:gap-3 shrink-0 text-left cursor-pointer focus-visible:outline-hidden group"
         >
-          <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-md shadow-[#C06C4C]/20 transition-transform group-hover:scale-105">
-            <span className="text-lg sm:text-xl font-bold font-heading">T</span>
-          </div>
+          <img
+            src="/logo.png"
+            alt="Taktic Logo"
+            className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl object-contain shadow-md shadow-[#C06C4C]/20 transition-transform group-hover:scale-105"
+          />
           <span className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] leading-none transition-colors group-hover:text-[#C06C4C]">
             Taktic
           </span>

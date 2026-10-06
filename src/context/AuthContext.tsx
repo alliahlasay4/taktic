@@ -36,7 +36,7 @@ const DEFAULT_PROFILE: UserProfile = {
   avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
   bio: 'Productivity enthusiast building deep work habits with Taktic.',
   microGoal: 'Complete 3 pomodoros before 2 PM',
-  statusMessage: 'In Deep Flow Mode ⚡',
+  statusMessage: 'In Deep Flow Mode',
   timezone: 'GMT+8 (Asia/Manila)',
   workHoursStart: '09:00',
   workHoursEnd: '17:00',
@@ -158,7 +158,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       if (demoSaved) {
         try {
           return { ...DEFAULT_PROFILE, ...JSON.parse(demoSaved) };
-        } catch {}
+        } catch { }
       }
       return DEFAULT_PROFILE;
     }
@@ -183,14 +183,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       id: targetId,
       privacySettings: updates.privacySettings
         ? {
-            showFocusHours: updates.privacySettings.showFocusHours ?? profile.privacySettings?.showFocusHours ?? true,
-            showMicroGoal: updates.privacySettings.showMicroGoal ?? profile.privacySettings?.showMicroGoal ?? true,
-            showActivityFeed: updates.privacySettings.showActivityFeed ?? profile.privacySettings?.showActivityFeed ?? true,
-            showStreak: updates.privacySettings.showStreak ?? profile.privacySettings?.showStreak ?? true,
-            isIncognito: updates.privacySettings.isIncognito !== undefined
-              ? Boolean(updates.privacySettings.isIncognito)
-              : Boolean(profile.privacySettings?.isIncognito),
-          }
+          showFocusHours: updates.privacySettings.showFocusHours ?? profile.privacySettings?.showFocusHours ?? true,
+          showMicroGoal: updates.privacySettings.showMicroGoal ?? profile.privacySettings?.showMicroGoal ?? true,
+          showActivityFeed: updates.privacySettings.showActivityFeed ?? profile.privacySettings?.showActivityFeed ?? true,
+          showStreak: updates.privacySettings.showStreak ?? profile.privacySettings?.showStreak ?? true,
+          isIncognito: updates.privacySettings.isIncognito !== undefined
+            ? Boolean(updates.privacySettings.isIncognito)
+            : Boolean(profile.privacySettings?.isIncognito),
+        }
         : profile.privacySettings,
     };
 
@@ -220,7 +220,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (cachedStr) {
       try {
         cachedProfile = JSON.parse(cachedStr);
-      } catch {}
+      } catch { }
     }
 
     if (cachedProfile) {
@@ -280,7 +280,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (isSupabaseConfigured) {
           try {
             await supabase.auth.signOut({ scope: 'local' });
-          } catch {}
+          } catch { }
         }
 
         // 3. Extract confirmed email from URL token payload
@@ -406,7 +406,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         if (parsed?.token) {
           emailRedirectTo = `${window.location.origin}/login?circle_invite=${parsed.token}&inviter=${encodeURIComponent(parsed.inviter || 'Circle Partner')}`;
         }
-      } catch {}
+      } catch { }
     }
 
     const { error } = await supabase.auth.signUp({

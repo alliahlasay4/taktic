@@ -123,9 +123,11 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-main)] text-[var(--text-primary)]">
         <div className="flex flex-col items-center gap-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-lg shadow-[#C06C4C]/25 animate-pulse">
-            <span className="font-heading font-bold text-2xl">T</span>
-          </div>
+          <img
+            src="/logo.png"
+            alt="Taktic Logo"
+            className="h-12 w-12 rounded-2xl object-contain shadow-lg shadow-[#C06C4C]/25 animate-pulse"
+          />
           <div className="flex items-center gap-2">
             <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--accent-terracotta)] border-t-transparent" />
             <p className="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">

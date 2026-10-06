@@ -163,14 +163,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       <header className="sticky top-0 z-40 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-main)]/85 backdrop-blur-md transition-colors duration-300">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           {/* Brand Logo */}
-          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-md shadow-[#C06C4C]/20">
-              <span className="text-lg sm:text-xl font-bold font-heading">T</span>
-            </div>
-            <span className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] leading-none">
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="flex items-center gap-2.5 sm:gap-3 shrink-0 text-left cursor-pointer focus-visible:outline-hidden group"
+          >
+            <img
+              src="/logo.png"
+              alt="Taktic Logo"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl object-contain shadow-md shadow-[#C06C4C]/20 transition-transform duration-200 group-hover:scale-105"
+            />
+            <span className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] leading-none transition-colors duration-200 group-hover:text-[#C06C4C]">
               Taktic
             </span>
-          </div>
+          </button>
 
           {/* Center Navigation Anchors */}
           <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-[var(--text-secondary)]">
@@ -855,13 +861,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       {/* 7. FOOTER */}
       <footer className="border-t border-[var(--border-subtle)] bg-[var(--bg-main)] py-12 text-xs text-[var(--text-muted)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white font-heading font-bold text-xs">
-              T
-            </div>
-            <span className="font-heading font-bold text-[var(--text-primary)]">Taktic</span>
-            <span>— A calm workspace for daily priorities, habits, and focus.</span>
-          </div>
+          <button
+            type="button"
+            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+            className="flex items-center gap-2.5 group cursor-pointer text-left focus-visible:outline-hidden"
+          >
+            <img
+              src="/logo.png"
+              alt="Taktic Logo"
+              className="h-7 w-7 rounded-lg object-contain transition-transform duration-200 group-hover:scale-110"
+            />
+            <span className="font-heading font-bold text-[var(--text-primary)] transition-colors duration-200 group-hover:text-[#C06C4C]">
+              Taktic
+            </span>
+            <span className="text-[var(--text-muted)]">— A calm workspace for daily priorities, habits, and focus.</span>
+          </button>
 
           <div className="flex items-center gap-6">
             <button

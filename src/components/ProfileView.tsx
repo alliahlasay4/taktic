@@ -83,24 +83,24 @@ export const ProfileView: React.FC = () => {
       {/* Cover Banner & Identity Header */}
       <div className="relative rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] overflow-hidden shadow-xs transition-colors duration-300">
         {/* Cover Gradient Mesh Banner */}
-        <div className="h-32 bg-gradient-to-r from-[var(--accent-terracotta)]/25 via-[var(--accent-dusty-rose)]/20 to-[var(--accent-warm-ochre)]/20 border-b border-[var(--border-subtle)] relative overflow-hidden">
+        <div className="h-36 sm:h-44 bg-gradient-to-r from-[var(--accent-terracotta)]/25 via-[var(--accent-dusty-rose)]/20 to-[var(--accent-warm-ochre)]/20 border-b border-[var(--border-subtle)] relative overflow-hidden">
           <div className="absolute top-0 right-0 w-80 h-80 bg-[var(--accent-dusty-rose)]/10 rounded-full blur-3xl -mr-20 -mt-20 pointer-events-none" />
           <div className="absolute bottom-0 left-1/3 w-64 h-64 bg-[var(--accent-warm-ochre)]/10 rounded-full blur-3xl pointer-events-none" />
         </div>
 
         {/* Identity Details Row (Overlapping Avatar) */}
         <div className="px-6 pb-6 pt-0 relative">
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 -mt-12 mb-4">
-            <div className="flex items-end gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-4">
+            <div className="flex flex-col sm:flex-row sm:items-end gap-4 sm:gap-5">
               <div
-                className="relative group cursor-pointer shrink-0"
+                className="-mt-14 sm:-mt-16 relative group cursor-pointer shrink-0 z-10"
                 onClick={() => fileInputRef.current?.click()}
                 title="Click to upload picture"
               >
                 <img
                   src={profile.avatarUrl}
                   alt={profile.fullName}
-                  className="w-24 h-24 rounded-2xl object-cover border-4 border-[var(--card-surface)] shadow-md bg-[var(--card-surface)] group-hover:opacity-85 transition"
+                  className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl object-cover border-4 border-[var(--card-surface)] shadow-lg bg-[var(--card-surface)] group-hover:opacity-85 transition ring-1 ring-black/5 dark:ring-white/10"
                 />
                 <div className="absolute inset-0 rounded-2xl bg-black/45 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition duration-200">
                   <Camera className="w-5 h-5 mb-0.5" />
@@ -126,9 +126,9 @@ export const ProfileView: React.FC = () => {
                 )}
               </div>
 
-              <div className="pb-1">
+              <div className="pt-2 sm:pt-4 pb-1">
                 <div className="flex items-center gap-2.5 flex-wrap">
-                  <h1 className="text-2xl font-bold font-heading text-[var(--text-primary)] tracking-tight">{profile.fullName}</h1>
+                  <h1 className="text-2xl sm:text-3xl font-bold font-heading text-[var(--text-primary)] tracking-tight">{profile.fullName}</h1>
 
                   {/* Copyable username badge */}
                   <button
@@ -147,31 +147,33 @@ export const ProfileView: React.FC = () => {
                 </div>
 
                 {profile.statusMessage && (
-                  <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--accent-terracotta)] mt-1">
+                  <div className="flex items-center gap-1.5 text-xs font-medium text-[var(--accent-terracotta)] mt-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} />
-                    <span>{profile.statusMessage}</span>
+                    <span>{profile.statusMessage.replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{27BF}]|⚡/gu, '').trim()}</span>
                   </div>
                 )}
               </div>
             </div>
 
-            <button
-              type="button"
-              onClick={() => setActiveSubTab(activeSubTab === 'overview' ? 'settings' : 'overview')}
-              className="flex items-center gap-2 px-4 py-2 min-h-[44px] rounded-xl bg-[var(--card-hover)] hover:bg-[var(--border-subtle)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-xs font-semibold transition-all shadow-xs active:scale-95 focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
-            >
-              {activeSubTab === 'overview' ? (
-                <>
-                  <Edit3 className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} aria-hidden="true" />
-                  <span>Edit Profile</span>
-                </>
-              ) : (
-                <>
-                  <User className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} aria-hidden="true" />
-                  <span>View Showcase</span>
-                </>
-              )}
-            </button>
+            <div className="pt-2 sm:pt-4 sm:self-end">
+              <button
+                type="button"
+                onClick={() => setActiveSubTab(activeSubTab === 'overview' ? 'settings' : 'overview')}
+                className="flex items-center gap-2 px-4 py-2 min-h-[42px] rounded-xl bg-[var(--card-hover)] hover:bg-[var(--border-subtle)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-xs font-semibold transition-all shadow-xs active:scale-95 focus-visible:ring-2 focus-visible:ring-emerald-500 cursor-pointer"
+              >
+                {activeSubTab === 'overview' ? (
+                  <>
+                    <Edit3 className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} aria-hidden="true" />
+                    <span>Edit Profile</span>
+                  </>
+                ) : (
+                  <>
+                    <User className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} aria-hidden="true" />
+                    <span>View Showcase</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
           {/* Bio & Micro Goal */}

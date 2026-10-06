@@ -299,14 +299,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
 
         {/* Top Header: Brand Logo & Back to Home inside Left Column */}
         <div className="relative z-10 flex items-center justify-between">
-          <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl bg-white dark:bg-[var(--card-surface)] text-[#C06C4C] dark:text-[var(--accent-warm-ochre)] font-heading font-extrabold text-xl shadow-lg dark:border dark:border-[var(--border-subtle)] transition-colors duration-300">
-              T
-            </div>
-            <span className="font-heading text-2xl font-bold tracking-tight text-white drop-shadow-xs">
+          <button
+            type="button"
+            onClick={onBackToHome}
+            disabled={!onBackToHome}
+            className={`flex items-center gap-2.5 sm:gap-3 text-left focus-visible:outline-hidden group ${onBackToHome ? 'cursor-pointer' : 'cursor-default'}`}
+          >
+            <img
+              src="/logo.png"
+              alt="Taktic Logo"
+              className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl object-contain shadow-lg transition-transform duration-200 group-hover:scale-105"
+            />
+            <span className="font-heading text-2xl font-bold tracking-tight text-white drop-shadow-xs transition-colors duration-200 group-hover:text-amber-200">
               Taktic
             </span>
-          </div>
+          </button>
 
           {onBackToHome && (
             <button

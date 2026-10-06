@@ -137,11 +137,13 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
 
           {/* Top Bar: Brand & Close */}
           <div className="relative z-10 flex items-center justify-between pb-3">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-white text-[#C06C4C] font-heading font-bold text-sm shadow-md">
-                T
-              </div>
-              <span className="font-heading text-lg font-bold tracking-tight text-white">
+            <div className="flex items-center gap-2.5 group cursor-default">
+              <img
+                src="/logo.png"
+                alt="Taktic Logo"
+                className="h-8 w-8 rounded-xl object-contain shadow-md transition-transform duration-200 group-hover:scale-105"
+              />
+              <span className="font-heading text-lg font-bold tracking-tight text-white transition-colors duration-200 group-hover:text-amber-200">
                 Taktic
               </span>
             </div>
