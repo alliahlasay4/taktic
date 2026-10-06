@@ -183,6 +183,7 @@ function MainLayout() {
     feedPosts,
     members,
     invites,
+    incomingInvites,
     togglePartner,
     toggleMute,
     addMemberByName,
@@ -192,13 +193,14 @@ function MainLayout() {
     resendCircleInvite,
     generateMagicInviteLink,
     acceptCircleInvite,
+    declineCircleInvite,
     checkMyPendingInvite,
     toggleLikePost,
     broadcastAchievement,
     deletePost,
   } = useCircles();
 
-  // Pending Circle Partner Invitation State
+  // Pending Circle Partner Invitation State (Controls full-screen welcome modal)
   const [pendingCircleInvite, setPendingCircleInvite] = useState<{ token: string; inviter: string } | null>(null);
 
   // Automatically check Supabase database and local storage for pending invitations from non-members
@@ -238,15 +240,25 @@ function MainLayout() {
       return;
     }
 
+    const processCandidateInvite = (cand: { token: string; inviter: string }) => {
+      // Create or ensure notification exists for this invite
+      const isSnoozed = sessionStorage.getItem(`taktic_snoozed_circle_invite_${cand.token}`) === 'true';
+      if (!isSnoozed) {
+        setPendingCircleInvite(cand);
+      } else {
+        setPendingCircleInvite(null);
+      }
+    };
+
     if (candidate) {
-      setPendingCircleInvite(candidate);
+      processCandidateInvite(candidate);
       return;
     }
 
     // 3. If no local candidate, check database via RPC for invites from non-members
     checkMyPendingInvite().then((invite) => {
       if (invite && !existingMemberNames.has(invite.inviter.toLowerCase())) {
-        setPendingCircleInvite(invite);
+        processCandidateInvite(invite);
       } else {
         setPendingCircleInvite(null);
       }
@@ -265,6 +277,7 @@ function MainLayout() {
       );
       localStorage.removeItem('taktic_pending_circle_invite');
       sessionStorage.removeItem('taktic_pending_circle_invite');
+      sessionStorage.removeItem(`taktic_snoozed_circle_invite_${token}`);
       setPendingCircleInvite(null);
 
       // Clean query parameters from URL gracefully
@@ -281,9 +294,30 @@ function MainLayout() {
     }
   };
 
-  const handleDeclineCircleInvite = () => {
+  const handleMaybeLaterCircleInvite = () => {
+    if (pendingCircleInvite) {
+      sessionStorage.setItem(`taktic_snoozed_circle_invite_${pendingCircleInvite.token}`, 'true');
+      notify(
+        `Circle Request from ${pendingCircleInvite.inviter}`,
+        `${pendingCircleInvite.inviter} invited you to connect as accountability Circle Partners.`,
+        'circle',
+        'circles',
+        pendingCircleInvite.token
+      );
+    }
+    setPendingCircleInvite(null);
+  };
+
+  const handleDeclineCircleInvite = async (token?: string) => {
+    const tokenToDecline = token || pendingCircleInvite?.token;
+    if (tokenToDecline) {
+      await declineCircleInvite(tokenToDecline);
+    }
     localStorage.removeItem('taktic_pending_circle_invite');
     sessionStorage.removeItem('taktic_pending_circle_invite');
+    if (tokenToDecline) {
+      sessionStorage.removeItem(`taktic_snoozed_circle_invite_${tokenToDecline}`);
+    }
     setPendingCircleInvite(null);
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
@@ -291,6 +325,7 @@ function MainLayout() {
       url.searchParams.delete('inviter');
       window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
     }
+    showToast('Invitation Declined', 'The partner request has been removed.', 'system');
   };
 
   const [activeSoundscape, setActiveSoundscape] = useState<string | null>(null);
@@ -416,6 +451,7 @@ function MainLayout() {
             onMarkAllAsRead={markAllAsRead}
             onClearAll={clearAll}
             onSelectTab={setActiveTab}
+            onAcceptCircleInvite={handleAcceptCircleInvite}
           />
         )}
 
@@ -523,6 +559,7 @@ function MainLayout() {
                     members={members}
                     feedPosts={feedPosts}
                     invites={invites}
+                    incomingInvites={incomingInvites}
                     userStreak={userStreak}
                     currentUserId={user?.id}
                     currentUserName={currentUserName}
@@ -537,6 +574,8 @@ function MainLayout() {
                     onCancelInvite={cancelCircleInvite}
                     onResendInvite={resendCircleInvite}
                     onGenerateMagicLink={generateMagicInviteLink}
+                    onAcceptInvite={handleAcceptCircleInvite}
+                    onDeclineInvite={handleDeclineCircleInvite}
                   />
                 )}
 
@@ -607,6 +646,7 @@ function MainLayout() {
           inviterName={pendingCircleInvite?.inviter || 'Circle Partner'}
           inviteToken={pendingCircleInvite?.token || ''}
           onAccept={handleAcceptCircleInvite}
+          onMaybeLater={handleMaybeLaterCircleInvite}
           onDecline={handleDeclineCircleInvite}
         />
 

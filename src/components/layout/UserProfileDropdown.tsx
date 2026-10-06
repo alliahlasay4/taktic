@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { User, Sun, Moon, LogOut, ShieldCheck, Sparkles, Settings, Eye, EyeOff } from 'lucide-react';
+import { User, Sun, Moon, LogOut, Sparkles, Settings, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface UserProfileDropdownProps {
@@ -23,8 +23,8 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const userName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-  const userEmail = user?.email || 'demo@taktic.app';
-  const userAvatar = profile?.avatarUrl || user?.user_metadata?.avatar_url;
+  const userEmail = user?.email || (profile as any)?.email || (isDemo ? 'demo@taktic.app' : '');
+  const userAvatar = profile?.avatarUrl || (profile as any)?.avatar_url || user?.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -50,17 +50,15 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
     >
       {/* User Header Identity Card */}
       <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] mb-2">
-        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-gradient-to-tr from-[#6B8E6E] to-[#C87D87] text-sm font-bold text-white shadow-md">
-          {userAvatar ? (
-            <img src={userAvatar} alt={userName} className="h-full w-full object-cover" />
-          ) : (
-            userName.substring(0, 2).toUpperCase()
-          )}
-          <span className={`absolute -bottom-0.5 -right-0.5 flex h-3.5 w-3.5 items-center justify-center rounded-full ring-2 ring-[var(--card-surface)] ${
-            profile?.privacySettings?.isIncognito ? 'bg-amber-500' : 'bg-emerald-500'
-          }`}>
-            <ShieldCheck className="h-2.5 w-2.5 text-white" />
-          </span>
+        <div className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-xl border border-[var(--border-subtle)] shadow-md">
+          <img
+            src={userAvatar}
+            alt={userName}
+            className="h-full w-full object-cover"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+            }}
+          />
         </div>
 
         <div className="flex-1 min-w-0">

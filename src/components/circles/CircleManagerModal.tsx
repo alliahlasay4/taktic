@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Settings, ShieldCheck, UserPlus, Volume2, VolumeX, UserX, Lock, Users, Search, Sparkles } from 'lucide-react';
 import { CircleMember } from '../../types';
+import { RemovePartnerModal } from './RemovePartnerModal';
 
 interface CircleManagerModalProps {
   isOpen: boolean;
@@ -24,6 +25,7 @@ export const CircleManagerModal: React.FC<CircleManagerModalProps> = ({
   const [newMemberName, setNewMemberName] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [filterType, setFilterType] = useState<'all' | 'partners' | 'guests'>('all');
+  const [memberToRemove, setMemberToRemove] = useState<CircleMember | null>(null);
 
   if (!isOpen) return null;
 
@@ -276,8 +278,8 @@ export const CircleManagerModal: React.FC<CircleManagerModalProps> = ({
                                 {/* Remove from Circle */}
                                 <button
                                   type="button"
-                                  onClick={() => (onRemoveMember ? onRemoveMember(member.id) : onTogglePartner(member.id))}
-                                  className="flex items-center gap-1 rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-500/20 transition"
+                                  onClick={() => setMemberToRemove(member)}
+                                  className="flex items-center gap-1 rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[11px] font-semibold text-red-500 hover:bg-red-500/20 transition cursor-pointer"
                                   title="Remove from your Circle Roster"
                                 >
                                   <UserX className="h-3 w-3" />
@@ -317,12 +319,29 @@ export const CircleManagerModal: React.FC<CircleManagerModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-5 py-2 text-xs font-bold text-white transition shadow-md"
+            className="rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-5 py-2 text-xs font-bold text-white transition shadow-md cursor-pointer"
           >
             Done
           </button>
         </div>
       </div>
+
+      {/* Confirmation Modal for Removing Partner */}
+      <RemovePartnerModal
+        isOpen={Boolean(memberToRemove)}
+        member={memberToRemove}
+        onClose={() => setMemberToRemove(null)}
+        onConfirm={() => {
+          if (memberToRemove) {
+            if (onRemoveMember) {
+              onRemoveMember(memberToRemove.id);
+            } else {
+              onTogglePartner(memberToRemove.id);
+            }
+            setMemberToRemove(null);
+          }
+        }}
+      />
     </div>
   );
 };

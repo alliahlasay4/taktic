@@ -25,7 +25,8 @@ import {
   Compass,
   HelpCircle,
 } from 'lucide-react';
-import { CircleMember, CircleFeedPost, CircleInvite } from '../../types';
+import { CircleMember, CircleFeedPost, CircleInvite, IncomingCircleInvite } from '../../types';
+import confetti from 'canvas-confetti';
 import { LiveFocusRoom } from './LiveFocusRoom';
 import { CircleFeed } from './CircleFeed';
 import { useFocusRooms } from '../../hooks/useFocusRooms';
@@ -33,12 +34,14 @@ import { CreatePodModal } from './CreatePodModal';
 import { JoinRoomModal } from './JoinRoomModal';
 import { ShareMilestoneModal } from './ShareMilestoneModal';
 import { InvitePartnerModal } from './InvitePartnerModal';
+import { RemovePartnerModal } from './RemovePartnerModal';
 import { CirclesOnboardingGuide } from './CirclesOnboardingGuide';
 
 interface CirclesViewProps {
   members: CircleMember[];
   feedPosts: CircleFeedPost[];
   invites?: CircleInvite[];
+  incomingInvites?: IncomingCircleInvite[];
   userStreak: number;
   currentUserId?: string;
   currentUserName?: string;
@@ -53,12 +56,15 @@ interface CirclesViewProps {
   onCancelInvite?: (inviteId: string) => Promise<void>;
   onResendInvite?: (inviteId: string) => Promise<{ success: boolean; inviteLink: string }>;
   onGenerateMagicLink?: () => { token: string; link: string };
+  onAcceptInvite?: (token: string) => Promise<void>;
+  onDeclineInvite?: (token: string) => Promise<void> | void;
 }
 
 export const CirclesView: React.FC<CirclesViewProps> = ({
   members,
   feedPosts,
   invites = [],
+  incomingInvites = [],
   userStreak,
   currentUserId,
   currentUserName,
@@ -73,6 +79,8 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   onCancelInvite,
   onResendInvite,
   onGenerateMagicLink,
+  onAcceptInvite,
+  onDeclineInvite,
 }) => {
   const [activeTab, setActiveTab] = useState<'pods' | 'feed' | 'network'>('pods');
   const [networkFilter, setNetworkFilter] = useState<'all' | 'partners' | 'guests'>('all');
@@ -81,8 +89,12 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   const [isJoinRoomOpen, setIsJoinRoomOpen] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
+  const [memberToRemove, setMemberToRemove] = useState<CircleMember | null>(null);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
   const [newPartnerName, setNewPartnerName] = useState('');
+  const [acceptingToken, setAcceptingToken] = useState<string | null>(null);
+  const [decliningToken, setDecliningToken] = useState<string | null>(null);
+  const [confirmingDeclineToken, setConfirmingDeclineToken] = useState<string | null>(null);
 
   const [isActionsMenuOpen, setIsActionsMenuOpen] = useState(false);
   const actionsMenuRef = useRef<HTMLDivElement>(null);
@@ -344,7 +356,8 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
               label: 'Roster',
               fullLabel: 'Accountability Network',
               icon: ShieldCheck,
-              badge: `${partnerMembers.length}`,
+              badge: (incomingInvites?.length || 0) > 0 ? `${partnerMembers.length} • +${incomingInvites?.length} Request` : `${partnerMembers.length}`,
+              hasAlert: (incomingInvites?.length || 0) > 0,
             },
           ].map((tab) => {
             const TabIcon = tab.icon;
@@ -458,6 +471,132 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                 )}
               </div>
             </div>
+
+            {/* Incoming Partner Requests Card */}
+            {(incomingInvites || []).length > 0 && (
+              <div className="rounded-2xl border border-[var(--accent-terracotta)]/40 bg-gradient-to-br from-[var(--accent-terracotta)]/10 via-[var(--accent-dusty-rose)]/10 to-[var(--accent-warm-ochre)]/10 p-4 sm:p-5 shadow-sm space-y-3.5 animate-in fade-in duration-200">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div className="flex items-center gap-2.5">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-xs">
+                      <Sparkles className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <h3 className="font-heading font-extrabold text-sm text-[var(--text-primary)]">
+                        Incoming Partner Requests ({(incomingInvites || []).length})
+                      </h3>
+                      <p className="text-[11px] text-[var(--text-secondary)]">
+                        Review and connect with your accountability partners
+                      </p>
+                    </div>
+                  </div>
+                  <span className="rounded-full bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-terracotta)]">
+                    Action Required
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-1">
+                  {incomingInvites!.map((req) => (
+                    <div
+                      key={req.token}
+                      className="flex flex-col justify-between rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 space-y-3 shadow-xs transition-all hover:border-[var(--accent-terracotta)]/40"
+                    >
+                      <div className="flex items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-tr from-[#6B8E6E] to-[#C87D87] text-white text-sm font-bold shadow-xs">
+                          {req.inviter ? req.inviter.charAt(0).toUpperCase() : 'C'}
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 justify-between">
+                            <h4 className="font-bold text-xs sm:text-sm text-[var(--text-primary)] truncate">
+                              {req.inviter}
+                            </h4>
+                            <span className="text-[10px] text-[var(--text-muted)] font-mono">
+                              {req.createdAt ? new Date(req.createdAt).toLocaleDateString() : 'Pending'}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-[var(--text-secondary)] mt-0.5 line-clamp-2">
+                            Invited you to connect as Circle Partners to share focus momentum and hit goals together.
+                          </p>
+                        </div>
+                      </div>
+
+                      {confirmingDeclineToken === req.token ? (
+                        <div className="rounded-xl bg-rose-500/10 border border-rose-500/20 p-2.5 flex items-center justify-between gap-2 text-xs animate-in fade-in">
+                          <span className="text-rose-500 font-medium text-[11px]">Decline partner request?</span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => setConfirmingDeclineToken(null)}
+                              className="px-2 py-1 rounded-lg bg-[var(--card-surface)] border border-[var(--border-subtle)] text-[10px] font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] cursor-pointer"
+                            >
+                              Keep
+                            </button>
+                            <button
+                              type="button"
+                              onClick={async () => {
+                                if (onDeclineInvite) {
+                                  setDecliningToken(req.token);
+                                  await onDeclineInvite(req.token);
+                                  setDecliningToken(null);
+                                  setConfirmingDeclineToken(null);
+                                }
+                              }}
+                              disabled={decliningToken === req.token}
+                              className="px-2 py-1 rounded-lg bg-rose-500 text-white text-[10px] font-bold hover:bg-rose-600 transition cursor-pointer"
+                            >
+                              {decliningToken === req.token ? 'Declining...' : 'Decline'}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2 pt-2 border-t border-[var(--border-subtle)]">
+                          <button
+                            type="button"
+                            onClick={async () => {
+                              if (onAcceptInvite) {
+                                setAcceptingToken(req.token);
+                                try {
+                                  await onAcceptInvite(req.token);
+                                  confetti({
+                                    particleCount: 75,
+                                    spread: 65,
+                                    origin: { y: 0.6 },
+                                    colors: ['#C06C4C', '#C87D87', '#CFA052', '#6B8E6E'],
+                                  });
+                                } finally {
+                                  setAcceptingToken(null);
+                                }
+                              }
+                            }}
+                            disabled={acceptingToken === req.token}
+                            className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 rounded-xl bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] hover:brightness-110 text-white font-bold text-xs shadow-xs transition cursor-pointer disabled:opacity-50"
+                          >
+                            {acceptingToken === req.token ? (
+                              <>
+                                <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" />
+                                <span>Connecting...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Check className="h-3.5 w-3.5" />
+                                <span>Accept & Join Circle</span>
+                              </>
+                            )}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => setConfirmingDeclineToken(req.token)}
+                            className="py-2 px-3 rounded-xl border border-[var(--border-subtle)] hover:bg-[var(--card-hover)] text-xs font-semibold text-[var(--text-secondary)] hover:text-rose-500 transition cursor-pointer"
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Privacy Shield Banner */}
             <div className="rounded-xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--accent-botanical-sage)]/10 p-3 flex items-start gap-2.5">
@@ -775,8 +914,8 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                             {/* Remove Partner */}
                             <button
                               type="button"
-                              onClick={() => (onRemoveMember ? onRemoveMember(member.id) : onTogglePartner ? onTogglePartner(member.id) : null)}
-                              className="flex items-center gap-1 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-500/20 transition min-h-[36px]"
+                              onClick={() => setMemberToRemove(member)}
+                              className="flex items-center gap-1 rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-semibold text-red-500 hover:bg-red-500/20 transition min-h-[36px] cursor-pointer"
                               title="Remove from your Circle Roster"
                             >
                               <UserX className="h-3.5 w-3.5" />
@@ -845,6 +984,23 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
         onClose={() => setIsOnboardingGuideOpen(false)}
         onComplete={handleCompleteTour}
         setActiveTab={setActiveTab}
+      />
+
+      {/* Confirmation Modal to Remove Partner */}
+      <RemovePartnerModal
+        isOpen={Boolean(memberToRemove)}
+        member={memberToRemove}
+        onClose={() => setMemberToRemove(null)}
+        onConfirm={() => {
+          if (memberToRemove) {
+            if (onRemoveMember) {
+              onRemoveMember(memberToRemove.id);
+            } else if (onTogglePartner) {
+              onTogglePartner(memberToRemove.id);
+            }
+            setMemberToRemove(null);
+          }
+        }}
       />
 
       {/* Tour Completion Celebratory Toast */}

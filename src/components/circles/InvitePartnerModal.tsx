@@ -208,9 +208,9 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
           <div className="space-y-4">
             <div>
               <p className="text-xs text-[var(--text-secondary)] mb-2 leading-relaxed">
-                Share this link via chat or email. Anyone who opens it can join your Circle Roster with one click:
+                Share this magic link with a friend or colleague to connect instantly:
               </p>
-              <div className="flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-2.5">
+              <div className="flex items-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] p-2">
                 <input
                   id="magic-share-link-input"
                   name="magicShareLink"
@@ -218,12 +218,12 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
                   readOnly
                   value={defaultLink}
                   aria-label="Magic share link"
-                  className="flex-1 text-[11px] font-mono text-[var(--text-primary)] bg-transparent focus:outline-none truncate"
+                  className="flex-1 text-[11px] font-mono text-[var(--text-primary)] bg-transparent focus:outline-none truncate pl-2"
                 />
                 <button
                   type="button"
                   onClick={() => handleCopyLink(defaultLink)}
-                  className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] text-white px-3.5 py-2 text-xs font-bold shrink-0 shadow-xs transition active:scale-95"
+                  className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] text-white px-3.5 py-2 text-xs font-bold shrink-0 shadow-xs transition active:scale-95 cursor-pointer"
                 >
                   {copiedLink ? <Check className="h-3.5 w-3.5" /> : <Copy className="h-3.5 w-3.5" />}
                   <span>{copiedLink ? 'Copied' : 'Copy'}</span>
@@ -234,7 +234,7 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
             {/* Quick Share Buttons */}
             <div className="pt-2 border-t border-[var(--border-subtle)]">
               <span className="text-[11px] font-semibold text-[var(--text-muted)] mb-2 block">
-                Quick Share via:
+                Quick Share:
               </span>
               <div className="grid grid-cols-2 gap-2">
                 <a
@@ -258,15 +258,6 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
             </div>
           </div>
         )}
-
-        {/* Privacy Callout Banner */}
-        <div className="mt-5 rounded-2xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--accent-botanical-sage)]/10 p-3 flex items-start gap-2.5">
-          <ShieldCheck className="h-4 w-4 text-[var(--accent-botanical-sage)] shrink-0 mt-0.5" />
-          <p className="text-[11px] text-[var(--text-primary)] leading-snug">
-            <span className="font-bold text-[var(--accent-botanical-sage)]">Privacy Protected: </span>
-            Streak milestones and ring closures are shared. Task names and notes stay private.
-          </p>
-        </div>
       </div>
     </div>
   );

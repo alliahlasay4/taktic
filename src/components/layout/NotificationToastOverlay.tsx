@@ -25,7 +25,7 @@ export const NotificationToastOverlay: React.FC<NotificationToastOverlayProps> =
   };
 
   return (
-    <div className="fixed bottom-4 sm:bottom-5 left-3 right-3 sm:left-auto sm:right-5 z-50 flex flex-col gap-2.5 sm:gap-3 max-w-sm mx-auto sm:mx-0 w-auto sm:w-full pointer-events-none">
+    <div className="fixed bottom-4 sm:bottom-5 left-3 right-3 sm:left-auto sm:right-5 z-50 flex flex-col gap-2.5 sm:gap-3 max-w-md sm:max-w-lg mx-auto sm:mx-0 w-auto sm:w-full pointer-events-none">
       <AnimatePresence>
         {toasts.map((toast) => (
           <motion.div
@@ -36,13 +36,13 @@ export const NotificationToastOverlay: React.FC<NotificationToastOverlayProps> =
             transition={{ duration: 0.25, ease: 'easeOut' }}
             className="pointer-events-auto flex items-start gap-3 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/95 backdrop-blur-md p-4 shadow-2xl text-[var(--text-primary)]"
           >
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)]">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] mt-0.5">
               {getIcon(toast.type)}
             </div>
 
             <div className="flex-1 min-w-0 pr-1">
               <h4 className="text-xs font-bold text-[var(--text-primary)] tracking-tight">{toast.title}</h4>
-              <p className="mt-0.5 text-xs text-[var(--text-secondary)] leading-snug line-clamp-2">{toast.message}</p>
+              <p className="mt-0.5 text-xs text-[var(--text-secondary)] leading-relaxed break-words">{toast.message}</p>
             </div>
 
             <button

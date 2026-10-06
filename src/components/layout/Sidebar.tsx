@@ -491,30 +491,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
                 <img
-                  src={profile.avatarUrl}
+                  src={profile.avatarUrl || (profile as any)?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
                   alt={profile.fullName}
                   className="w-10 h-10 rounded-xl object-cover border border-[var(--border-subtle)] shadow-xs transition-transform group-hover:scale-105"
-                />
-                <span
-                  className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 border-2 border-[var(--card-surface)] rounded-full ${
-                    profile.privacySettings?.isIncognito
-                      ? 'bg-amber-500 ring-1 ring-amber-500/40'
-                      : 'bg-emerald-500 ring-1 ring-emerald-500/40'
-                  }`}
+                  onError={(e) => {
+                    (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+                  }}
                 />
               </div>
               <div className="min-w-0">
                 <p className="text-xs font-bold text-[var(--text-primary)] truncate">{profile.fullName}</p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span
-                    className={`w-1.5 h-1.5 rounded-full ${
-                      profile.privacySettings?.isIncognito ? 'bg-amber-500' : 'bg-emerald-500'
-                    }`}
-                  />
-                  <span className="text-[11px] text-[var(--text-muted)] font-medium">
-                    {profile.privacySettings?.isIncognito ? 'Incognito' : 'Online'}
-                  </span>
-                </div>
+                <p className="text-[11px] text-[var(--text-muted)] font-medium mt-0.5">
+                  {profile.privacySettings?.isIncognito ? 'Incognito' : 'Online'}
+                </p>
               </div>
             </div>
             <div className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-colors shrink-0 ${

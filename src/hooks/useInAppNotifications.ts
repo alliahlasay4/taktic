@@ -265,7 +265,13 @@ export function useInAppNotifications() {
 
   // Local or cross-client in-app notify
   const notify = useCallback(
-    async (title: string, message: string, type: InAppNotification['type'] = 'system', actionTab?: ActiveTab) => {
+    async (
+      title: string,
+      message: string,
+      type: InAppNotification['type'] = 'system',
+      actionTab?: ActiveTab,
+      inviteToken?: string
+    ) => {
       const id =
         typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
           ? crypto.randomUUID()
@@ -279,6 +285,7 @@ export function useInAppNotifications() {
         read: false,
         createdAt: new Date().toISOString(),
         actionTab,
+        inviteToken,
       };
 
       // Register local dispatch to suppress realtime duplicate echo

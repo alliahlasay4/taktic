@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Repeat, Flame, Users, Sparkles, CheckCheck, Trash2, X, BellOff } from 'lucide-react';
+import { Clock, Repeat, Flame, Users, Sparkles, CheckCheck, Trash2, X, BellOff, Check, ArrowRight } from 'lucide-react';
 import { InAppNotification, ActiveTab } from '../../types';
 
 interface NotificationCenterDropdownProps {
@@ -10,6 +10,7 @@ interface NotificationCenterDropdownProps {
   onMarkAllAsRead: () => void;
   onClearAll: () => void;
   onSelectTab?: (tab: ActiveTab) => void;
+  onAcceptCircleInvite?: (token: string) => Promise<void>;
 }
 
 export const NotificationCenterDropdown: React.FC<NotificationCenterDropdownProps> = ({
@@ -20,6 +21,7 @@ export const NotificationCenterDropdown: React.FC<NotificationCenterDropdownProp
   onMarkAllAsRead,
   onClearAll,
   onSelectTab,
+  onAcceptCircleInvite,
 }) => {
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -172,7 +174,40 @@ export const NotificationCenterDropdown: React.FC<NotificationCenterDropdownProp
                   </h4>
                   <span className="text-[10px] text-[var(--text-muted)] shrink-0">{formatTimeAgo(item.createdAt)}</span>
                 </div>
-                <p className="mt-0.5 text-xs text-[var(--text-secondary)] line-clamp-2">{item.message}</p>
+                <p className="mt-0.5 text-xs text-[var(--text-secondary)] leading-relaxed break-words">{item.message}</p>
+
+                {/* Inline Action Buttons for Circle Partner Invitations */}
+                {item.inviteToken && onAcceptCircleInvite && (
+                  <div className="mt-2.5 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={async () => {
+                        onMarkAsRead(item.id);
+                        await onAcceptCircleInvite(item.inviteToken!);
+                        onClose();
+                      }}
+                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] hover:brightness-110 text-white font-bold text-[11px] shadow-xs transition cursor-pointer"
+                    >
+                      <Check className="h-3 w-3" />
+                      <span>Accept & Join</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onMarkAsRead(item.id);
+                        if (onSelectTab) {
+                          onSelectTab('circles');
+                        }
+                        onClose();
+                      }}
+                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-subtle)] hover:bg-[var(--card-hover)] text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
+                    >
+                      <span>View in Circles</span>
+                      <ArrowRight className="h-3 w-3" />
+                    </button>
+                  </div>
+                )}
               </div>
 
               {!item.read && (

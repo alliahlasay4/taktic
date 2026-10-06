@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flame, Sparkles, Volume2, VolumeX, ShieldCheck, Bell, Sun, Moon, StickyNote } from 'lucide-react';
+import { Flame, Sparkles, Volume2, VolumeX, Bell, Sun, Moon, StickyNote } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { InAppNotification, ActiveTab } from '../../types';
 import { NotificationCenterDropdown } from './NotificationCenterDropdown';
@@ -21,6 +21,7 @@ interface NavbarProps {
   onMarkAllAsRead?: () => void;
   onClearAll?: () => void;
   onSelectTab?: (tab: ActiveTab) => void;
+  onAcceptCircleInvite?: (token: string) => Promise<void>;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -39,13 +40,14 @@ export const Navbar: React.FC<NavbarProps> = ({
   onMarkAllAsRead = () => { },
   onClearAll = () => { },
   onSelectTab,
+  onAcceptCircleInvite,
 }) => {
   const { user, profile, isDemo } = useAuth();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const userName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-  const userAvatar = profile?.avatarUrl || user?.user_metadata?.avatar_url;
+  const userAvatar = profile?.avatarUrl || (profile as any)?.avatar_url || user?.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[var(--border-subtle)] bg-[var(--card-surface)]/80 backdrop-blur-md transition-colors duration-300">
@@ -148,6 +150,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               onMarkAllAsRead={onMarkAllAsRead}
               onClearAll={onClearAll}
               onSelectTab={onSelectTab}
+              onAcceptCircleInvite={onAcceptCircleInvite}
             />
           </div>
 
@@ -163,16 +166,14 @@ export const Navbar: React.FC<NavbarProps> = ({
               title="Account Menu"
               aria-label="User Account Menu"
             >
-              {userAvatar ? (
-                <img src={userAvatar} alt={userName} className="h-full w-full object-cover" />
-              ) : (
-                userName.substring(0, 2).toUpperCase()
-              )}
-              <span className={`absolute -bottom-0.5 -right-0.5 flex h-2.5 w-2.5 sm:h-3 sm:w-3 items-center justify-center rounded-full ring-1 sm:ring-2 ring-[var(--card-surface)] ${
-                profile?.privacySettings?.isIncognito ? 'bg-amber-500' : 'bg-emerald-500'
-              }`}>
-                <ShieldCheck className="h-1.5 w-1.5 sm:h-2 sm:w-2 text-white" strokeWidth={1.5} aria-hidden="true" />
-              </span>
+              <img
+                src={userAvatar}
+                alt={userName}
+                className="h-full w-full object-cover"
+                onError={(e) => {
+                  (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+                }}
+              />
             </button>
 
             {/* User Profile Dropdown Menu */}

@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { CircleFeedPost, CircleMember, CircleInvite } from '../types';
+import { CircleFeedPost, CircleMember, CircleInvite, IncomingCircleInvite } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_CIRCLE_MEMBERS, INITIAL_CIRCLE_FEED } from '../lib/mockData';
@@ -60,6 +60,23 @@ export function useCircles() {
     return [];
   });
 
+  const [incomingInvites, setIncomingInvites] = useState<IncomingCircleInvite[]>(() => {
+    if (isDemo || userKey === 'demo') {
+      const saved = sessionStorage.getItem('taktic_demo_incoming_invites');
+      return saved ? JSON.parse(saved) : [];
+    }
+    const saved = localStorage.getItem(`taktic_incoming_invites_${userKey}`);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return [];
+  });
+
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -76,6 +93,16 @@ export function useCircles() {
       sessionStorage.setItem('taktic_demo_circle_members', JSON.stringify(updated));
     } else {
       localStorage.setItem(`taktic_circle_members_${userKey}`, JSON.stringify(updated));
+    }
+  };
+
+  // Persist incoming invites with strict account isolation
+  const saveIncomingInvites = (updated: IncomingCircleInvite[]) => {
+    setIncomingInvites(updated);
+    if (isDemo || userKey === 'demo') {
+      sessionStorage.setItem('taktic_demo_incoming_invites', JSON.stringify(updated));
+    } else {
+      localStorage.setItem(`taktic_incoming_invites_${userKey}`, JSON.stringify(updated));
     }
   };
 
@@ -195,6 +222,13 @@ export function useCircles() {
 
   // Accept Circle Partner Invite (calls PostgreSQL SECURITY DEFINER RPC)
   const acceptCircleInvite = async (inviteToken: string) => {
+    // Remove from local/session storage & incoming invites list
+    localStorage.removeItem('taktic_pending_circle_invite');
+    sessionStorage.removeItem('taktic_pending_circle_invite');
+    sessionStorage.removeItem(`taktic_snoozed_circle_invite_${inviteToken}`);
+    const remainingIncoming = incomingInvites.filter((inv) => inv.token !== inviteToken);
+    saveIncomingInvites(remainingIncoming);
+
     if (isRealUser && user) {
       const { data, error: rpcErr } = await supabase.rpc('accept_circle_invite', {
         p_invite_token: inviteToken,
@@ -223,6 +257,26 @@ export function useCircles() {
       };
       saveMembers([partnerMember, ...members]);
       return { success: true, inviter_name: inviterTitle };
+    }
+  };
+
+  // Decline Circle Partner Invite
+  const declineCircleInvite = async (inviteToken: string) => {
+    localStorage.removeItem('taktic_pending_circle_invite');
+    sessionStorage.removeItem('taktic_pending_circle_invite');
+    sessionStorage.removeItem(`taktic_snoozed_circle_invite_${inviteToken}`);
+    const remainingIncoming = incomingInvites.filter((inv) => inv.token !== inviteToken);
+    saveIncomingInvites(remainingIncoming);
+
+    if (isRealUser && user) {
+      try {
+        await supabase
+          .from('circle_invites')
+          .update({ status: 'cancelled' })
+          .eq('invite_token', inviteToken);
+      } catch (err) {
+        console.error('Error declining circle invite in Supabase:', err);
+      }
     }
   };
 
@@ -361,16 +415,27 @@ export function useCircles() {
   };
 
   const removeMember = async (memberId: string) => {
+    const targetMember = members.find((m) => m.id === memberId);
     const updated = members.filter((m) => m.id !== memberId);
     saveMembers(updated);
 
     if (isRealUser && user) {
       try {
-        await supabase
-          .from('circle_members')
-          .delete()
-          .eq('id', memberId)
-          .eq('user_id', user.id);
+        const isUuid = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(memberId);
+        const { error: rpcErr } = await supabase.rpc('disconnect_circle_partner', {
+          p_member_id: isUuid ? memberId : null,
+          p_partner_user_id: targetMember?.partnerUserId || null,
+          p_partner_name: targetMember?.name || null,
+        });
+
+        if (rpcErr) {
+          console.warn('RPC disconnect_circle_partner error, falling back to direct delete:', rpcErr);
+          await supabase
+            .from('circle_members')
+            .delete()
+            .eq('id', memberId)
+            .eq('user_id', user.id);
+        }
       } catch (err) {
         console.error('Error deleting member from Supabase:', err);
       }
@@ -600,7 +665,49 @@ export function useCircles() {
         }
       }
 
-      // 3. Fetch circle posts from DB
+      // 3. Fetch incoming invites for this user (where user's email was invited)
+      try {
+        const existingNames = new Set(
+          (membersData || []).map((m) => (m.member_name || '').toLowerCase())
+        );
+        const { data: pendingRpc } = await supabase.rpc('get_my_pending_circle_invite');
+        let incomingList: IncomingCircleInvite[] = [];
+
+        if (pendingRpc && pendingRpc.invite_token) {
+          const invName = pendingRpc.inviter_name || 'Circle Partner';
+          if (!existingNames.has(invName.toLowerCase())) {
+            incomingList.push({
+              token: pendingRpc.invite_token,
+              inviter: invName,
+              email: pendingRpc.email,
+              createdAt: new Date().toISOString(),
+            });
+          }
+        }
+
+        // Also check localStorage/sessionStorage for any pending invite token not yet accepted
+        const savedRaw = localStorage.getItem('taktic_pending_circle_invite') || sessionStorage.getItem('taktic_pending_circle_invite');
+        if (savedRaw) {
+          try {
+            const parsed = JSON.parse(savedRaw);
+            if (parsed?.token && !incomingList.some((i) => i.token === parsed.token)) {
+              if (!existingNames.has((parsed.inviter || '').toLowerCase())) {
+                incomingList.push({
+                  token: parsed.token,
+                  inviter: parsed.inviter || 'Circle Partner',
+                  createdAt: new Date().toISOString(),
+                });
+              }
+            }
+          } catch {}
+        }
+
+        saveIncomingInvites(incomingList);
+      } catch (err) {
+        console.warn('Could not fetch incoming circle invites:', err);
+      }
+
+      // 4. Fetch circle posts from DB
       const { data: postsData, error: postsErr } = await supabase
         .from('circle_posts')
         .select('*')
@@ -1022,6 +1129,7 @@ export function useCircles() {
     rawFeedPosts: feedPosts,
     members,
     invites,
+    incomingInvites,
     loading,
     error,
     togglePartner,
@@ -1033,6 +1141,7 @@ export function useCircles() {
     resendCircleInvite,
     generateMagicInviteLink,
     acceptCircleInvite,
+    declineCircleInvite,
     checkMyPendingInvite,
     toggleLikePost,
     broadcastAchievement,

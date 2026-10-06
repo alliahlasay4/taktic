@@ -99,6 +99,14 @@ export interface HeatmapDay {
 
 export type ActiveTab = 'dashboard' | 'inbox' | 'focus' | 'habits' | 'circles' | 'analytics' | 'archive' | 'profile';
 
+export interface IncomingCircleInvite {
+  token: string;
+  inviter: string;
+  inviterAvatar?: string;
+  createdAt?: string;
+  email?: string;
+}
+
 export interface InAppNotification {
   id: string;
   title: string;
@@ -107,6 +115,8 @@ export interface InAppNotification {
   read: boolean;
   createdAt: string;
   actionTab?: ActiveTab;
+  inviteToken?: string;
+  inviterName?: string;
 }
 
 export interface UserProfile {
