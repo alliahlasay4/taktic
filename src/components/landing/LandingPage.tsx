@@ -10,7 +10,6 @@ import {
   Repeat,
   Clock,
   Volume2,
-  VolumeX,
   CloudRain,
   Waves,
   Headphones,
@@ -25,11 +24,11 @@ import {
   Flame,
   Sun,
   Moon,
-  ChevronRight,
-  Play,
-  Pause,
-  MessageSquare,
   Lock,
+  Layers,
+  Check,
+  X,
+  Compass,
 } from 'lucide-react';
 
 interface LandingPageProps {
@@ -84,28 +83,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   }, []);
 
   // Interactive Rhythm Demo State
-  const [demoTasks, setDemoTasks] = useState(2);
+  const [demoTasks, setDemoTasks] = useState(3);
   const [demoHabits, setDemoHabits] = useState(2);
-  const [demoFocusMins, setDemoFocusMins] = useState(60);
+  const [demoFocusMins, setDemoFocusMins] = useState(50);
 
-  const taskPct = Math.min(100, Math.round((demoTasks / 3) * 100));
+  const taskPct = Math.min(100, Math.round((demoTasks / 5) * 100));
   const habitPct = Math.min(100, Math.round((demoHabits / 3) * 100));
   const focusPct = Math.min(100, Math.round((demoFocusMins / 100) * 100));
+  const overallAvg = Math.round((taskPct + habitPct + focusPct) / 3);
   const allClosed = taskPct >= 100 && habitPct >= 100 && focusPct >= 100;
 
   const triggerCelebration = () => {
     soundEngine.playCelebrationSound();
     confetti({
-      particleCount: 70,
-      spread: 70,
+      particleCount: 75,
+      spread: 75,
       origin: { y: 0.6 },
       colors: ['#6B8E6E', '#C87D87', '#CFA052', '#C06C4C'],
     });
   };
 
   const handleIncrementTask = () => {
-    const next = demoTasks >= 3 ? 1 : demoTasks + 1;
-    const nextTaskPct = Math.min(100, Math.round((next / 3) * 100));
+    const next = demoTasks >= 5 ? 1 : demoTasks + 1;
+    const nextTaskPct = Math.min(100, Math.round((next / 5) * 100));
     const nextAvg = Math.round((nextTaskPct + habitPct + focusPct) / 3);
 
     if (nextAvg >= 100) {
@@ -142,7 +142,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
     setDemoFocusMins(next);
   };
 
-  // Concentric SVG math (200x200 canvas with generous inner clear radius)
+  // SVG Triple Rings geometry
   const center = 100;
   const r1 = 80; // Tasks (Botanical Sage)
   const c1 = 2 * Math.PI * r1;
@@ -157,14 +157,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   const strokeDashoffset3 = c3 - (c3 * focusPct) / 100;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] transition-colors duration-300 overflow-x-hidden selection:bg-[var(--accent-terracotta)]/30 selection:text-[var(--text-primary)]">
+    <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] transition-colors duration-300 overflow-x-hidden selection:bg-[var(--accent-terracotta)]/25 selection:text-[var(--text-primary)]">
       
       {/* 1. TOP NAVIGATION HEADER */}
       <header className="sticky top-0 z-40 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-main)]/85 backdrop-blur-md transition-colors duration-300">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          {/* Clean Brand Logo */}
+          {/* Brand Logo */}
           <div className="flex items-center gap-2.5 sm:gap-3 shrink-0">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-md shadow-[#C06C4C]/25">
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] text-white shadow-md shadow-[#C06C4C]/20">
               <span className="text-lg sm:text-xl font-bold font-heading">T</span>
             </div>
             <span className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] leading-none">
@@ -172,23 +172,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             </span>
           </div>
 
-          {/* Center Navigation Anchors (Desktop) */}
-          <nav className="hidden md:flex items-center gap-6 text-xs font-semibold text-[var(--text-secondary)]">
-            <a href="#features" className="hover:text-[var(--text-primary)] transition">
+          {/* Center Navigation Anchors */}
+          <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-[var(--text-secondary)]">
+            <a href="#how-it-works" className="hover:text-[var(--text-primary)] transition">
               How It Works
             </a>
-            <a href="#bento" className="hover:text-[var(--text-primary)] transition">
+            <a href="#features" className="hover:text-[var(--text-primary)] transition">
               Features
             </a>
-            <a href="#social" className="hover:text-[var(--text-primary)] transition">
+            <a href="#circles" className="hover:text-[var(--text-primary)] transition">
               Focus Circles
             </a>
-            <a href="#security" className="hover:text-[var(--text-primary)] transition">
-              Privacy & Speed
+            <a href="#comparison" className="hover:text-[var(--text-primary)] transition">
+              Why Taktic
             </a>
           </nav>
 
-          {/* Right Action Controls & Theme Toggle */}
+          {/* Right Action Controls */}
           <div className="flex items-center gap-2 sm:gap-3 shrink-0">
             {/* Theme Toggle Button */}
             <button
@@ -205,12 +205,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               )}
             </button>
 
-            {/* Fast-Pass Demo Button */}
+            {/* 1-Click Guest Demo Button */}
             <button
               type="button"
               onClick={loginAsDemo}
-              className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[var(--accent-warm-ochre)]/40 bg-[var(--accent-warm-ochre)]/15 px-3 py-2 text-xs font-bold text-[var(--accent-warm-ochre)] hover:bg-[var(--accent-warm-ochre)]/25 transition cursor-pointer shadow-2xs"
-              title="Skip sign in and explore interactive demo"
+              className="hidden sm:flex items-center gap-1.5 rounded-xl border border-[var(--accent-warm-ochre)]/40 bg-[var(--accent-warm-ochre)]/15 px-3.5 py-2 text-xs font-bold text-[var(--accent-warm-ochre)] hover:bg-[var(--accent-warm-ochre)]/25 transition cursor-pointer shadow-2xs"
+              title="Explore full app in guest mode with sample data"
             >
               <Sparkles className="h-3.5 w-3.5" />
               <span>1-Click Demo</span>
@@ -228,17 +228,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
         </div>
       </header>
 
-      {/* 2. HERO SECTION WITH LIVE INTERACTIVE SHOWCASE */}
+      {/* 2. HERO SECTION */}
       <section className="relative pt-12 pb-16 sm:pt-20 sm:pb-24 overflow-hidden">
-        {/* Background Ambient Glows */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[350px] bg-gradient-to-tr from-[#C06C4C]/15 via-[#C87D87]/15 to-[#CFA052]/15 rounded-full blur-3xl pointer-events-none" />
+        {/* Ambient Warm Aura */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-gradient-to-tr from-[#C06C4C]/15 via-[#C87D87]/15 to-[#CFA052]/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
           <div className="text-center max-w-3xl mx-auto space-y-4 sm:space-y-6">
+            
             {/* Eyebrow Pill */}
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-terracotta)]/30 bg-[var(--accent-terracotta)]/10 px-3.5 py-1 text-xs font-bold text-[var(--accent-terracotta)] shadow-2xs">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>A calmer way to organize your day</span>
+              <span>A calmer, distraction-free daily workspace</span>
             </div>
 
             {/* Main Headline */}
@@ -247,12 +248,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <span className="bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] bg-clip-text text-transparent">
                 Build steady habits.
               </span>{' '}
-              Work without distractions.
+              Work in deep flow.
             </h1>
 
             {/* Subheading */}
             <p className="text-sm sm:text-base md:text-lg text-[var(--text-secondary)] leading-relaxed max-w-2xl mx-auto">
-              Endless to-do lists create overwhelm. Taktic combines your <strong>top 3 daily priorities</strong>, <strong>habit routines</strong>, and <strong>timed focus sessions</strong> into one calm, clutter-free dashboard.
+              Endless to-do lists create overwhelm. Taktic brings your <strong>top 3–5 daily focus priorities</strong>, <strong>habit routines</strong>, and <strong>ambient focus sessions</strong> into one calm, unified dashboard.
             </p>
 
             {/* Primary Action Buttons */}
@@ -284,16 +285,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border-subtle)]">
                 <div>
                   <div className="flex items-center gap-2">
-                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-ping" />
+                    <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
                     <span className="text-xs font-bold font-heading text-[var(--text-primary)]">
-                      Interactive Preview
+                      Interactive Live Preview
                     </span>
                     <span className="rounded-full bg-[var(--accent-botanical-sage)]/15 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-botanical-sage)]">
-                      Try clicking below
+                      Click below to test
                     </span>
                   </div>
                   <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                    See how your daily progress rings, habits, and background audio work together in real time
+                    Experience daily completion rings, habit progress, and soothing soundscapes in real time.
                   </p>
                 </div>
 
@@ -301,7 +302,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] shadow-2xs">
                   <div className="px-2 text-[10px] font-bold text-[var(--accent-warm-ochre)] uppercase tracking-wider flex items-center gap-1">
                     <Volume2 className="h-3 w-3" />
-                    <span>Audio:</span>
+                    <span className="hidden xs:inline">Sound:</span>
                   </div>
                   {SOUNDSCAPES.map((snd) => {
                     const Icon = snd.icon;
@@ -311,7 +312,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         key={snd.id}
                         type="button"
                         onClick={() => toggleSoundscape(snd.id)}
-                        className={`flex items-center gap-1 px-2 py-1 rounded-xl text-[11px] font-semibold transition cursor-pointer ${
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-semibold transition cursor-pointer ${
                           isPlaying
                             ? 'bg-[var(--accent-warm-ochre)] text-black shadow-xs font-bold'
                             : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
@@ -329,13 +330,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               {/* Showcase Grid: Rings + Controls + Live Sprint Card */}
               <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-6 items-center">
                 
-                {/* Left: Concentric Triple Rings Interactive SVG (5 cols) */}
-                <div className="md:col-span-5 flex flex-col items-center justify-center p-6 rounded-3xl bg-[var(--bg-main)] border border-[var(--border-subtle)] shadow-lg relative overflow-hidden group">
-                  {/* Subtle Background Radial Ambient Aura */}
-                  <div className="absolute inset-0 bg-radial from-[var(--accent-warm-ochre)]/10 via-[var(--accent-terracotta)]/5 to-transparent blur-xl pointer-events-none" />
-
+                {/* Left: Concentric Triple Rings Interactive SVG */}
+                <div className="md:col-span-5 flex flex-col items-center justify-center p-6 rounded-3xl bg-[var(--bg-main)] border border-[var(--border-subtle)] shadow-sm relative overflow-hidden group">
                   <div className="relative flex items-center justify-center">
-                    <svg viewBox="0 0 200 200" className="w-52 h-52 sm:w-60 sm:h-60 rotate-[-90deg]">
+                    <svg viewBox="0 0 200 200" className="w-52 h-52 sm:w-56 sm:h-56 rotate-[-90deg]">
                       <defs>
                         {/* Task Ring Gradient */}
                         <linearGradient id="taskGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -354,14 +352,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                           <stop offset="0%" stopColor="#CFA052" />
                           <stop offset="100%" stopColor="#E6B870" />
                         </linearGradient>
-
-                        {/* Soft Glow Filter */}
-                        <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
-                          <feDropShadow dx="0" dy="0" stdDeviation="2.5" floodColor="#CFA052" floodOpacity="0.3" />
-                        </filter>
                       </defs>
 
-                      {/* Ring 1 Track & Fill - Tasks (Botanical Sage) */}
+                      {/* Ring 1 - Tasks (Botanical Sage) */}
                       <circle cx={center} cy={center} r={r1} stroke="#6B8E6E" strokeWidth="12" fill="transparent" opacity="0.15" />
                       <motion.circle
                         cx={center}
@@ -376,7 +369,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         strokeLinecap="round"
                       />
 
-                      {/* Ring 2 Track & Fill - Habits (Dusty Rose) */}
+                      {/* Ring 2 - Habits (Dusty Rose) */}
                       <circle cx={center} cy={center} r={r2} stroke="#C87D87" strokeWidth="12" fill="transparent" opacity="0.15" />
                       <motion.circle
                         cx={center}
@@ -391,7 +384,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         strokeLinecap="round"
                       />
 
-                      {/* Ring 3 Track & Fill - Focus (Warm Ochre) */}
+                      {/* Ring 3 - Focus (Warm Ochre) */}
                       <circle cx={center} cy={center} r={r3} stroke="#CFA052" strokeWidth="12" fill="transparent" opacity="0.15" />
                       <motion.circle
                         cx={center}
@@ -404,7 +397,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         animate={{ strokeDashoffset: strokeDashoffset3 }}
                         transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
                         strokeLinecap="round"
-                        filter="url(#glow)"
                       />
                     </svg>
 
@@ -412,7 +404,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none select-none z-10 px-2">
                       <AnimatePresence mode="wait">
                         <motion.div
-                          key={Math.round((taskPct + habitPct + focusPct) / 3)}
+                          key={overallAvg}
                           initial={{ scale: 0.8, opacity: 0 }}
                           animate={{ scale: 1, opacity: 1 }}
                           exit={{ scale: 0.8, opacity: 0 }}
@@ -420,35 +412,34 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                           className="flex flex-col items-center"
                         >
                           <span className="font-heading text-3xl sm:text-4xl font-black text-[var(--text-primary)] leading-none tracking-tight">
-                            {Math.round((taskPct + habitPct + focusPct) / 3)}%
+                            {overallAvg}%
                           </span>
                         </motion.div>
                       </AnimatePresence>
 
-                      {/* Status Pill */}
-                      <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--card-surface)]/95 dark:bg-[#25201D]/95 border border-[var(--border-subtle)] shadow-md backdrop-blur-md">
+                      <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--card-surface)]/95 border border-[var(--border-subtle)] shadow-xs">
                         <span className={`h-1.5 w-1.5 rounded-full ${allClosed ? 'bg-emerald-500 animate-ping' : 'bg-[#CFA052] animate-pulse'}`} />
-                        <span className="text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] bg-clip-text text-transparent">
-                          {allClosed ? 'All Done for Today! 🎉' : 'Daily Progress'}
+                        <span className="text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] bg-clip-text text-transparent">
+                          {allClosed ? 'Goal Reached! 🎉' : 'Daily Rhythm'}
                         </span>
                       </div>
                     </div>
                   </div>
 
-                  {/* Interactive Trigger Buttons to test rings live */}
+                  {/* Interactive Buttons */}
                   <div className="mt-6 flex items-center gap-2 flex-wrap justify-center relative z-10">
                     <button
                       type="button"
                       onClick={handleIncrementTask}
-                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 dark:border-emerald-500/30 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
-                      <span>+ Task ({demoTasks}/3)</span>
+                      <span>+ Task ({demoTasks}/5)</span>
                     </button>
                     <button
                       type="button"
                       onClick={handleIncrementHabit}
-                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-rose-500/40 bg-rose-500/15 text-rose-800 dark:text-rose-300 dark:border-rose-500/30 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/40 bg-rose-500/15 text-rose-800 dark:text-rose-300 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
                     >
                       <Repeat className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
                       <span>+ Habit ({demoHabits}/3)</span>
@@ -456,7 +447,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <button
                       type="button"
                       onClick={handleIncrementFocus}
-                      className="px-3.5 py-1.5 rounded-xl text-xs font-bold border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 dark:border-amber-500/30 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
+                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
                     >
                       <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                       <span>+ Focus ({demoFocusMins}m)</span>
@@ -464,7 +455,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                   </div>
                 </div>
 
-                {/* Right: Live Sprint & Co-Working Pod Card (7 cols) */}
+                {/* Right: Live Sprint & Micro-Preview Cards */}
                 <div className="md:col-span-7 space-y-3.5">
                   {/* Co-Working Live Sprint Room Snippet */}
                   <div className="p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-2.5">
@@ -472,15 +463,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <div className="flex items-center gap-2">
                         <span className="h-2 w-2 rounded-full bg-[#6B8E6E] animate-pulse" />
                         <span className="text-xs font-bold font-heading text-[var(--text-primary)]">
-                          Shared Focus Room: Sprint Alpha
+                          Shared Focus Pod: Deep Work Sprint
                         </span>
                       </div>
-                      <span className="font-mono text-xs font-bold text-[var(--accent-terracotta)] px-2 py-0.5 rounded-full bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30">
-                        18:45 Remaining
+                      <span className="font-mono text-xs font-bold text-[var(--accent-terracotta)] px-2.5 py-0.5 rounded-full bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30">
+                        18:45 Left
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
+                    <div className="flex items-center gap-2.5 text-xs text-[var(--text-secondary)]">
                       <div className="flex -space-x-2 overflow-hidden">
                         <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-tr from-[#6B8E6E] to-[#C87D87] text-[9px] font-bold text-white ring-2 ring-[var(--card-surface)]">
                           AL
@@ -493,30 +484,30 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         </span>
                       </div>
                       <span className="text-[11px] font-medium">
-                        3 peers focusing quietly together with distraction filters enabled
+                        3 peers in a silent 25-minute Pomodoro sprint with break room unlocks
                       </span>
                     </div>
                   </div>
 
-                  {/* Feature Highlights Mini Pills */}
+                  {/* Micro-Features Grid */}
                   <div className="grid grid-cols-2 gap-2.5 text-xs">
-                    <div className="p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
+                    <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
                       <div className="flex items-center gap-1.5 font-bold text-[var(--accent-botanical-sage)]">
                         <CheckCircle2 className="h-4 w-4" />
                         <span>Daily Sweep</span>
                       </div>
-                      <p className="text-[11px] text-[var(--text-secondary)]">
-                        Archive completed tasks with 1 click so tomorrow always starts clean.
+                      <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                        Archive completed tasks in 1 click so every morning starts completely uncluttered.
                       </p>
                     </div>
 
-                    <div className="p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
+                    <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
                       <div className="flex items-center gap-1.5 font-bold text-[var(--accent-warm-ochre)]">
                         <StickyNote className="h-4 w-4" />
                         <span>Quick Capture</span>
                       </div>
-                      <p className="text-[11px] text-[var(--text-secondary)]">
-                        Press <kbd className="px-1 py-0.5 rounded bg-[var(--card-surface)] border border-[var(--border-subtle)] font-mono text-[9px]">Ctrl+J</kbd> anytime to capture sudden ideas without losing flow.
+                      <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                        Press <kbd className="px-1.5 py-0.5 rounded bg-[var(--card-surface)] border border-[var(--border-subtle)] font-mono text-[9px]">Ctrl+J</kbd> anytime to record notes and convert them to tasks.
                       </p>
                     </div>
                   </div>
@@ -527,8 +518,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
         </div>
       </section>
 
-      {/* 3. CORE PILLARS: HOW TAKTIC WORKS (3 COLUMNS) */}
-      <section id="features" className="py-16 sm:py-24 border-t border-[var(--border-subtle)] bg-[var(--card-surface)]">
+      {/* 3. CORE PILLARS: HOW TAKTIC WORKS */}
+      <section id="how-it-works" className="py-16 sm:py-24 border-t border-[var(--border-subtle)] bg-[var(--card-surface)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto space-y-3 mb-14">
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-terracotta)] font-heading">
@@ -543,21 +534,22 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
             {/* Pillar 1: Task Execution */}
             <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-6 sm:p-7 space-y-4 hover:border-[#6B8E6E]/50 transition shadow-xs">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#6B8E6E]/15 text-[#6B8E6E] shadow-sm">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#6B8E6E]/15 text-[#6B8E6E] shadow-xs">
                 <Target className="h-6 w-6" />
               </div>
               <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
                 1. Prioritize What Actually Matters
               </h3>
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                Long to-do lists cause decision fatigue. Taktic prompts you to pick your top 3 commitments each morning, organize them across the day, and mark them off with clarity.
+                Long to-do lists cause decision fatigue. Taktic prompts you to select 3–5 high priority commitments each morning (with a 5-task capacity cap to prevent burnout), organize them across the day, and mark them off with clarity.
               </p>
-              <ul className="space-y-2 text-xs font-medium text-[var(--text-secondary)] pt-2">
+              <ul className="space-y-2 text-xs font-medium text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#6B8E6E] shrink-0" />
-                  <span>Top 3 commitments highlighted for today</span>
+                  <span>3–5 daily focus commitments (capped at 5)</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#6B8E6E] shrink-0" />
@@ -572,19 +564,19 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
             {/* Pillar 2: Habit Rings */}
             <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-6 sm:p-7 space-y-4 hover:border-[#C87D87]/50 transition shadow-xs">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#C87D87]/15 text-[#C87D87] shadow-sm">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#C87D87]/15 text-[#C87D87] shadow-xs">
                 <Repeat className="h-6 w-6" />
               </div>
               <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
                 2. Build Consistent Daily Habits
               </h3>
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                Consistency beats intensity. Keep track of daily routines—like reading, movement, or writing—alongside your tasks, with streak milestones that celebrate steady progress.
+                Consistency beats intensity. Keep track of daily routines—like reading, movement, or deep study—alongside your tasks, with streak milestones that celebrate steady progress.
               </p>
-              <ul className="space-y-2 text-xs font-medium text-[var(--text-secondary)] pt-2">
+              <ul className="space-y-2 text-xs font-medium text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
                 <li className="flex items-center gap-2">
                   <Flame className="h-4 w-4 text-[#C87D87] shrink-0" />
-                  <span>Daily streak tracking & emergency streak freezes</span>
+                  <span>Consecutive active day streak tracking</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Trophy className="h-4 w-4 text-[#C87D87] shrink-0" />
@@ -592,14 +584,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#C87D87] shrink-0" />
-                  <span>Visual progress rings that close as you finish</span>
+                  <span>Visual habit ring that closes as you complete</span>
                 </li>
               </ul>
             </div>
 
             {/* Pillar 3: Deep Work & Soundscapes */}
             <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-6 sm:p-7 space-y-4 hover:border-[#CFA052]/50 transition shadow-xs">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#CFA052]/15 text-[#CFA052] shadow-sm">
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#CFA052]/15 text-[#CFA052] shadow-xs">
                 <Clock className="h-6 w-6" />
               </div>
               <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
@@ -608,14 +600,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                 Get into deep flow without external distractions. Start timed Pomodoro sprints paired with soothing background audio, and switch into immersive full-screen mode whenever you need locked-in focus.
               </p>
-              <ul className="space-y-2 text-xs font-medium text-[var(--text-secondary)] pt-2">
+              <ul className="space-y-2 text-xs font-medium text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
                 <li className="flex items-center gap-2">
                   <Headphones className="h-4 w-4 text-[#CFA052] shrink-0" />
-                  <span>Rain, ocean waves, warm chords & cafe ambiance</span>
+                  <span>Rain, ocean waves, warm chords & cafe ambience</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <Lock className="h-4 w-4 text-[#CFA052] shrink-0" />
-                  <span>Full-screen distraction-free focus mode</span>
+                  <span>Distraction-free full-screen focus view</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#CFA052] shrink-0" />
@@ -628,21 +620,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       </section>
 
       {/* 4. FEATURE BENTO GRID */}
-      <section id="bento" className="py-16 sm:py-24 bg-[var(--bg-main)]">
+      <section id="features" className="py-16 sm:py-24 bg-[var(--bg-main)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-2xl mx-auto space-y-3 mb-14">
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-warm-ochre)] font-heading">
               Thoughtful Features
             </span>
             <h2 className="font-heading text-2xl sm:text-4xl font-extrabold text-[var(--text-primary)]">
-              Designed to Fit How You Actually Work
+              Crafted for Real Focus, Not Busywork
             </h2>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
             
             {/* Bento 1: Live Co-Working & Pods (8 cols) */}
-            <div id="social" className="md:col-span-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-8 space-y-4 shadow-xs">
+            <div id="circles" className="md:col-span-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-8 space-y-4 shadow-xs">
               <div className="flex items-center gap-2">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#C06C4C]/15 text-[#C06C4C]">
                   <Users className="h-5 w-5" />
@@ -655,7 +647,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 Quiet Focus Rooms & Study Circles
               </h3>
               <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed max-w-2xl">
-                Staying disciplined is easier when you work alongside others. Join shared 25-minute sprints with friends or coworkers, send silent cheers, and catch up in the break room when the timer ends—no cameras or microphones required.
+                Staying disciplined is easier when working alongside others. Join shared 25-minute sprints with friends or coworkers, send silent cheers, and catch up in the break room when the timer ends—no cameras or microphones needed.
               </p>
 
               <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -664,7 +656,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <Zap className="h-3.5 w-3.5 text-[#CFA052]" />
                     <span>Silent Cheers</span>
                   </div>
-                  <p className="text-[11px] text-[var(--text-secondary)]">Send encouraging emoji reactions without interrupting someone's concentration.</p>
+                  <p className="text-[11px] text-[var(--text-secondary)]">Send encouraging reactions without interrupting someone's concentration.</p>
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
@@ -672,15 +664,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <Coffee className="h-3.5 w-3.5 text-amber-500" />
                     <span>Break Room</span>
                   </div>
-                  <p className="text-[11px] text-[var(--text-secondary)]">Chat unlocks automatically between sprints and mutes during focus sessions.</p>
+                  <p className="text-[11px] text-[var(--text-secondary)]">Chat unlocks between sprints and automatically mutes during focus sessions.</p>
                 </div>
 
                 <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-xs text-[var(--text-primary)]">
                     <ShieldCheck className="h-3.5 w-3.5 text-[#6B8E6E]" />
-                    <span>Private Circles</span>
+                    <span>Private Pods</span>
                   </div>
-                  <p className="text-[11px] text-[var(--text-secondary)]">Create invite-only spaces for study groups, friends, or project teams.</p>
+                  <p className="text-[11px] text-[var(--text-secondary)]">Create invite-only circles with unique access codes for your study group or team.</p>
                 </div>
               </div>
             </div>
@@ -700,17 +692,17 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                   Global Scratchpad
                 </h3>
                 <p className="text-xs text-[var(--text-secondary)] leading-relaxed mt-1">
-                  Press <kbd className="px-1.5 py-0.5 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] font-mono text-[10px]">Ctrl+J</kbd> from anywhere in the app to jot down a quick note, meeting takeaway, or idea. Convert any note to an actionable task in one click.
+                  Press <kbd className="px-1.5 py-0.5 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] font-mono text-[10px]">Ctrl+J</kbd> from anywhere in the app to jot down a quick thought. Convert any note to an actionable task with one click.
                 </p>
               </div>
 
               <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-1.5">
                 <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-primary)]">
-                  <span>💡 Follow up with client feedback</span>
+                  <span>💡 Prepare deck for Thursday</span>
                   <span className="text-[#CFA052] font-mono text-[10px]">Pinned</span>
                 </div>
-                <p className="text-[10px] text-[var(--text-muted)] line-clamp-2">
-                  Review morning comments and prepare final deck updates.
+                <p className="text-[10px] text-[var(--text-secondary)] line-clamp-2">
+                  Review morning feedback and finalize summary slide.
                 </p>
               </div>
             </div>
@@ -726,28 +718,28 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 </span>
               </div>
               <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
-                Task Archive & Reflection
+                Task Archive & History
               </h3>
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                Never lose track of what you accomplished. Look back at past completed tasks, filter by date range, and export your history anytime.
+                Review past accomplishments, search completed tasks, batch restore items, or export your history to CSV whenever needed.
               </p>
             </div>
 
-            {/* Bento 4: Architecture & Security (8 cols) */}
-            <div id="security" className="md:col-span-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-8 space-y-3 shadow-xs">
+            {/* Bento 4: Private & Distraction-Free (8 cols) */}
+            <div className="md:col-span-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-8 space-y-3 shadow-xs">
               <div className="flex items-center gap-2">
                 <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#B08B9E]/15 text-[#B08B9E]">
                   <ShieldCheck className="h-5 w-5" />
                 </span>
                 <span className="text-xs font-bold uppercase tracking-wider text-[#B08B9E] font-heading">
-                  Fast & Private
+                  Private & Clutter-Free
                 </span>
               </div>
               <h3 className="font-heading text-xl font-bold text-[var(--text-primary)]">
-                Instant Responsiveness with Offline Support
+                A Calmer Personal Workspace with Zero Distractions
               </h3>
               <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-                Taktic saves changes instantly in your browser and works seamlessly even without an active internet connection. Your data syncs securely to your account whenever you reconnect, keeping your personal routines and notes completely private.
+                Taktic is built without advertisements, algorithmic feeds, or data selling. Your routines, notes, and daily commitments remain completely private to your account—giving you a quiet sanctuary to think and do your best work.
               </p>
             </div>
 
@@ -755,13 +747,78 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
         </div>
       </section>
 
-      {/* 5. FINAL CTA BANNER */}
-      <section className="py-16 sm:py-24 bg-[var(--card-surface)] border-t border-[var(--border-subtle)]">
+      {/* 5. WHY TAKTIC IS DIFFERENT (COMPARISON) */}
+      <section id="comparison" className="py-16 sm:py-24 border-t border-[var(--border-subtle)] bg-[var(--card-surface)]">
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
+            <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-botanical-sage)] font-heading">
+              Simplicity by Design
+            </span>
+            <h2 className="font-heading text-2xl sm:text-4xl font-extrabold text-[var(--text-primary)]">
+              Less Time Managing. More Time in Flow.
+            </h2>
+            <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
+              Most productivity apps turn into second jobs. Taktic keeps your planning lightweight so you spend your energy on actual execution.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            
+            {/* The Old Way */}
+            <div className="rounded-3xl border border-rose-500/20 bg-[var(--bg-main)] p-6 sm:p-7 space-y-4">
+              <div className="flex items-center gap-2 text-rose-500 font-bold text-sm font-heading">
+                <X className="h-4 w-4" />
+                <span>Overcomplicated Productivity Tools</span>
+              </div>
+              <ul className="space-y-3 text-xs text-[var(--text-secondary)]">
+                <li className="flex items-start gap-2">
+                  <span className="text-rose-500 font-bold">✕</span>
+                  <span>Endless, overwhelming lists with 50+ unchecked items</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-rose-500 font-bold">✕</span>
+                  <span>Constant context switching across separate timers and apps</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-rose-500 font-bold">✕</span>
+                  <span>Complex configuration, nested tags, and cognitive fatigue</span>
+                </li>
+              </ul>
+            </div>
+
+            {/* The Taktic Way */}
+            <div className="rounded-3xl border border-emerald-500/30 bg-[var(--bg-main)] p-6 sm:p-7 space-y-4 shadow-sm">
+              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm font-heading">
+                <Check className="h-4 w-4" />
+                <span>The Taktic Rhythm</span>
+              </div>
+              <ul className="space-y-3 text-xs text-[var(--text-secondary)]">
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-500 font-bold">✓</span>
+                  <span>Focused daily constraint: commit to 3–5 priority tasks</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-500 font-bold">✓</span>
+                  <span>Unified view: habits, tasks, and ambient audio in one tab</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-emerald-500 font-bold">✓</span>
+                  <span>Calm daily reset: sweep completed items and start fresh tomorrow</span>
+                </li>
+              </ul>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* 6. FINAL CTA BANNER */}
+      <section className="py-16 sm:py-24 bg-[var(--bg-main)] border-t border-[var(--border-subtle)]">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
           <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] p-8 sm:p-12 text-white shadow-2xl shadow-[#C06C4C]/25 text-center space-y-6">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3.5 py-1 text-xs font-bold">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>Start your free workspace today</span>
+              <span>Free workspace • No credit card required</span>
             </div>
 
             <h2 className="font-heading text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto">
@@ -795,7 +852,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
         </div>
       </section>
 
-      {/* 6. FOOTER */}
+      {/* 7. FOOTER */}
       <footer className="border-t border-[var(--border-subtle)] bg-[var(--bg-main)] py-12 text-xs text-[var(--text-muted)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <div className="flex items-center gap-2.5">
@@ -820,12 +877,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               Interactive Demo
             </button>
             <a
-              href="https://github.com"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="#how-it-works"
               className="hover:text-[var(--text-primary)] transition"
             >
-              GitHub
+              How It Works
             </a>
           </div>
         </div>

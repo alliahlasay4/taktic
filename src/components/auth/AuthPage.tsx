@@ -243,11 +243,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
   return (
     <div className="min-h-screen lg:h-screen w-full bg-[var(--bg-main)] text-[var(--text-primary)] transition-colors duration-300 flex flex-col lg:flex-row overflow-x-hidden lg:overflow-hidden">
       
-      {/* ================= LEFT COLUMN (60%): HERO VISUAL WITH ORGANIC FLUID WAVES ================= */}
-      <div className="w-full lg:w-[60%] relative overflow-hidden bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] p-6 sm:p-8 lg:p-10 xl:p-12 text-white flex flex-col justify-between shadow-2xl min-h-[300px] lg:min-h-0">
+      {/* ================= LEFT COLUMN (60%): HERO VISUAL WITH DYNAMIC OMBRE & ORGANIC WAVES ================= */}
+      <div className="w-full lg:w-[60%] relative overflow-hidden bg-gradient-to-br from-[#C06C4C] via-[#C87D87] to-[#CFA052] dark:from-[#22130F] dark:via-[#2C1620] dark:to-[#22180F] p-6 sm:p-8 lg:p-10 xl:p-12 text-white flex flex-col justify-between shadow-2xl min-h-[300px] lg:min-h-0 transition-colors duration-300 dark:border-r dark:border-[var(--border-subtle)]">
         
         {/* Layered Organic Wave SVGs in the Background */}
-        <div className="absolute inset-0 pointer-events-none opacity-40 mix-blend-screen overflow-hidden">
+        <div className="absolute inset-0 pointer-events-none opacity-40 dark:opacity-30 mix-blend-screen dark:mix-blend-lighten overflow-hidden transition-opacity duration-300">
           <svg
             className="absolute -right-20 -bottom-20 w-[140%] h-[140%] min-w-[500px]"
             viewBox="0 0 500 500"
@@ -256,20 +256,21 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
           >
             <path
               d="M0 150 C 150 260 280 40 450 180 C 550 250 500 450 500 500 L 0 500 Z"
-              fill="url(#waveGrad1)"
-              opacity="0.6"
+              fill={darkMode ? 'url(#darkWaveGrad1)' : 'url(#waveGrad1)'}
+              opacity={darkMode ? '0.7' : '0.6'}
             />
             <path
               d="M0 280 C 120 180 320 320 500 200 L 500 500 L 0 500 Z"
-              fill="url(#waveGrad2)"
-              opacity="0.7"
+              fill={darkMode ? 'url(#darkWaveGrad2)' : 'url(#waveGrad2)'}
+              opacity={darkMode ? '0.8' : '0.7'}
             />
             <path
               d="M0 380 C 200 280 350 420 500 340 L 500 500 L 0 500 Z"
               fill="#FFFFFF"
-              opacity="0.15"
+              opacity={darkMode ? '0.06' : '0.15'}
             />
             <defs>
+              {/* Light Mode Gradients */}
               <linearGradient id="waveGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
                 <stop offset="0%" stopColor="#FFA066" />
                 <stop offset="100%" stopColor="#C87D87" />
@@ -278,18 +279,28 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
                 <stop offset="0%" stopColor="#C87D87" />
                 <stop offset="100%" stopColor="#C06C4C" />
               </linearGradient>
+
+              {/* Dark Mode Gradients */}
+              <linearGradient id="darkWaveGrad1" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#8A361F" />
+                <stop offset="100%" stopColor="#5E2330" />
+              </linearGradient>
+              <linearGradient id="darkWaveGrad2" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stopColor="#5E2330" />
+                <stop offset="100%" stopColor="#694317" />
+              </linearGradient>
             </defs>
           </svg>
         </div>
 
         {/* Ambient Glow Orbs */}
-        <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/20 blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-[#CFA052]/30 blur-3xl pointer-events-none" />
+        <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-white/20 dark:bg-[#C06C4C]/15 blur-3xl pointer-events-none transition-all duration-300" />
+        <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full bg-[#CFA052]/30 dark:bg-[#CFA052]/15 blur-3xl pointer-events-none transition-all duration-300" />
 
         {/* Top Header: Brand Logo & Back to Home inside Left Column */}
         <div className="relative z-10 flex items-center justify-between">
           <div className="flex items-center gap-2.5 sm:gap-3">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl bg-white text-[#C06C4C] font-heading font-extrabold text-xl shadow-lg">
+            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl bg-white dark:bg-[var(--card-surface)] text-[#C06C4C] dark:text-[var(--accent-warm-ochre)] font-heading font-extrabold text-xl shadow-lg dark:border dark:border-[var(--border-subtle)] transition-colors duration-300">
               T
             </div>
             <span className="font-heading text-2xl font-bold tracking-tight text-white drop-shadow-xs">
@@ -301,7 +312,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
             <button
               type="button"
               onClick={onBackToHome}
-              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 backdrop-blur-md text-xs font-semibold text-white transition-all cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/15 hover:bg-white/25 dark:bg-white/10 dark:hover:bg-white/15 dark:border dark:border-white/10 backdrop-blur-md text-xs font-semibold text-white transition-all cursor-pointer shadow-xs"
             >
               <ArrowLeft className="w-3.5 h-3.5" />
               <span>Back to Home</span>
@@ -311,7 +322,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
 
         {/* Middle Hero Typography */}
         <div className="relative z-10 py-6 sm:py-8 lg:py-0 space-y-3 sm:space-y-4 max-w-lg my-auto">
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/20 backdrop-blur-md px-3.5 py-1 text-xs font-semibold text-white">
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/20 dark:bg-white/10 dark:border dark:border-white/10 backdrop-blur-md px-3.5 py-1 text-xs font-semibold text-white">
             <Sparkles className="w-3.5 h-3.5" />
             <span>Tactical Focus & Daily Rhythm</span>
           </div>
@@ -332,22 +343,22 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
             )}
           </h1>
 
-          <p className="text-xs sm:text-sm lg:text-base text-white/90 leading-relaxed font-normal">
+          <p className="text-xs sm:text-sm lg:text-base text-white/90 dark:text-neutral-200 leading-relaxed font-normal">
             {isResetPassword
               ? 'Enter your registered email to receive password reset instructions and reclaim your workspace.'
               : isSignUp
-              ? 'Turn scattered to-do lists into 3 sharp focus priorities, streak-protected habits, and deep flow sessions.'
+              ? 'Turn scattered to-do lists into 3–5 sharp focus priorities, streak-protected habits, and deep flow sessions.'
               : 'Command your daily execution, stack habit routines, and lock in deep focus sprints in synchrony.'}
           </p>
         </div>
 
         {/* Bottom Social Proof / Rhythm Pill */}
-        <div className="relative z-10 flex items-center gap-3 pt-4 border-t border-white/20 text-xs text-white/85">
+        <div className="relative z-10 flex items-center gap-3 pt-4 border-t border-white/20 dark:border-white/10 text-xs text-white/85 dark:text-neutral-300">
           <div className="flex -space-x-2 overflow-hidden">
-            <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white/60 bg-[#CFA052] flex items-center justify-center font-bold text-[10px] text-black">
+            <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white/60 dark:ring-white/20 bg-[#CFA052] flex items-center justify-center font-bold text-[10px] text-black">
               ★
             </div>
-            <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white/60 bg-white text-[#C06C4C] flex items-center justify-center font-bold text-[9px]">
+            <div className="inline-block h-6 w-6 rounded-full ring-2 ring-white/60 dark:ring-white/20 bg-white dark:bg-[var(--card-surface)] text-[#C06C4C] dark:text-[var(--accent-terracotta)] flex items-center justify-center font-bold text-[9px]">
               99%
             </div>
           </div>
