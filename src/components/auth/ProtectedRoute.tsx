@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useAuth, hasIncomingAuthLink } from '../../context/AuthContext';
+import { useAuth, isEmailConfirmationLink, isPasswordRecoveryLink } from '../../context/AuthContext';
 import { AuthPage } from './AuthPage';
 import { LandingPage } from '../landing/LandingPage';
 import {
@@ -20,7 +20,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     const searchParams = new URLSearchParams(window.location.search);
     const circleInvite = searchParams.get('circle_invite');
     const inviterParam = searchParams.get('inviter');
-    const isAuthLink = hasIncomingAuthLink();
+    const isAuthLink = isEmailConfirmationLink() || isPasswordRecoveryLink();
     const hasNotice = Boolean(sessionStorage.getItem('taktic_auth_confirmation_notice'));
 
     // Automatically capture & preserve invite token across all tabs using localStorage & sessionStorage
@@ -111,7 +111,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   }, [loading, user]);
 
   // Detect explicit manual logout vs email verification redirect
-  const isAuthCallback = hasIncomingAuthLink() || (typeof window !== 'undefined' && Boolean(sessionStorage.getItem('taktic_auth_confirmation_notice')));
+  const isAuthCallback = isEmailConfirmationLink() || (typeof window !== 'undefined' && Boolean(sessionStorage.getItem('taktic_auth_confirmation_notice')));
   const currentPath = typeof window !== 'undefined' ? normalizePath(window.location.pathname) : '/';
   const isExplicitAuthPath = isAuthPath(currentPath);
 

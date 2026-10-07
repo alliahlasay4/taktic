@@ -59,10 +59,31 @@ const DEMO_USER: DemoUser = {
   },
 };
 
+export const isEmailConfirmationLink = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const hash = window.location.hash.toLowerCase();
+  const search = window.location.search.toLowerCase();
+  return (
+    hash.includes('type=signup') ||
+    hash.includes('type=email_change') ||
+    hash.includes('type=invite') ||
+    search.includes('type=signup') ||
+    search.includes('type=email_change') ||
+    search.includes('type=invite')
+  );
+};
+
+export const isPasswordRecoveryLink = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const hash = window.location.hash.toLowerCase();
+  const search = window.location.search.toLowerCase();
+  return hash.includes('type=recovery') || search.includes('type=recovery');
+};
+
 export const hasIncomingAuthLink = (): boolean => {
   if (typeof window === 'undefined') return false;
-  const hash = window.location.hash;
-  const search = window.location.search;
+  const hash = window.location.hash.toLowerCase();
+  const search = window.location.search.toLowerCase();
   return (
     hash.includes('access_token') ||
     hash.includes('type=signup') ||
@@ -268,7 +289,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Process incoming auth links (Email Confirmation, Password Reset, Magic Link)
+    // Process incoming auth links (Email Confirmation, Password Reset, Google OAuth / PKCE)
     const handleIncomingAuthLink = async () => {
       if (typeof window === 'undefined') return;
 
@@ -276,61 +297,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const search = window.location.search;
       const isAuthCallback = hasIncomingAuthLink();
       const hasAuthError = hash.includes('error=') || search.includes('error=');
-
-      if (isAuthCallback && !hasAuthError) {
-        // 1. Immediately purge demo state & cached profiles
-        clearDemoData();
-        localStorage.removeItem('taktic_demo_mode');
-        localStorage.removeItem('taktic_user_profile');
-        setIsDemo(false);
-
-        // 2. Cleanly sign out Account A FIRST before doing anything with the new link
-        if (isSupabaseConfigured) {
-          try {
-            await supabase.auth.signOut({ scope: 'local' });
-          } catch { }
-        }
-
-        // 3. Extract confirmed email from URL token payload
-        let confirmedEmail = extractEmailFromUrl();
-
-        // 4. If PKCE code is present, exchange it with Supabase to finalize Account B's verification
-        if (isSupabaseConfigured && search.includes('code=')) {
-          try {
-            const searchParams = new URLSearchParams(search);
-            const code = searchParams.get('code');
-            if (code) {
-              const { data, error } = await supabase.auth.exchangeCodeForSession(code);
-              if (!error && data?.user?.email) {
-                confirmedEmail = data.user.email;
-              }
-              // Sign out immediately so Account B is NOT automatically logged in
-              await supabase.auth.signOut({ scope: 'local' });
-            }
-          } catch (err) {
-            console.error('Error handling auth confirmation:', err);
-          }
-        }
-
-        const notice = {
-          email: confirmedEmail,
-          message: 'Your email has been verified! Please sign in with your password to continue.',
-        };
-
-        // 5. Save confirmation notice into sessionStorage for AuthPage
-        sessionStorage.setItem('taktic_auth_confirmation_notice', JSON.stringify(notice));
-
-        // 6. Clean URL to /login and broadcast events to open AuthPage and pre-fill form
-        window.history.replaceState(null, '', '/login');
-        window.dispatchEvent(new CustomEvent('taktic_auth_notice', { detail: notice }));
-        window.dispatchEvent(new Event('popstate'));
-
-        setUser(null);
-        setSession(null);
-        setProfile(DEFAULT_PROFILE);
-        setLoading(false);
-        return;
-      }
 
       if (hasAuthError) {
         // Clean error hash and navigate to /login to display error
@@ -340,6 +306,108 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setSession(null);
         setLoading(false);
         return;
+      }
+
+      if (isAuthCallback) {
+        // 1. Immediately purge demo state & cached profiles
+        clearDemoData();
+        localStorage.removeItem('taktic_demo_mode');
+        setIsDemo(false);
+
+        // Case A: Email Confirmation Link (User clicked verification link in signup email)
+        if (isEmailConfirmationLink()) {
+          // Cleanly sign out previous session before confirming new verification
+          if (isSupabaseConfigured) {
+            try {
+              await supabase.auth.signOut({ scope: 'local' });
+            } catch { }
+          }
+
+          let confirmedEmail = extractEmailFromUrl();
+
+          // If PKCE code is present for email verification, exchange it with Supabase to finalize Account B's verification
+          if (isSupabaseConfigured && search.includes('code=')) {
+            try {
+              const searchParams = new URLSearchParams(search);
+              const code = searchParams.get('code');
+              if (code) {
+                const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+                if (!error && data?.user?.email) {
+                  confirmedEmail = data.user.email;
+                }
+                // Sign out immediately so Account B is NOT automatically logged in
+                await supabase.auth.signOut({ scope: 'local' });
+              }
+            } catch (err) {
+              console.error('Error handling auth confirmation:', err);
+            }
+          }
+
+          const notice = {
+            email: confirmedEmail,
+            message: 'Your email has been verified! Please sign in with your password to continue.',
+          };
+
+          // Save confirmation notice into sessionStorage for AuthPage
+          sessionStorage.setItem('taktic_auth_confirmation_notice', JSON.stringify(notice));
+
+          // Clean URL to /login and broadcast events to open AuthPage and pre-fill form
+          window.history.replaceState(null, '', '/login');
+          window.dispatchEvent(new CustomEvent('taktic_auth_notice', { detail: notice }));
+          window.dispatchEvent(new Event('popstate'));
+
+          setUser(null);
+          setSession(null);
+          setProfile(DEFAULT_PROFILE);
+          setLoading(false);
+          return;
+        }
+
+        // Case B: Password Recovery Link
+        if (isPasswordRecoveryLink()) {
+          window.history.replaceState(null, '', '/login#reset');
+          window.dispatchEvent(new Event('popstate'));
+          setLoading(false);
+          return;
+        }
+
+        // Case C: OAuth Login (e.g. Google Sign In) or PKCE Code Exchange
+        if (isSupabaseConfigured) {
+          sessionStorage.removeItem('taktic_oauth_flow');
+
+          if (search.includes('code=')) {
+            try {
+              const searchParams = new URLSearchParams(search);
+              const code = searchParams.get('code');
+              if (code) {
+                const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+                if (!error && data?.session?.user) {
+                  setSession(data.session);
+                  setUser(data.session.user);
+                  await syncSupabaseProfile(data.session);
+                  window.history.replaceState(null, '', '/focushub');
+                  window.dispatchEvent(new Event('popstate'));
+                  setLoading(false);
+                  return;
+                }
+              }
+            } catch (err) {
+              console.error('Error exchanging OAuth code:', err);
+            }
+          }
+
+          // Check for existing session or implicit hash token
+          const { data: { session: existingSession } } = await supabase.auth.getSession();
+          if (existingSession?.user) {
+            setSession(existingSession);
+            setUser(existingSession.user);
+            await syncSupabaseProfile(existingSession);
+            window.history.replaceState(null, '', '/focushub');
+            window.dispatchEvent(new Event('popstate'));
+            setLoading(false);
+            return;
+          }
+        }
       }
 
       if (!isSupabaseConfigured) {
@@ -366,7 +434,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       // If we are currently handling an email confirmation redirect, do not auto-login
-      if (hasIncomingAuthLink()) return;
+      if (isEmailConfirmationLink()) return;
 
       // If user switched to demo mode, do not allow Supabase empty session to clear demo user
       if (isDemo || localStorage.getItem('taktic_demo_mode') === 'true') return;
