@@ -33,17 +33,17 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
   // Ring 1: Outer - Tasks (Botanical Sage)
   const r1 = 88;
   const c1 = 2 * Math.PI * r1;
-  const strokeDashoffset1 = c1 - (c1 * taskPct) / 100;
+  const strokeDashoffset1 = Math.max(0, c1 - (c1 * taskPct) / 100);
 
   // Ring 2: Middle - Habits (Dusty Rose)
   const r2 = 68;
   const c2 = 2 * Math.PI * r2;
-  const strokeDashoffset2 = c2 - (c2 * habitPct) / 100;
+  const strokeDashoffset2 = Math.max(0, c2 - (c2 * habitPct) / 100);
 
   // Ring 3: Inner - Focus Time (Warm Ochre)
   const r3 = 48;
   const c3 = 2 * Math.PI * r3;
-  const strokeDashoffset3 = c3 - (c3 * focusPct) / 100;
+  const strokeDashoffset3 = Math.max(0, c3 - (c3 * focusPct) / 100);
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-between gap-6 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-7 shadow-xs w-full max-w-full relative overflow-hidden group transition-colors duration-300">
@@ -97,7 +97,7 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
             fill="transparent"
             strokeDasharray={c1}
             animate={{ strokeDashoffset: strokeDashoffset1 }}
-            transition={{ duration: 1.2, ease: [0.34, 1.56, 0.64, 1] }}
+            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
             strokeLinecap="round"
             className="cursor-pointer hover:opacity-90"
             onClick={() => onRingClick?.('tasks')}
@@ -122,7 +122,7 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
             fill="transparent"
             strokeDasharray={c2}
             animate={{ strokeDashoffset: strokeDashoffset2 }}
-            transition={{ duration: 1.2, delay: 0.1, ease: [0.34, 1.56, 0.64, 1] }}
+            transition={{ duration: 0.8, delay: 0.1, ease: [0.22, 1, 0.36, 1] }}
             strokeLinecap="round"
             className="cursor-pointer hover:opacity-90"
             onClick={() => onRingClick?.('habits')}
@@ -147,7 +147,7 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
             fill="transparent"
             strokeDasharray={c3}
             animate={{ strokeDashoffset: strokeDashoffset3 }}
-            transition={{ duration: 1.2, delay: 0.2, ease: [0.34, 1.56, 0.64, 1] }}
+            transition={{ duration: 0.8, delay: 0.2, ease: [0.22, 1, 0.36, 1] }}
             strokeLinecap="round"
             className="cursor-pointer hover:opacity-90"
             onClick={() => onRingClick?.('focus')}

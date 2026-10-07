@@ -148,15 +148,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   const center = 100;
   const r1 = 80; // Tasks (Botanical Sage)
   const c1 = 2 * Math.PI * r1;
-  const strokeDashoffset1 = c1 - (c1 * taskPct) / 100;
+  const strokeDashoffset1 = Math.max(0, c1 - (c1 * taskPct) / 100);
 
   const r2 = 62; // Habits (Dusty Rose)
   const c2 = 2 * Math.PI * r2;
-  const strokeDashoffset2 = c2 - (c2 * habitPct) / 100;
+  const strokeDashoffset2 = Math.max(0, c2 - (c2 * habitPct) / 100);
 
   const r3 = 44; // Focus Time (Warm Ochre)
   const c3 = 2 * Math.PI * r3;
-  const strokeDashoffset3 = c3 - (c3 * focusPct) / 100;
+  const strokeDashoffset3 = Math.max(0, c3 - (c3 * focusPct) / 100);
 
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] transition-colors duration-300 overflow-x-hidden selection:bg-[var(--accent-terracotta)]/25 selection:text-[var(--text-primary)]">
@@ -378,7 +378,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         fill="transparent"
                         strokeDasharray={c1}
                         animate={{ strokeDashoffset: strokeDashoffset1 }}
-                        transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
+                        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         strokeLinecap="round"
                       />
 
@@ -393,7 +393,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         fill="transparent"
                         strokeDasharray={c2}
                         animate={{ strokeDashoffset: strokeDashoffset2 }}
-                        transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
+                        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         strokeLinecap="round"
                       />
 
@@ -408,7 +408,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         fill="transparent"
                         strokeDasharray={c3}
                         animate={{ strokeDashoffset: strokeDashoffset3 }}
-                        transition={{ duration: 0.7, ease: [0.34, 1.56, 0.64, 1] }}
+                        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
                         strokeLinecap="round"
                       />
                     </svg>
