@@ -36,6 +36,7 @@ import { ShareMilestoneModal } from './ShareMilestoneModal';
 import { InvitePartnerModal } from './InvitePartnerModal';
 import { RemovePartnerModal } from './RemovePartnerModal';
 import { CirclesOnboardingGuide } from './CirclesOnboardingGuide';
+import { useAuth } from '../../context/AuthContext';
 
 interface CirclesViewProps {
   members: CircleMember[];
@@ -114,15 +115,27 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
     };
   }, [isActionsMenuOpen]);
 
-  // First-time onboarding guide state
+  const { isDemo } = useAuth();
+
+  // First-time onboarding guide state (prompts demo accounts, or first-time regular users)
   const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState<boolean>(() => {
+    if (isDemo) return true;
     return localStorage.getItem('taktic_circles_onboarding_completed') !== 'true';
   });
   const [showCelebrationToast, setShowCelebrationToast] = useState<boolean>(false);
   const [highlightInviteButton, setHighlightInviteButton] = useState<boolean>(false);
 
+  // When switching to demo account or visiting circles as demo user, ensure guide is prompted
+  useEffect(() => {
+    if (isDemo) {
+      setIsOnboardingGuideOpen(true);
+    }
+  }, [isDemo]);
+
   const handleCompleteTour = () => {
-    localStorage.setItem('taktic_circles_onboarding_completed', 'true');
+    if (!isDemo) {
+      localStorage.setItem('taktic_circles_onboarding_completed', 'true');
+    }
     setIsOnboardingGuideOpen(false);
     setShowCelebrationToast(true);
     setHighlightInviteButton(true);
@@ -166,7 +179,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   const activePodsCount = focusPods.filter((p) => (p.activeMembersCount || 0) > 0).length;
 
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-xs transition-colors duration-300 overflow-hidden">
+    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-xs transition-colors duration-300">
       {/* Top KPI Header Banner */}
       <div className="p-4 sm:p-6 pb-4 sm:pb-5">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4 sm:gap-5">
@@ -212,7 +225,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
               </button>
 
               {isActionsMenuOpen && (
-                <div className="absolute right-0 top-full mt-1.5 w-56 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-1.5 shadow-xl backdrop-blur-md z-50 animate-in fade-in zoom-in-95 duration-150 space-y-0.5">
+                <div className="absolute left-0 top-full mt-1.5 w-56 max-w-[calc(100vw-2.5rem)] rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-1.5 shadow-2xl backdrop-blur-md z-50 animate-in fade-in zoom-in-95 duration-150 space-y-0.5">
                   <div className="px-2.5 py-1.5 text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
                     Quick Actions
                   </div>
@@ -846,13 +859,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
                                 className={`h-2.5 w-2.5 rounded-full shrink-0 ${
                                   isOffline
                                     ? 'bg-slate-400 dark:bg-slate-500 opacity-60'
-                                    : member.status === 'focusing'
-                                    ? 'bg-[var(--accent-botanical-sage)] animate-ping'
-                                    : member.status === 'completed_day'
-                                    ? 'bg-[var(--accent-warm-ochre)]'
-                                    : statusLabel === 'Online'
-                                    ? 'bg-emerald-500'
-                                    : 'bg-slate-400 dark:bg-slate-500 opacity-60'
+                                    : 'bg-[var(--accent-botanical-sage)]'
                                 }`}
                                 title={`Status: ${statusLabel}`}
                               />

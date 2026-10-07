@@ -29,7 +29,9 @@ import {
   Check,
   X,
   Compass,
+  AlertCircle,
 } from 'lucide-react';
+import { TakticLogo } from '../common/TakticLogo';
 
 interface LandingPageProps {
   onOpenAuth: (defaultSignUp?: boolean) => void;
@@ -158,7 +160,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
   return (
     <div className="min-h-screen bg-[var(--bg-main)] text-[var(--text-primary)] transition-colors duration-300 overflow-x-hidden selection:bg-[var(--accent-terracotta)]/25 selection:text-[var(--text-primary)]">
-      
+
       {/* 1. TOP NAVIGATION HEADER */}
       <header className="sticky top-0 z-40 w-full border-b border-[var(--border-subtle)] bg-[var(--bg-main)]/85 backdrop-blur-md transition-colors duration-300">
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
@@ -166,30 +168,36 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="flex items-center gap-2.5 sm:gap-3 shrink-0 text-left cursor-pointer focus-visible:outline-hidden group"
+            className="flex items-center text-left cursor-pointer focus-visible:outline-hidden group"
+            aria-label="Taktic Home"
           >
-            <img
-              src="/logo.png"
-              alt="Taktic Logo"
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl object-contain shadow-md shadow-[#C06C4C]/20 transition-transform duration-200 group-hover:scale-105"
-            />
-            <span className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] leading-none transition-colors duration-200 group-hover:text-[#C06C4C]">
-              Taktic
-            </span>
+            <TakticLogo size="md" showText={true} />
           </button>
 
           {/* Center Navigation Anchors */}
           <nav className="hidden md:flex items-center gap-7 text-xs font-semibold text-[var(--text-secondary)]">
-            <a href="#how-it-works" className="hover:text-[var(--text-primary)] transition">
+            <a
+              href="#how-it-works"
+              className="relative py-1 hover:text-[var(--text-primary)] transition duration-200 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-[#C06C4C] after:to-[#CFA052] hover:after:w-full after:transition-all after:duration-300"
+            >
               How It Works
             </a>
-            <a href="#features" className="hover:text-[var(--text-primary)] transition">
+            <a
+              href="#features"
+              className="relative py-1 hover:text-[var(--text-primary)] transition duration-200 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-[#C06C4C] after:to-[#CFA052] hover:after:w-full after:transition-all after:duration-300"
+            >
               Features
             </a>
-            <a href="#circles" className="hover:text-[var(--text-primary)] transition">
+            <a
+              href="#circles"
+              className="relative py-1 hover:text-[var(--text-primary)] transition duration-200 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-[#C06C4C] after:to-[#CFA052] hover:after:w-full after:transition-all after:duration-300"
+            >
               Focus Circles
             </a>
-            <a href="#comparison" className="hover:text-[var(--text-primary)] transition">
+            <a
+              href="#comparison"
+              className="relative py-1 hover:text-[var(--text-primary)] transition duration-200 after:absolute after:bottom-0 after:left-0 after:h-[2px] after:w-0 after:bg-gradient-to-r after:from-[#C06C4C] after:to-[#CFA052] hover:after:w-full after:transition-all after:duration-300"
+            >
               Why Taktic
             </a>
           </nav>
@@ -235,13 +243,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       </header>
 
       {/* 2. HERO SECTION */}
-      <section className="relative pt-12 pb-16 sm:pt-20 sm:pb-24 overflow-hidden">
+      <section className="relative pt-8 pb-12 sm:pt-12 sm:pb-16 overflow-hidden">
         {/* Ambient Warm Aura */}
-        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[650px] h-[350px] bg-gradient-to-tr from-[#C06C4C]/15 via-[#C87D87]/15 to-[#CFA052]/15 rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[300px] bg-gradient-to-tr from-[#C06C4C]/15 via-[#C87D87]/15 to-[#CFA052]/15 rounded-full blur-3xl pointer-events-none" />
 
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="text-center max-w-3xl mx-auto space-y-4 sm:space-y-6">
-            
+          <div className="text-center max-w-3xl mx-auto space-y-3 sm:space-y-4">
+
             {/* Eyebrow Pill */}
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-terracotta)]/30 bg-[var(--accent-terracotta)]/10 px-3.5 py-1 text-xs font-bold text-[var(--accent-terracotta)] shadow-2xs">
               <Sparkles className="h-3.5 w-3.5" />
@@ -249,7 +257,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             </div>
 
             {/* Main Headline */}
-            <h1 className="font-heading text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[var(--text-primary)] leading-[1.15]">
+            <h1 className="font-heading text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[var(--text-primary)] leading-[1.12]">
               Plan what matters today.{' '}
               <span className="bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] bg-clip-text text-transparent">
                 Build steady habits.
@@ -263,11 +271,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             </p>
 
             {/* Primary Action Buttons */}
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
               <button
                 type="button"
                 onClick={() => onOpenAuth(true)}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-[#C06C4C]/25 hover:brightness-105 active:scale-98 transition cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] px-6 py-3 text-sm font-bold text-white shadow-lg shadow-[#C06C4C]/25 hover:brightness-105 active:scale-98 transition cursor-pointer"
               >
                 <span>Get Started Free</span>
                 <ArrowRight className="h-4 w-4" />
@@ -275,7 +283,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <button
                 type="button"
                 onClick={loginAsDemo}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] px-6 py-3.5 text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--card-hover)] hover:border-[var(--accent-warm-ochre)]/50 shadow-xs transition cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] px-6 py-3 text-sm font-bold text-[var(--text-primary)] hover:bg-[var(--card-hover)] hover:border-[var(--accent-warm-ochre)]/50 shadow-xs transition cursor-pointer"
               >
                 <Sparkles className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
                 <span>Try Interactive Demo</span>
@@ -284,11 +292,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
           </div>
 
           {/* HERO LIVE INTERACTIVE CANVAS */}
-          <div className="mt-12 sm:mt-16 max-w-5xl mx-auto">
-            <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-8 shadow-2xl shadow-black/10 relative overflow-hidden">
-              
+          <div className="mt-8 sm:mt-10 max-w-5xl mx-auto">
+            <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-6 shadow-2xl shadow-black/10 relative overflow-hidden">
+
               {/* Header inside Mockup Preview */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 pb-6 border-b border-[var(--border-subtle)]">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 pb-4 border-b border-[var(--border-subtle)]">
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="h-2.5 w-2.5 rounded-full bg-emerald-500 animate-pulse" />
@@ -318,11 +326,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         key={snd.id}
                         type="button"
                         onClick={() => toggleSoundscape(snd.id)}
-                        className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-semibold transition cursor-pointer ${
-                          isPlaying
-                            ? 'bg-[var(--accent-warm-ochre)] text-black shadow-xs font-bold'
-                            : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
-                        }`}
+                        className={`flex items-center gap-1 px-2.5 py-1 rounded-xl text-[11px] font-semibold transition cursor-pointer ${isPlaying
+                          ? 'bg-[var(--accent-warm-ochre)] text-black shadow-xs font-bold'
+                          : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+                          }`}
                         title={isPlaying ? `Stop ${snd.label}` : `Play ${snd.label}`}
                       >
                         <Icon className="h-3 w-3 shrink-0" />
@@ -334,12 +341,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               </div>
 
               {/* Showcase Grid: Rings + Controls + Live Sprint Card */}
-              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 pt-6 items-center">
-                
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-5 pt-5 items-center">
+
                 {/* Left: Concentric Triple Rings Interactive SVG */}
-                <div className="md:col-span-5 flex flex-col items-center justify-center p-6 rounded-3xl bg-[var(--bg-main)] border border-[var(--border-subtle)] shadow-sm relative overflow-hidden group">
+                <div className="md:col-span-5 flex flex-col items-center justify-center p-4 sm:p-5 rounded-3xl bg-[var(--bg-main)] border border-[var(--border-subtle)] shadow-sm relative overflow-hidden group">
                   <div className="relative flex items-center justify-center">
-                    <svg viewBox="0 0 200 200" className="w-52 h-52 sm:w-56 sm:h-56 rotate-[-90deg]">
+                    <svg viewBox="0 0 200 200" className="w-44 h-44 sm:w-48 sm:h-48 rotate-[-90deg]">
                       <defs>
                         {/* Task Ring Gradient */}
                         <linearGradient id="taskGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -423,7 +430,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         </motion.div>
                       </AnimatePresence>
 
-                      <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--card-surface)]/95 border border-[var(--border-subtle)] shadow-xs">
+                      <div className="mt-1 flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[var(--card-surface)]/95 border border-[var(--border-subtle)] shadow-xs">
                         <span className={`h-1.5 w-1.5 rounded-full ${allClosed ? 'bg-emerald-500 animate-ping' : 'bg-[#CFA052] animate-pulse'}`} />
                         <span className="text-[10px] font-bold uppercase tracking-wider bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] bg-clip-text text-transparent">
                           {allClosed ? 'Goal Reached! 🎉' : 'Daily Rhythm'}
@@ -433,11 +440,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                   </div>
 
                   {/* Interactive Buttons */}
-                  <div className="mt-6 flex items-center gap-2 flex-wrap justify-center relative z-10">
+                  <div className="mt-4 flex items-center gap-1.5 sm:gap-2 flex-wrap justify-center relative z-10">
                     <button
                       type="button"
                       onClick={handleIncrementTask}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-xl text-xs font-bold border border-emerald-500/40 bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
                     >
                       <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400" />
                       <span>+ Task ({demoTasks}/5)</span>
@@ -445,7 +452,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <button
                       type="button"
                       onClick={handleIncrementHabit}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-rose-500/40 bg-rose-500/15 text-rose-800 dark:text-rose-300 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-xl text-xs font-bold border border-rose-500/40 bg-rose-500/15 text-rose-800 dark:text-rose-300 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
                     >
                       <Repeat className="h-3.5 w-3.5 text-rose-600 dark:text-rose-400" />
                       <span>+ Habit ({demoHabits}/3)</span>
@@ -453,7 +460,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <button
                       type="button"
                       onClick={handleIncrementFocus}
-                      className="px-3 py-1.5 rounded-xl text-xs font-bold border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
+                      className="px-2.5 py-1 rounded-xl text-xs font-bold border border-amber-500/40 bg-amber-500/15 text-amber-800 dark:text-amber-300 hover:scale-105 active:scale-95 transition cursor-pointer shadow-2xs flex items-center gap-1"
                     >
                       <Clock className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
                       <span>+ Focus ({demoFocusMins}m)</span>
@@ -462,58 +469,58 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 </div>
 
                 {/* Right: Live Sprint & Micro-Preview Cards */}
-                <div className="md:col-span-7 space-y-3.5">
+                <div className="md:col-span-7 space-y-2.5">
                   {/* Co-Working Live Sprint Room Snippet */}
-                  <div className="p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-2.5">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="h-2 w-2 rounded-full bg-[#6B8E6E] animate-pulse" />
-                        <span className="text-xs font-bold font-heading text-[var(--text-primary)]">
+                  <div className="p-3 sm:p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-1.5 sm:gap-2">
+                      <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                        <span className="h-2 w-2 rounded-full bg-[#6B8E6E] animate-pulse shrink-0" />
+                        <span className="text-[11px] sm:text-xs font-bold font-heading text-[var(--text-primary)]">
                           Shared Focus Pod: Deep Work Sprint
                         </span>
                       </div>
-                      <span className="font-mono text-xs font-bold text-[var(--accent-terracotta)] px-2.5 py-0.5 rounded-full bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30">
+                      <span className="shrink-0 whitespace-nowrap font-mono text-[10px] sm:text-xs font-bold text-[var(--accent-terracotta)] px-2 sm:px-2.5 py-0.5 rounded-full bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30">
                         18:45 Left
                       </span>
                     </div>
 
-                    <div className="flex items-center gap-2.5 text-xs text-[var(--text-secondary)]">
-                      <div className="flex -space-x-2 overflow-hidden">
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-tr from-[#6B8E6E] to-[#C87D87] text-[9px] font-bold text-white ring-2 ring-[var(--card-surface)]">
+                    <div className="flex items-center gap-2 sm:gap-2.5 text-xs text-[var(--text-secondary)]">
+                      <div className="flex -space-x-2 overflow-hidden shrink-0">
+                        <span className="inline-flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-gradient-to-tr from-[#6B8E6E] to-[#C87D87] text-[8px] sm:text-[9px] font-bold text-white ring-2 ring-[var(--card-surface)]">
                           AL
                         </span>
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-tr from-[#C06C4C] to-[#CFA052] text-[9px] font-bold text-white ring-2 ring-[var(--card-surface)]">
+                        <span className="inline-flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-gradient-to-tr from-[#C06C4C] to-[#CFA052] text-[8px] sm:text-[9px] font-bold text-white ring-2 ring-[var(--card-surface)]">
                           MV
                         </span>
-                        <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-tr from-[#B08B9E] to-[#6B8E6E] text-[9px] font-bold text-white ring-2 ring-[var(--card-surface)]">
+                        <span className="inline-flex h-5 w-5 sm:h-6 sm:w-6 items-center justify-center rounded-full bg-gradient-to-tr from-[#B08B9E] to-[#6B8E6E] text-[8px] sm:text-[9px] font-bold text-white ring-2 ring-[var(--card-surface)]">
                           SJ
                         </span>
                       </div>
-                      <span className="text-[11px] font-medium">
+                      <span className="text-[10px] sm:text-[11px] font-medium leading-tight">
                         3 peers in a silent 25-minute Pomodoro sprint with break room unlocks
                       </span>
                     </div>
                   </div>
 
                   {/* Micro-Features Grid */}
-                  <div className="grid grid-cols-2 gap-2.5 text-xs">
-                    <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-[var(--accent-botanical-sage)]">
-                        <CheckCircle2 className="h-4 w-4" />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-2.5 text-xs">
+                    <div className="p-2.5 sm:p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-[var(--accent-botanical-sage)] text-xs">
+                        <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                         <span>Daily Sweep</span>
                       </div>
-                      <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                      <p className="text-[10px] sm:text-[11px] text-[var(--text-secondary)] leading-relaxed">
                         Archive completed tasks in 1 click so every morning starts completely uncluttered.
                       </p>
                     </div>
 
-                    <div className="p-3.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
-                      <div className="flex items-center gap-1.5 font-bold text-[var(--accent-warm-ochre)]">
-                        <StickyNote className="h-4 w-4" />
+                    <div className="p-2.5 sm:p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
+                      <div className="flex items-center gap-1.5 font-bold text-[var(--accent-warm-ochre)] text-xs">
+                        <StickyNote className="h-3.5 w-3.5 sm:h-4 sm:w-4 shrink-0" />
                         <span>Quick Capture</span>
                       </div>
-                      <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                        Press <kbd className="px-1.5 py-0.5 rounded bg-[var(--card-surface)] border border-[var(--border-subtle)] font-mono text-[9px]">Ctrl+J</kbd> anytime to record notes and convert them to tasks.
+                      <p className="text-[10px] sm:text-[11px] text-[var(--text-secondary)] leading-relaxed">
+                        Press <kbd className="px-1 py-0.5 rounded bg-[var(--card-surface)] border border-[var(--border-subtle)] font-mono text-[9px]">Ctrl+J</kbd> anytime to record notes and convert them to tasks.
                       </p>
                     </div>
                   </div>
@@ -525,13 +532,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       </section>
 
       {/* 3. CORE PILLARS: HOW TAKTIC WORKS */}
-      <section id="how-it-works" className="py-16 sm:py-24 border-t border-[var(--border-subtle)] bg-[var(--card-surface)]">
+      <section id="how-it-works" className="scroll-mt-0 py-12 sm:py-16 border-t border-[var(--border-subtle)] bg-[var(--card-surface)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto space-y-3 mb-14">
+          <div className="text-center max-w-2xl mx-auto space-y-2 mb-8 sm:mb-10">
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-terracotta)] font-heading">
               Designed for Clarity
             </span>
-            <h2 className="font-heading text-2xl sm:text-4xl font-extrabold text-[var(--text-primary)]">
+            <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[var(--text-primary)]">
               Everything You Need to Run Your Day, Without the Noise
             </h2>
             <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
@@ -539,12 +546,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+
             {/* Pillar 1: Task Execution */}
-            <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-6 sm:p-7 space-y-4 hover:border-[#6B8E6E]/50 transition shadow-xs">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#6B8E6E]/15 text-[#6B8E6E] shadow-xs">
-                <Target className="h-6 w-6" />
+            <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-5 sm:p-6 space-y-3.5 hover:border-[#6B8E6E]/50 transition shadow-xs">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#6B8E6E]/15 text-[#6B8E6E] shadow-xs">
+                <Target className="h-5 w-5" />
               </div>
               <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
                 1. Prioritize What Actually Matters
@@ -552,7 +559,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                 Long to-do lists cause decision fatigue. Taktic prompts you to select 3–5 high priority commitments each morning (with a 5-task capacity cap to prevent burnout), organize them across the day, and mark them off with clarity.
               </p>
-              <ul className="space-y-2 text-xs font-medium text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
+              <ul className="space-y-1.5 text-xs font-medium text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
                 <li className="flex items-center gap-2">
                   <CheckCircle2 className="h-4 w-4 text-[#6B8E6E] shrink-0" />
                   <span>3–5 daily focus commitments (capped at 5)</span>
@@ -569,9 +576,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             </div>
 
             {/* Pillar 2: Habit Rings */}
-            <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-6 sm:p-7 space-y-4 hover:border-[#C87D87]/50 transition shadow-xs">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#C87D87]/15 text-[#C87D87] shadow-xs">
-                <Repeat className="h-6 w-6" />
+            <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-5 sm:p-6 space-y-3.5 hover:border-[#C87D87]/50 transition shadow-xs">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#C87D87]/15 text-[#C87D87] shadow-xs">
+                <Repeat className="h-5 w-5" />
               </div>
               <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
                 2. Build Consistent Daily Habits
@@ -579,7 +586,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                 Consistency beats intensity. Keep track of daily routines—like reading, movement, or deep study—alongside your tasks, with streak milestones that celebrate steady progress.
               </p>
-              <ul className="space-y-2 text-xs font-medium text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
+              <ul className="space-y-1.5 text-xs font-medium text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
                 <li className="flex items-center gap-2">
                   <Flame className="h-4 w-4 text-[#C87D87] shrink-0" />
                   <span>Consecutive active day streak tracking</span>
@@ -596,9 +603,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             </div>
 
             {/* Pillar 3: Deep Work & Soundscapes */}
-            <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-6 sm:p-7 space-y-4 hover:border-[#CFA052]/50 transition shadow-xs">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#CFA052]/15 text-[#CFA052] shadow-xs">
-                <Clock className="h-6 w-6" />
+            <div className="rounded-3xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-5 sm:p-6 space-y-3.5 hover:border-[#CFA052]/50 transition shadow-xs">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#CFA052]/15 text-[#CFA052] shadow-xs">
+                <Clock className="h-5 w-5" />
               </div>
               <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
                 3. Focus Timer & Ambient Audio
@@ -606,7 +613,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                 Get into deep flow without external distractions. Start timed Pomodoro sprints paired with soothing background audio, and switch into immersive full-screen mode whenever you need locked-in focus.
               </p>
-              <ul className="space-y-2 text-xs font-medium text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
+              <ul className="space-y-1.5 text-xs font-medium text-[var(--text-secondary)] pt-2 border-t border-[var(--border-subtle)]">
                 <li className="flex items-center gap-2">
                   <Headphones className="h-4 w-4 text-[#CFA052] shrink-0" />
                   <span>Rain, ocean waves, warm chords & cafe ambience</span>
@@ -626,69 +633,71 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       </section>
 
       {/* 4. FEATURE BENTO GRID */}
-      <section id="features" className="py-16 sm:py-24 bg-[var(--bg-main)]">
+      <section id="features" className="scroll-mt-0 py-12 sm:py-16 bg-[var(--bg-main)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto space-y-3 mb-14">
+          <div className="text-center max-w-2xl mx-auto space-y-2 mb-8 sm:mb-10">
             <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-warm-ochre)] font-heading">
               Thoughtful Features
             </span>
-            <h2 className="font-heading text-2xl sm:text-4xl font-extrabold text-[var(--text-primary)]">
+            <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[var(--text-primary)]">
               Crafted for Real Focus, Not Busywork
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-            
-            {/* Bento 1: Live Co-Working & Pods (8 cols) */}
-            <div id="circles" className="md:col-span-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-8 space-y-4 shadow-xs">
-              <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#C06C4C]/15 text-[#C06C4C]">
-                  <Users className="h-5 w-5" />
-                </span>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#C06C4C] font-heading">
-                  Gentle Accountability
-                </span>
-              </div>
-              <h3 className="font-heading text-xl sm:text-2xl font-bold text-[var(--text-primary)]">
-                Quiet Focus Rooms & Study Circles
-              </h3>
-              <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed max-w-2xl">
-                Staying disciplined is easier when working alongside others. Join shared 25-minute sprints with friends or coworkers, send silent cheers, and catch up in the break room when the timer ends—no cameras or microphones needed.
-              </p>
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-4 sm:gap-5">
 
-              <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
+            {/* Bento 1: Live Co-Working & Pods (8 cols) */}
+            <div id="circles" className="scroll-mt-20 md:col-span-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 space-y-3.5 shadow-xs flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#C06C4C]/15 text-[#C06C4C]">
+                    <Users className="h-4 w-4" />
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#C06C4C] font-heading">
+                    Gentle Accountability
+                  </span>
+                </div>
+                <h3 className="font-heading text-lg sm:text-xl font-bold text-[var(--text-primary)]">
+                  Quiet Focus Rooms & Study Circles
+                </h3>
+                <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed max-w-2xl">
+                  Staying disciplined is easier when working alongside others. Join shared 25-minute sprints with friends or coworkers, send silent cheers, and catch up in the break room when the timer ends—no cameras or microphones needed.
+                </p>
+              </div>
+
+              <div className="pt-2 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                <div className="p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-xs text-[var(--text-primary)]">
-                    <Zap className="h-3.5 w-3.5 text-[#CFA052]" />
+                    <Zap className="h-3.5 w-3.5 text-[#CFA052] shrink-0" />
                     <span>Silent Cheers</span>
                   </div>
-                  <p className="text-[11px] text-[var(--text-secondary)]">Send encouraging reactions without interrupting someone's concentration.</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">Send encouraging reactions without interrupting someone's concentration.</p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
+                <div className="p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-xs text-[var(--text-primary)]">
-                    <Coffee className="h-3.5 w-3.5 text-amber-500" />
+                    <Coffee className="h-3.5 w-3.5 text-amber-500 shrink-0" />
                     <span>Break Room</span>
                   </div>
-                  <p className="text-[11px] text-[var(--text-secondary)]">Chat unlocks between sprints and automatically mutes during focus sessions.</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">Chat unlocks between sprints and automatically mutes during focus sessions.</p>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
+                <div className="p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1">
                   <div className="flex items-center gap-1.5 font-bold text-xs text-[var(--text-primary)]">
-                    <ShieldCheck className="h-3.5 w-3.5 text-[#6B8E6E]" />
+                    <ShieldCheck className="h-3.5 w-3.5 text-[#6B8E6E] shrink-0" />
                     <span>Private Pods</span>
                   </div>
-                  <p className="text-[11px] text-[var(--text-secondary)]">Create invite-only circles with unique access codes for your study group or team.</p>
+                  <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">Create invite-only circles with unique access codes for your study group or team.</p>
                 </div>
               </div>
             </div>
 
             {/* Bento 2: Quick Notes Scratchpad (4 cols) */}
-            <div className="md:col-span-4 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-8 space-y-4 shadow-xs flex flex-col justify-between">
-              <div>
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#CFA052]/15 text-[#CFA052]">
-                    <StickyNote className="h-5 w-5" />
+            <div className="md:col-span-4 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 space-y-3.5 shadow-xs flex flex-col justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#CFA052]/15 text-[#CFA052]">
+                    <StickyNote className="h-4 w-4" />
                   </span>
                   <span className="text-xs font-bold uppercase tracking-wider text-[#CFA052] font-heading">
                     Instant Capture
@@ -697,121 +706,255 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
                   Global Scratchpad
                 </h3>
-                <p className="text-xs text-[var(--text-secondary)] leading-relaxed mt-1">
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
                   Press <kbd className="px-1.5 py-0.5 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] font-mono text-[10px]">Ctrl+J</kbd> from anywhere in the app to jot down a quick thought. Convert any note to an actionable task with one click.
                 </p>
               </div>
 
-              <div className="p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-1.5">
-                <div className="flex items-center justify-between text-[11px] font-bold text-[var(--text-primary)]">
-                  <span>💡 Prepare deck for Thursday</span>
-                  <span className="text-[#CFA052] font-mono text-[10px]">Pinned</span>
+              {/* Realistic Notepad Container with 2 Notes to eliminate empty void */}
+              <div className="space-y-2 pt-1">
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-1">
+                  <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-[var(--text-primary)]">
+                    <span className="truncate">💡 Prepare deck for Thursday</span>
+                    <span className="shrink-0 whitespace-nowrap text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] border border-[var(--accent-warm-ochre)]/30">
+                      Pinned
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[var(--text-secondary)] line-clamp-1">
+                    Review morning feedback and finalize summary slide.
+                  </p>
                 </div>
-                <p className="text-[10px] text-[var(--text-secondary)] line-clamp-2">
-                  Review morning feedback and finalize summary slide.
-                </p>
+
+                <div className="p-2.5 sm:p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-1">
+                  <div className="flex items-center justify-between gap-2 text-[11px] font-bold text-[var(--text-primary)]">
+                    <span className="truncate">🎯 Send team sprint recap</span>
+                    <span className="shrink-0 whitespace-nowrap text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/30">
+                      + To Task
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-[var(--text-secondary)] line-clamp-1">
+                    Convert directly to top daily focus commitment.
+                  </p>
+                </div>
               </div>
             </div>
 
             {/* Bento 3: Safe Task Archive (4 cols) */}
-            <div className="md:col-span-4 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-8 space-y-3 shadow-xs">
-              <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#6B8E6E]/15 text-[#6B8E6E]">
-                  <Archive className="h-5 w-5" />
-                </span>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#6B8E6E] font-heading">
-                  Searchable History
-                </span>
+            <div className="md:col-span-4 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 space-y-3.5 shadow-xs flex flex-col justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#6B8E6E]/15 text-[#6B8E6E]">
+                    <Archive className="h-4 w-4" />
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#6B8E6E] font-heading">
+                    Searchable History
+                  </span>
+                </div>
+                <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
+                  Task Archive & History
+                </h3>
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                  Review past accomplishments, search completed tasks, batch restore items, or export your history to CSV whenever needed.
+                </p>
               </div>
-              <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
-                Task Archive & History
-              </h3>
-              <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                Review past accomplishments, search completed tasks, batch restore items, or export your history to CSV whenever needed.
-              </p>
+
+              <div className="p-2.5 sm:p-3 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] flex items-center justify-between gap-2 text-xs">
+                <div className="flex items-center gap-2 min-w-0">
+                  <CheckCircle2 className="h-4 w-4 text-[var(--accent-botanical-sage)] shrink-0" />
+                  <span className="text-[11px] font-semibold text-[var(--text-primary)] truncate">14 tasks swept to archive</span>
+                </div>
+                <span className="text-[10px] font-mono font-bold text-[var(--text-muted)] shrink-0">1-click restore</span>
+              </div>
             </div>
 
             {/* Bento 4: Private & Distraction-Free (8 cols) */}
-            <div className="md:col-span-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 sm:p-8 space-y-3 shadow-xs">
-              <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-[#B08B9E]/15 text-[#B08B9E]">
-                  <ShieldCheck className="h-5 w-5" />
-                </span>
-                <span className="text-xs font-bold uppercase tracking-wider text-[#B08B9E] font-heading">
-                  Private & Clutter-Free
-                </span>
+            <div className="md:col-span-8 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 space-y-3.5 shadow-xs flex flex-col justify-between">
+              <div className="space-y-1.5">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#B08B9E]/15 text-[#B08B9E]">
+                    <ShieldCheck className="h-4 w-4" />
+                  </span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#B08B9E] font-heading">
+                    Private & Clutter-Free
+                  </span>
+                </div>
+                <h3 className="font-heading text-lg sm:text-xl font-bold text-[var(--text-primary)]">
+                  A Calmer Personal Workspace with Zero Distractions
+                </h3>
+                <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+                  Taktic is built without advertisements, algorithmic feeds, or data selling. Your routines, notes, and daily commitments remain completely private to your account—giving you a quiet sanctuary to think and do your best work.
+                </p>
               </div>
-              <h3 className="font-heading text-xl font-bold text-[var(--text-primary)]">
-                A Calmer Personal Workspace with Zero Distractions
-              </h3>
-              <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-                Taktic is built without advertisements, algorithmic feeds, or data selling. Your routines, notes, and daily commitments remain completely private to your account—giving you a quiet sanctuary to think and do your best work.
-              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1">
+                <div className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-[#B08B9E] shrink-0" />
+                  <span className="text-[11px] font-semibold text-[var(--text-primary)]">Zero Advertisements</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-[#B08B9E] shrink-0" />
+                  <span className="text-[11px] font-semibold text-[var(--text-primary)]">No Social Algorithms</span>
+                </div>
+                <div className="p-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] flex items-center gap-2">
+                  <Check className="h-3.5 w-3.5 text-[#B08B9E] shrink-0" />
+                  <span className="text-[11px] font-semibold text-[var(--text-primary)]">Private Account Data</span>
+                </div>
+              </div>
             </div>
 
           </div>
         </div>
       </section>
 
-      {/* 5. WHY TAKTIC IS DIFFERENT (COMPARISON) */}
-      <section id="comparison" className="py-16 sm:py-24 border-t border-[var(--border-subtle)] bg-[var(--card-surface)]">
-        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-2xl mx-auto space-y-3 mb-12">
-            <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-botanical-sage)] font-heading">
-              Simplicity by Design
-            </span>
-            <h2 className="font-heading text-2xl sm:text-4xl font-extrabold text-[var(--text-primary)]">
+      {/* 5. WHY TAKTIC IS DIFFERENT (COMPARISON / SIMPLICITY BY DESIGN) */}
+      <section id="comparison" className="scroll-mt-0 py-12 sm:py-16 border-t border-[var(--border-subtle)] bg-[var(--card-surface)]/50 relative overflow-hidden">
+        {/* Subtle background ambient glow */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[300px] bg-gradient-to-r from-[var(--accent-terracotta)]/5 via-[var(--accent-botanical-sage)]/5 to-[var(--accent-warm-ochre)]/5 blur-3xl rounded-full pointer-events-none" />
+
+        <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 relative z-10">
+          {/* Header */}
+          <div className="text-center max-w-2xl mx-auto space-y-2 mb-8 sm:mb-10">
+            <div className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-botanical-sage)]/10 border border-[var(--accent-botanical-sage)]/25 px-3 py-1 text-xs font-bold text-[var(--accent-botanical-sage)] font-heading">
+              <Sparkles className="h-3.5 w-3.5" />
+              <span>Simplicity by Design</span>
+            </div>
+            <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight">
               Less Time Managing. More Time in Flow.
             </h2>
-            <p className="text-xs sm:text-sm text-[var(--text-secondary)]">
-              Most productivity apps turn into second jobs. Taktic keeps your planning lightweight so you spend your energy on actual execution.
+            <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed max-w-xl mx-auto">
+              Most productivity apps turn into second jobs. Taktic keeps your planning lightweight so your energy stays focused on deep, meaningful execution.
             </p>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            
-            {/* The Old Way */}
-            <div className="rounded-3xl border border-rose-500/20 bg-[var(--bg-main)] p-6 sm:p-7 space-y-4">
-              <div className="flex items-center gap-2 text-rose-500 font-bold text-sm font-heading">
-                <X className="h-4 w-4" />
-                <span>Overcomplicated Productivity Tools</span>
+          {/* Side-by-Side Unified Comparison Card Grid */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 items-stretch">
+
+            {/* The Traditional Way (High contrast, clearly visible card with dusty rose accents) */}
+            <div className="relative flex flex-col justify-between rounded-3xl border border-[var(--border-subtle)] dark:border-[var(--accent-dusty-rose)]/30 bg-[var(--card-surface)] dark:bg-[#25211E] p-4 sm:p-6 space-y-4 shadow-lg shadow-black/10 transition-all">
+              {/* Subtle top indicator */}
+              <div className="absolute top-0 left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent-dusty-rose)]/70 to-transparent" />
+
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] dark:border-white/10 pb-3">
+                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-dusty-rose)]/15 dark:bg-[var(--accent-dusty-rose)]/25 border border-[var(--accent-dusty-rose)]/35 text-[var(--accent-dusty-rose)] font-bold shadow-sm">
+                      <AlertCircle className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-heading font-bold text-sm sm:text-base text-[var(--text-primary)] leading-snug">
+                        The Traditional Way
+                      </h3>
+                      <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] dark:text-[var(--text-secondary)] leading-snug">
+                        Overcomplicated & fragmented tools
+                      </p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 whitespace-nowrap rounded-full bg-[var(--accent-dusty-rose)]/15 dark:bg-[var(--accent-dusty-rose)]/25 border border-[var(--accent-dusty-rose)]/35 px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-[var(--accent-dusty-rose)] shadow-sm">
+                    Friction Heavy
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-[var(--surface-sunken)] dark:bg-[#1D1917] border border-[var(--border-subtle)] dark:border-white/10 text-xs shadow-sm">
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-dusty-rose)]/20 dark:bg-[var(--accent-dusty-rose)]/25 text-[var(--accent-dusty-rose)] border border-[var(--accent-dusty-rose)]/30">
+                      <Layers className="h-3 w-3" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs">Endless Backlogs</strong>
+                      <span className="text-[11px] text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Overwhelming lists with 50+ lingering tasks and guilt fatigue.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-[var(--surface-sunken)] dark:bg-[#1D1917] border border-[var(--border-subtle)] dark:border-white/10 text-xs shadow-sm">
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-dusty-rose)]/20 dark:bg-[var(--accent-dusty-rose)]/25 text-[var(--accent-dusty-rose)] border border-[var(--accent-dusty-rose)]/30">
+                      <Repeat className="h-3 w-3" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs">Context Switching</strong>
+                      <span className="text-[11px] text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Juggling separate timer apps, habit trackers, and ambient audio players.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-[var(--surface-sunken)] dark:bg-[#1D1917] border border-[var(--border-subtle)] dark:border-white/10 text-xs shadow-sm">
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-dusty-rose)]/20 dark:bg-[var(--accent-dusty-rose)]/25 text-[var(--accent-dusty-rose)] border border-[var(--accent-dusty-rose)]/30">
+                      <Clock className="h-3 w-3" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs">Configuration Overhead</strong>
+                      <span className="text-[11px] text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Spending 30 minutes tweaking complex tags instead of doing real work.</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <ul className="space-y-3 text-xs text-[var(--text-secondary)]">
-                <li className="flex items-start gap-2">
-                  <span className="text-rose-500 font-bold">✕</span>
-                  <span>Endless, overwhelming lists with 50+ unchecked items</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-rose-500 font-bold">✕</span>
-                  <span>Constant context switching across separate timers and apps</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-rose-500 font-bold">✕</span>
-                  <span>Complex configuration, nested tags, and cognitive fatigue</span>
-                </li>
-              </ul>
+
+              <div className="p-2.5 rounded-2xl bg-[var(--accent-dusty-rose)]/10 dark:bg-[var(--accent-dusty-rose)]/15 border border-[var(--accent-dusty-rose)]/25 dark:border-[var(--accent-dusty-rose)]/30 text-[11px] font-semibold text-[var(--accent-dusty-rose)] flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-dusty-rose)] animate-pulse" />
+                <span>Result: Procrastination disguised as productivity.</span>
+              </div>
             </div>
 
-            {/* The Taktic Way */}
-            <div className="rounded-3xl border border-emerald-500/30 bg-[var(--bg-main)] p-6 sm:p-7 space-y-4 shadow-sm">
-              <div className="flex items-center gap-2 text-emerald-600 dark:text-emerald-400 font-bold text-sm font-heading">
-                <Check className="h-4 w-4" />
-                <span>The Taktic Rhythm</span>
+            {/* The Taktic Way (Elevated, warm, signature aesthetic) */}
+            <div className="relative flex flex-col justify-between rounded-3xl border border-[var(--accent-botanical-sage)]/50 dark:border-[var(--accent-botanical-sage)]/60 bg-[var(--card-surface)] dark:bg-[#25211E] p-4 sm:p-6 space-y-4 shadow-xl shadow-[var(--accent-botanical-sage)]/10 ring-1 ring-[var(--accent-botanical-sage)]/30 transition-all">
+              {/* Subtle warm accent banner */}
+              <div className="absolute top-0 left-8 right-8 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent-botanical-sage)] to-transparent opacity-90" />
+
+              <div className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-subtle)] dark:border-white/10 pb-3">
+                  <div className="flex items-center gap-2 sm:gap-2.5 min-w-0">
+                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-botanical-sage)]/15 dark:bg-[var(--accent-botanical-sage)]/25 border border-[var(--accent-botanical-sage)]/35 text-[var(--accent-botanical-sage)] font-bold shadow-sm">
+                      <Target className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0">
+                      <h3 className="font-heading font-bold text-sm sm:text-base text-[var(--text-primary)] flex items-center gap-1.5 leading-snug">
+                        The Taktic Rhythm
+                      </h3>
+                      <p className="text-[10px] sm:text-xs text-[var(--accent-botanical-sage)] font-semibold leading-snug">
+                        Calm, intentional constraint
+                      </p>
+                    </div>
+                  </div>
+                  <span className="shrink-0 whitespace-nowrap rounded-full bg-[var(--accent-botanical-sage)]/15 dark:bg-[var(--accent-botanical-sage)]/25 border border-[var(--accent-botanical-sage)]/35 px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-[var(--accent-botanical-sage)] shadow-sm">
+                    Flow Centered
+                  </span>
+                </div>
+
+                <div className="space-y-2.5">
+                  <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-[var(--accent-botanical-sage)]/10 dark:bg-[var(--accent-botanical-sage)]/20 border border-[var(--accent-botanical-sage)]/25 dark:border-[var(--accent-botanical-sage)]/40 text-xs shadow-sm">
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-botanical-sage)]/25 dark:bg-[var(--accent-botanical-sage)]/35 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/35">
+                      <Target className="h-3 w-3" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs">Daily 3–5 Priority Constraint</strong>
+                      <span className="text-[11px] text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Commit only to what moves the needle today. Zero backlog stress.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-[var(--accent-terracotta)]/10 dark:bg-[var(--accent-terracotta)]/20 border border-[var(--accent-terracotta)]/25 dark:border-[var(--accent-terracotta)]/40 text-xs shadow-sm">
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-terracotta)]/25 dark:bg-[var(--accent-terracotta)]/35 text-[var(--accent-terracotta)] border border-[var(--accent-terracotta)]/35">
+                      <Zap className="h-3 w-3" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs">Unified Sanctuary</strong>
+                      <span className="text-[11px] text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Tasks, Pomodoro timers, habit rings, and ambient audio in one calm tab.</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-start gap-2.5 p-3 rounded-2xl bg-[var(--accent-warm-ochre)]/10 dark:bg-[var(--accent-warm-ochre)]/20 border border-[var(--accent-warm-ochre)]/25 dark:border-[var(--accent-warm-ochre)]/40 text-xs shadow-sm">
+                    <div className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-warm-ochre)]/25 dark:bg-[var(--accent-warm-ochre)]/35 text-[var(--accent-warm-ochre)] border border-[var(--accent-warm-ochre)]/35">
+                      <Sparkles className="h-3 w-3" />
+                    </div>
+                    <div className="space-y-0.5">
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs">Calm Daily Clean Slate</strong>
+                      <span className="text-[11px] text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Sweep completed tasks to archive and start fresh each morning with clear momentum.</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <ul className="space-y-3 text-xs text-[var(--text-secondary)]">
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-500 font-bold">✓</span>
-                  <span>Focused daily constraint: commit to 3–5 priority tasks</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-500 font-bold">✓</span>
-                  <span>Unified view: habits, tasks, and ambient audio in one tab</span>
-                </li>
-                <li className="flex items-start gap-2">
-                  <span className="text-emerald-500 font-bold">✓</span>
-                  <span>Calm daily reset: sweep completed items and start fresh tomorrow</span>
-                </li>
-              </ul>
+
+              <div className="p-2.5 rounded-2xl bg-[var(--accent-botanical-sage)]/10 dark:bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/25 dark:border-[var(--accent-botanical-sage)]/30 text-[11px] font-semibold text-[var(--accent-botanical-sage)] flex items-center gap-2">
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-botanical-sage)] animate-pulse" />
+                <span>Result: Continuous daily flow and tangible progress.</span>
+              </div>
             </div>
 
           </div>
@@ -819,15 +962,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       </section>
 
       {/* 6. FINAL CTA BANNER */}
-      <section className="py-16 sm:py-24 bg-[var(--bg-main)] border-t border-[var(--border-subtle)]">
+      <section className="py-10 sm:py-14 bg-[var(--bg-main)] border-t border-[var(--border-subtle)]">
         <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
-          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] p-8 sm:p-12 text-white shadow-2xl shadow-[#C06C4C]/25 text-center space-y-6">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] p-6 sm:p-8 md:p-10 text-white shadow-2xl shadow-[#C06C4C]/25 text-center space-y-4 sm:space-y-5">
             <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-3.5 py-1 text-xs font-bold">
               <Sparkles className="h-3.5 w-3.5" />
               <span>Free workspace • No credit card required</span>
             </div>
 
-            <h2 className="font-heading text-2xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight max-w-2xl mx-auto">
+            <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight max-w-2xl mx-auto">
               Ready to Bring Calm and Focus to Your Workday?
             </h2>
 
@@ -835,11 +978,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               Plan your priorities, stay consistent with your habits, and work in deep flow with Taktic.
             </p>
 
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-2">
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3 pt-1">
               <button
                 type="button"
                 onClick={() => onOpenAuth(true)}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-white px-7 py-3.5 text-xs sm:text-sm font-bold text-[#C06C4C] hover:bg-white/90 active:scale-98 transition shadow-lg cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-white px-6 py-3 text-xs sm:text-sm font-bold text-[#C06C4C] hover:bg-white/90 active:scale-98 transition shadow-lg cursor-pointer"
               >
                 <span>Create Free Account</span>
                 <ArrowRight className="h-4 w-4" />
@@ -848,7 +991,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <button
                 type="button"
                 onClick={loginAsDemo}
-                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-black/20 hover:bg-black/30 border border-white/30 px-7 py-3.5 text-xs sm:text-sm font-bold text-white transition cursor-pointer"
+                className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-2xl bg-black/20 hover:bg-black/30 border border-white/30 px-6 py-3 text-xs sm:text-sm font-bold text-white transition cursor-pointer"
               >
                 <Sparkles className="h-4 w-4 text-[#CFA052]" />
                 <span>Try Interactive Demo</span>
@@ -859,22 +1002,16 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
       </section>
 
       {/* 7. FOOTER */}
-      <footer className="border-t border-[var(--border-subtle)] bg-[var(--bg-main)] py-12 text-xs text-[var(--text-muted)]">
+      <footer className="border-t border-[var(--border-subtle)] bg-[var(--bg-main)] py-8 text-xs text-[var(--text-muted)]">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-4">
           <button
             type="button"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             className="flex items-center gap-2.5 group cursor-pointer text-left focus-visible:outline-hidden"
+            aria-label="Taktic Home"
           >
-            <img
-              src="/logo.png"
-              alt="Taktic Logo"
-              className="h-7 w-7 rounded-lg object-contain transition-transform duration-200 group-hover:scale-110"
-            />
-            <span className="font-heading font-bold text-[var(--text-primary)] transition-colors duration-200 group-hover:text-[#C06C4C]">
-              Taktic
-            </span>
-            <span className="text-[var(--text-muted)]">— A calm workspace for daily priorities, habits, and focus.</span>
+            <TakticLogo size="sm" showText={true} />
+            <span className="text-[var(--text-muted)] hidden md:inline">— A calm workspace for daily priorities, habits, and focus.</span>
           </button>
 
           <div className="flex items-center gap-6">

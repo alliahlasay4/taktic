@@ -17,6 +17,7 @@ import {
   Copy,
   Check,
   Zap,
+  X,
 } from 'lucide-react';
 import { Task, PriorityLevel, QuickNote, NoteColor } from '../../types';
 import { Pagination } from '../common/Pagination';
@@ -1123,72 +1124,88 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
 
           {/* Sticky Bottom Batch Action Bar for Tasks */}
           {selectedTaskIds.length > 0 && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-5 py-3 rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] shadow-xl animate-in slide-in-from-bottom-5">
-              <span className="text-xs font-semibold text-[var(--text-primary)] pr-2 border-r border-[var(--border-subtle)]">
-                {selectedTaskIds.length} {selectedTaskIds.length === 1 ? 'task' : 'tasks'} selected
-              </span>
+            <div className="fixed bottom-20 sm:bottom-6 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-50 max-w-lg mx-auto flex items-center justify-between gap-1.5 sm:gap-2.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-[var(--card-surface)]/95 backdrop-blur-md border border-[var(--border-subtle)] shadow-2xl animate-in slide-in-from-bottom-5">
+              {/* Count Badge */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[var(--accent-terracotta)] text-white text-[10px] sm:text-xs font-bold shadow-xs">
+                  {selectedTaskIds.length}
+                </span>
+                <span className="text-[11px] sm:text-xs font-semibold text-[var(--text-primary)] whitespace-nowrap">
+                  <span className="hidden sm:inline">{selectedTaskIds.length === 1 ? 'task' : 'tasks'}</span> sel
+                </span>
+              </div>
 
-              {/* Batch Restore */}
-              <button
-                onClick={() => {
-                  onBatchUnarchiveTasks(selectedTaskIds);
-                  setSelectedTaskIds([]);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--accent-botanical-sage)] text-white hover:opacity-90 transition-opacity shadow-xs"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Restore Selected</span>
-              </button>
+              <div className="h-4 w-[1px] bg-[var(--border-subtle)] shrink-0" />
 
-              {/* Batch Export */}
-              <button
-                onClick={() => {
-                  const selectedTasksList = archivedTasks.filter((t) => selectedTaskIds.includes(t.id));
-                  handleExportTasksCSV(selectedTasksList);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--theme-surface-active)] hover:bg-[var(--theme-surface-hover)] text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors"
-              >
-                <Download className="w-3.5 h-3.5 text-[var(--accent-warm-ochre)]" />
-                <span>Export (CSV)</span>
-              </button>
-
-              {/* Batch Delete */}
-              {confirmBatchDelete ? (
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      onBatchDeleteTasks(selectedTaskIds);
-                      setSelectedTaskIds([]);
-                      setConfirmBatchDelete(false);
-                    }}
-                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700"
-                  >
-                    Confirm Delete ({selectedTaskIds.length})
-                  </button>
-                  <button
-                    onClick={() => setConfirmBatchDelete(false)}
-                    className="px-2 py-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
+              {/* Actions */}
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-1 justify-end min-w-0">
+                {/* Batch Restore */}
                 <button
-                  onClick={() => setConfirmBatchDelete(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                  onClick={() => {
+                    onBatchUnarchiveTasks(selectedTaskIds);
+                    setSelectedTaskIds([]);
+                  }}
+                  className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-[var(--accent-botanical-sage)] text-white hover:opacity-90 transition-opacity shadow-xs shrink-0 cursor-pointer"
+                  title="Restore selected tasks"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete</span>
+                  <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                  <span>Restore</span>
                 </button>
-              )}
 
-              {/* Clear Selection */}
-              <button
-                onClick={() => setSelectedTaskIds([])}
-                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] pl-2 border-l border-[var(--border-subtle)]"
-              >
-                Deselect
-              </button>
+                {/* Batch Export */}
+                <button
+                  onClick={() => {
+                    const selectedTasksList = archivedTasks.filter((t) => selectedTaskIds.includes(t.id));
+                    handleExportTasksCSV(selectedTasksList);
+                  }}
+                  className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-[var(--theme-surface-active)] hover:bg-[var(--theme-surface-hover)] text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors shrink-0 cursor-pointer"
+                  title="Export selected as CSV"
+                >
+                  <Download className="w-3.5 h-3.5 text-[var(--accent-warm-ochre)] shrink-0" />
+                  <span className="hidden xs:inline">Export</span>
+                </button>
+
+                {/* Batch Delete */}
+                {confirmBatchDelete ? (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => {
+                        onBatchDeleteTasks(selectedTaskIds);
+                        setSelectedTaskIds([]);
+                        setConfirmBatchDelete(false);
+                      }}
+                      className="px-2 py-1 text-[10px] sm:text-xs font-bold rounded-lg bg-rose-600 text-white hover:bg-rose-700 cursor-pointer whitespace-nowrap"
+                    >
+                      Confirm ({selectedTaskIds.length})
+                    </button>
+                    <button
+                      onClick={() => setConfirmBatchDelete(false)}
+                      className="px-1.5 py-1 text-[10px] sm:text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmBatchDelete(true)}
+                    className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors shrink-0 cursor-pointer"
+                    title="Delete permanently"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Delete</span>
+                  </button>
+                )}
+
+                {/* Clear Selection */}
+                <button
+                  onClick={() => setSelectedTaskIds([])}
+                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--theme-surface-hover)] rounded-lg transition-colors shrink-0 cursor-pointer"
+                  title="Deselect all"
+                  aria-label="Deselect all"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           )}
         </>
@@ -1501,72 +1518,88 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
 
           {/* Sticky Bottom Batch Action Bar for Notes */}
           {selectedNoteIds.length > 0 && (
-            <div className="fixed bottom-6 left-1/2 -translate-x-1/2 z-40 flex items-center gap-3 px-5 py-3 rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] shadow-xl animate-in slide-in-from-bottom-5">
-              <span className="text-xs font-semibold text-[var(--text-primary)] pr-2 border-r border-[var(--border-subtle)]">
-                {selectedNoteIds.length} {selectedNoteIds.length === 1 ? 'note' : 'notes'} selected
-              </span>
+            <div className="fixed bottom-20 sm:bottom-6 left-3 right-3 sm:left-1/2 sm:right-auto sm:-translate-x-1/2 z-50 max-w-lg mx-auto flex items-center justify-between gap-1.5 sm:gap-2.5 px-3 py-2 sm:px-4 sm:py-2.5 rounded-2xl bg-[var(--card-surface)]/95 backdrop-blur-md border border-[var(--border-subtle)] shadow-2xl animate-in slide-in-from-bottom-5">
+              {/* Count Badge */}
+              <div className="flex items-center gap-1.5 shrink-0">
+                <span className="flex items-center justify-center min-w-[20px] h-5 px-1.5 rounded-full bg-[var(--accent-terracotta)] text-white text-[10px] sm:text-xs font-bold shadow-xs">
+                  {selectedNoteIds.length}
+                </span>
+                <span className="text-[11px] sm:text-xs font-semibold text-[var(--text-primary)] whitespace-nowrap">
+                  <span className="hidden sm:inline">{selectedNoteIds.length === 1 ? 'note' : 'notes'}</span> sel
+                </span>
+              </div>
 
-              {/* Batch Restore */}
-              <button
-                onClick={() => {
-                  onBatchUnarchiveNotes?.(selectedNoteIds);
-                  setSelectedNoteIds([]);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--accent-botanical-sage)] text-white hover:opacity-90 transition-opacity shadow-xs"
-              >
-                <RotateCcw className="w-3.5 h-3.5" />
-                <span>Restore Selected</span>
-              </button>
+              <div className="h-4 w-[1px] bg-[var(--border-subtle)] shrink-0" />
 
-              {/* Batch Export */}
-              <button
-                onClick={() => {
-                  const selectedNotesList = archivedNotes.filter((n) => selectedNoteIds.includes(n.id));
-                  handleExportNotesCSV(selectedNotesList);
-                }}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-[var(--theme-surface-active)] hover:bg-[var(--theme-surface-hover)] text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors"
-              >
-                <Download className="w-3.5 h-3.5 text-[var(--accent-warm-ochre)]" />
-                <span>Export (CSV)</span>
-              </button>
-
-              {/* Batch Delete */}
-              {confirmBatchDelete ? (
-                <div className="flex items-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      onBatchDeleteNotes?.(selectedNoteIds);
-                      setSelectedNoteIds([]);
-                      setConfirmBatchDelete(false);
-                    }}
-                    className="px-2.5 py-1 text-xs font-semibold rounded-lg bg-rose-600 text-white hover:bg-rose-700"
-                  >
-                    Confirm Delete ({selectedNoteIds.length})
-                  </button>
-                  <button
-                    onClick={() => setConfirmBatchDelete(false)}
-                    className="px-2 py-1 text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              ) : (
+              {/* Actions */}
+              <div className="flex items-center gap-1 sm:gap-1.5 flex-1 justify-end min-w-0">
+                {/* Batch Restore */}
                 <button
-                  onClick={() => setConfirmBatchDelete(true)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors"
+                  onClick={() => {
+                    onBatchUnarchiveNotes?.(selectedNoteIds);
+                    setSelectedNoteIds([]);
+                  }}
+                  className="flex items-center justify-center gap-1 px-2.5 sm:px-3 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-[var(--accent-botanical-sage)] text-white hover:opacity-90 transition-opacity shadow-xs shrink-0 cursor-pointer"
+                  title="Restore selected notes"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
-                  <span>Delete</span>
+                  <RotateCcw className="w-3.5 h-3.5 shrink-0" />
+                  <span>Restore</span>
                 </button>
-              )}
 
-              {/* Clear Selection */}
-              <button
-                onClick={() => setSelectedNoteIds([])}
-                className="text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] pl-2 border-l border-[var(--border-subtle)]"
-              >
-                Deselect
-              </button>
+                {/* Batch Export */}
+                <button
+                  onClick={() => {
+                    const selectedNotesList = archivedNotes.filter((n) => selectedNoteIds.includes(n.id));
+                    handleExportNotesCSV(selectedNotesList);
+                  }}
+                  className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold bg-[var(--theme-surface-active)] hover:bg-[var(--theme-surface-hover)] text-[var(--text-primary)] border border-[var(--border-subtle)] transition-colors shrink-0 cursor-pointer"
+                  title="Export selected as CSV"
+                >
+                  <Download className="w-3.5 h-3.5 text-[var(--accent-warm-ochre)] shrink-0" />
+                  <span className="hidden xs:inline">Export</span>
+                </button>
+
+                {/* Batch Delete */}
+                {confirmBatchDelete ? (
+                  <div className="flex items-center gap-1 shrink-0">
+                    <button
+                      onClick={() => {
+                        onBatchDeleteNotes?.(selectedNoteIds);
+                        setSelectedNoteIds([]);
+                        setConfirmBatchDelete(false);
+                      }}
+                      className="px-2 py-1 text-[10px] sm:text-xs font-bold rounded-lg bg-rose-600 text-white hover:bg-rose-700 cursor-pointer whitespace-nowrap"
+                    >
+                      Confirm ({selectedNoteIds.length})
+                    </button>
+                    <button
+                      onClick={() => setConfirmBatchDelete(false)}
+                      className="px-1.5 py-1 text-[10px] sm:text-xs text-[var(--text-muted)] hover:text-[var(--text-primary)] cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setConfirmBatchDelete(true)}
+                    className="flex items-center justify-center gap-1 px-2 sm:px-2.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-500/10 transition-colors shrink-0 cursor-pointer"
+                    title="Delete permanently"
+                  >
+                    <Trash2 className="w-3.5 h-3.5 shrink-0" />
+                    <span className="hidden xs:inline">Delete</span>
+                  </button>
+                )}
+
+                {/* Clear Selection */}
+                <button
+                  onClick={() => setSelectedNoteIds([])}
+                  className="p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--theme-surface-hover)] rounded-lg transition-colors shrink-0 cursor-pointer"
+                  title="Deselect all"
+                  aria-label="Deselect all"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
             </div>
           )}
         </>

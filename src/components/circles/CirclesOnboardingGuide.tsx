@@ -98,6 +98,13 @@ export const CirclesOnboardingGuide: React.FC<CirclesOnboardingGuideProps> = ({
   });
   const popoverRef = useRef<HTMLDivElement>(null);
 
+  // Reset step to beginning whenever opened
+  useEffect(() => {
+    if (isOpen) {
+      setCurrentStep(0);
+    }
+  }, [isOpen]);
+
   // Measure popover height dynamically
   useEffect(() => {
     if (popoverRef.current) {

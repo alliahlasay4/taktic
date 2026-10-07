@@ -260,6 +260,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   useEffect(() => {
+    // If in demo mode, immediately set demo user and skip Supabase auth listeners
+    if (isDemo || localStorage.getItem('taktic_demo_mode') === 'true') {
+      setUser(DEMO_USER);
+      setSession(null);
+      setLoading(false);
+      return;
+    }
+
     // Process incoming auth links (Email Confirmation, Password Reset, Magic Link)
     const handleIncomingAuthLink = async () => {
       if (typeof window === 'undefined') return;
@@ -334,12 +342,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return;
       }
 
-      if (isDemo) {
-        setUser(DEMO_USER);
-        setLoading(false);
-        return;
-      }
-
       if (!isSupabaseConfigured) {
         setLoading(false);
         return;
@@ -347,6 +349,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       // Get initial session
       supabase.auth.getSession().then(({ data: { session } }) => {
+        if (isDemo || localStorage.getItem('taktic_demo_mode') === 'true') return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -364,6 +367,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       // If we are currently handling an email confirmation redirect, do not auto-login
       if (hasIncomingAuthLink()) return;
+
+      // If user switched to demo mode, do not allow Supabase empty session to clear demo user
+      if (isDemo || localStorage.getItem('taktic_demo_mode') === 'true') return;
 
       setSession(session);
       setUser(session?.user ?? null);
@@ -439,10 +445,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loginAsDemo = () => {
     clearDemoData();
-    setIsDemo(true);
     localStorage.setItem('taktic_demo_mode', 'true');
     setUser(DEMO_USER);
+    setSession(null);
     setProfile(DEFAULT_PROFILE);
+    setIsDemo(true);
+    setLoading(false);
   };
 
   const signOut = async () => {

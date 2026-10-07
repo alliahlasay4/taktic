@@ -14,6 +14,7 @@ import {
   ArrowRight,
   X,
 } from 'lucide-react';
+import { TakticLogo } from '../common/TakticLogo';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -137,16 +138,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
 
           {/* Top Bar: Brand & Close */}
           <div className="relative z-10 flex items-center justify-between pb-3">
-            <div className="flex items-center gap-2.5 group cursor-default">
-              <img
-                src="/logo.png"
-                alt="Taktic Logo"
-                className="h-8 w-8 rounded-xl object-contain shadow-md transition-transform duration-200 group-hover:scale-105"
-              />
-              <span className="font-heading text-lg font-bold tracking-tight text-white transition-colors duration-200 group-hover:text-amber-200">
-                Taktic
-              </span>
-            </div>
+            <TakticLogo size="sm" showText={true} />
 
             {onClose && (
               <button

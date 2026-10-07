@@ -4,6 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { InAppNotification, ActiveTab } from '../../types';
 import { NotificationCenterDropdown } from './NotificationCenterDropdown';
 import { UserProfileDropdown } from './UserProfileDropdown';
+import { TakticLogo } from '../common/TakticLogo';
 
 interface NavbarProps {
   darkMode: boolean;
@@ -57,15 +58,9 @@ export const Navbar: React.FC<NavbarProps> = ({
           type="button"
           onClick={() => onSelectTab?.('dashboard')}
           className="flex items-center gap-2.5 sm:gap-3 shrink-0 text-left cursor-pointer focus-visible:outline-hidden group"
+          aria-label="Taktic Dashboard"
         >
-          <img
-            src="/logo.png"
-            alt="Taktic Logo"
-            className="h-9 w-9 sm:h-10 sm:w-10 rounded-xl object-contain shadow-md shadow-[#C06C4C]/20 transition-transform group-hover:scale-105"
-          />
-          <span className="font-heading text-xl sm:text-2xl font-bold tracking-tight text-[var(--text-primary)] leading-none transition-colors group-hover:text-[#C06C4C]">
-            Taktic
-          </span>
+          <TakticLogo size="md" showText={true} />
         </button>
 
         {/* Action Controls */}

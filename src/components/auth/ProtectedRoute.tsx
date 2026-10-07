@@ -8,6 +8,7 @@ import {
   isLandingPath,
   normalizePath,
 } from '../../lib/routes';
+import { TakticLogo } from '../common/TakticLogo';
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -123,11 +124,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-main)] text-[var(--text-primary)]">
         <div className="flex flex-col items-center gap-4">
-          <img
-            src="/logo.png"
-            alt="Taktic Logo"
-            className="h-12 w-12 rounded-2xl object-contain shadow-lg shadow-[#C06C4C]/25 animate-pulse"
-          />
+          <TakticLogo size="lg" className="animate-pulse" />
           <div className="flex items-center gap-2">
             <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--accent-terracotta)] border-t-transparent" />
             <p className="text-xs font-semibold tracking-wider text-[var(--text-secondary)] uppercase">

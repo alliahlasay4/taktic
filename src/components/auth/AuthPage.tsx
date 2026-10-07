@@ -20,6 +20,7 @@ import {
   Eye,
   EyeOff,
 } from 'lucide-react';
+import { TakticLogo } from '../common/TakticLogo';
 
 interface AuthPageProps {
   onBackToHome?: () => void;
@@ -303,16 +304,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
             type="button"
             onClick={onBackToHome}
             disabled={!onBackToHome}
-            className={`flex items-center gap-2.5 sm:gap-3 text-left focus-visible:outline-hidden group ${onBackToHome ? 'cursor-pointer' : 'cursor-default'}`}
+            className={`flex items-center text-left focus-visible:outline-hidden group ${onBackToHome ? 'cursor-pointer' : 'cursor-default'}`}
+            aria-label="Taktic Home"
           >
-            <img
-              src="/logo.png"
-              alt="Taktic Logo"
-              className="h-9 w-9 sm:h-10 sm:w-10 rounded-2xl object-contain shadow-lg transition-transform duration-200 group-hover:scale-105"
-            />
-            <span className="font-heading text-2xl font-bold tracking-tight text-white drop-shadow-xs transition-colors duration-200 group-hover:text-amber-200">
-              Taktic
-            </span>
+            <TakticLogo size="md" showText={true} />
           </button>
 
           {onBackToHome && (
