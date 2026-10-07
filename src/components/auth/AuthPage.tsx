@@ -205,12 +205,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
       return;
     }
 
+    const formatAuthError = (err: any): string => {
+      const msg = err?.message || err || '';
+      if (typeof msg === 'string' && msg.toLowerCase().includes('error sending confirmation email')) {
+        return 'Supabase email rate limit reached (free tier limit: 3-4 emails/hour). In your Supabase Dashboard, go to Authentication → Providers → Email and turn OFF "Confirm email" (or set up custom SMTP).';
+      }
+      return msg || 'An unexpected authentication error occurred.';
+    };
+
     setIsSubmitting(true);
     try {
       if (isSignUp) {
         const { error } = await signUpWithEmail(email.trim(), password, fullName.trim());
         if (error) {
-          setErrorMsg(error.message);
+          setErrorMsg(formatAuthError(error));
         } else {
           const { error: loginErr } = await signInWithEmail(email.trim(), password);
           if (loginErr) {
@@ -221,7 +229,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
       } else {
         const { error } = await signInWithEmail(email.trim(), password);
         if (error) {
-          setErrorMsg(error.message);
+          setErrorMsg(formatAuthError(error));
         }
       }
     } catch (err: any) {
