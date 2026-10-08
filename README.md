@@ -1,9 +1,9 @@
-# 🎯 Taktic
+# Taktic
 
 <div align="center">
   <p align="center">
-    <strong>Tactical Focus & Daily Rhythm Workspace</strong><br />
-    Turn scattered to-do lists into 3–5 sharp daily focus priorities, streak-protected habits, and deep flow sessions.
+    <strong>Tactical Focus and Daily Rhythm Workspace</strong><br />
+    Turn scattered task lists into structured daily focus priorities, habit tracking, and flow sessions.
   </p>
 
   <p align="center">
@@ -18,90 +18,102 @@
 
 ---
 
-## 🌟 Key Highlights
+## Overview
 
-- ⏱️ **Focus Hub & Top 3–5 Priorities**: Curate daily focus items with drag-and-drop ordering and time estimations.
-- 🔄 **Habit Triple Rings & Freeze Shields**: Authentic streak calculation algorithms with missed-day shield protections.
-- 🧘 **Ambient Soundscape Engine**: Built-in soundscapes (Gentle Rain, Ocean Waves, Coffee Shop, Warm Chords) for deep focus.
-- 👥 **Social Accountability Circles**: Real-time partner presence, focus sharing, and encouragement pings.
-- 📱 **Progressive Web App (PWA)**: Full offline support, mobile install prompts, and standalone display.
-- ⚡ **1-Click Interactive Demo**: Immediate sandboxed demo mode for evaluation without requiring an account.
+Taktic is a productivity workspace designed to eliminate task overwhelm. Rather than managing endless backlogs, it structures daily execution into top focus priorities, streak-protected habit routines, and ambient focus sessions within a unified interface.
 
 ---
 
-## 🛠️ Tech Stack
+## Key Capabilities
 
-- **Framework**: [React 19](https://react.dev/) + [Vite](https://vitejs.dev/)
-- **Styling**: [TailwindCSS v4](https://tailwindcss.com/) with curated organic palettes (Terracotta, Ochre, Sage, Rose)
-- **State & Backend**: [Supabase](https://supabase.com/) (Auth, PostgreSQL, Row-Level Security) + Local Storage Sync
-- **Animations & UI**: [Framer Motion](https://www.framer.com/motion/), [Lucide React](https://lucide.dev/), Canvas Confetti
-- **Charts & Data**: [Recharts](https://recharts.org/)
-- **Testing**: [Vitest](https://vitest.dev/) (Unit & Component tests) + [Playwright](https://playwright.dev/) (E2E Browser testing)
-
----
-
-## 🚀 Getting Started
-
-### 1. Clone & Install Dependencies
-```bash
-git clone https://github.com/alliahlasay4/taktic.git
-cd taktic
-npm install
-```
-
-### 2. Configure Environment Variables
-Create a `.env.local` file in the root directory:
-```env
-VITE_SUPABASE_URL=https://your-project.supabase.co
-VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
-
-### 3. Run Development Server
-```bash
-npm run dev
-```
-Open [`http://localhost:5173`](http://localhost:5173) in your browser.
+- **Focus Hub**: Prioritize 3 to 5 core daily tasks with estimation and queue management.
+- **Habit Tracking & Streaks**: Consecutive completion algorithms with freeze shield protection against missed days.
+- **Ambient Audio Engine**: Integrated background soundscapes (Rain, Ocean, Cafe, Chords) for sustained deep work.
+- **Social Circles**: Real-time accountability, presence indicators, and activity feeds.
+- **Progressive Web App (PWA)**: Standalone desktop and mobile installation with offline data synchronization.
+- **Interactive Demo Mode**: Full guest access for platform evaluation without registration requirements.
 
 ---
 
-## 🧪 Automated Testing Suite
+## Tech Stack
 
-Taktic is equipped with automated tests covering unit logic, auth token parsing, streak algorithms, and end-to-end browser journeys.
+- **Frontend**: [React 19](https://react.dev/) with TypeScript and [Vite](https://vitejs.dev/)
+- **Styling**: [TailwindCSS v4](https://tailwindcss.com/)
+- **Backend & Persistence**: [Supabase](https://supabase.com/) (PostgreSQL, Authentication, Row-Level Security) with LocalStorage fallback
+- **State & Animations**: [Framer Motion](https://www.framer.com/motion/), [Lucide React](https://lucide.dev/)
+- **Data Visualization**: [Recharts](https://recharts.org/)
+- **Testing**: [Vitest](https://vitest.dev/) (Unit and Logic) + [Playwright](https://playwright.dev/) (End-to-End Browser Automation)
 
-### ⚡ Unit & Logic Tests (Vitest)
-Runs sub-second unit tests for streak math, date helpers, and authentication state handlers:
+---
+
+## Getting Started
+
+### Prerequisites
+
+- Node.js (v18 or later)
+- npm or pnpm
+
+### Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/alliahlasay4/taktic.git
+   cd taktic
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Configure environment variables:
+   Create a `.env.local` file in the project root:
+   ```env
+   VITE_SUPABASE_URL=https://your-project.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-supabase-anon-key
+   ```
+
+4. Start the local development server:
+   ```bash
+   npm run dev
+   ```
+   Open `http://localhost:5173` in your browser.
+
+---
+
+## Testing Suite
+
+Taktic includes automated unit testing for core algorithms and end-to-end browser testing for critical user workflows.
+
+### Unit & Logic Tests (Vitest)
+
+Validates streak calculations, date math, and authentication token parsing:
+
 ```bash
-# Run all unit tests once
+# Run unit tests
 npm run test
 
-# Run unit tests in interactive watch mode
+# Run in watch mode during active development
 npm run test:watch
 ```
 
-### 🌐 End-to-End Browser Tests (Playwright)
-Executes automated browser tests across Desktop and Mobile viewports with automatic screenshot capture and traces:
+### End-to-End Browser Tests (Playwright)
+
+Runs automated headless browser tests across desktop and mobile viewports:
+
 ```bash
-# Run all E2E tests in headless browser
+# Run end-to-end tests in headless mode
 npm run test:e2e
 
-# Run E2E tests in the interactive visual test runner UI
+# Run tests with the interactive visual UI runner
 npm run test:e2e:ui
 
-# View the detailed HTML test execution report and traces
+# Generate and inspect the HTML test report
 npm run test:e2e:report
 ```
 
 ---
 
-## 📸 Automated Test Artifacts
+## License
 
-When E2E tests execute, high-resolution screenshots are automatically saved to `/screenshots`:
-- `landing-page.png`: Hero header and landing page elements
-- `demo-dashboard.png`: Focus Hub dashboard loaded in 1-Click demo mode
-- `core-app-dashboard.png`: Habit rings and task tracking state
-
----
-
-## 📜 License
-
-MIT License &copy; 2026 Taktic. Built for builders who execute every single day.
+Distributed under the MIT License. See `LICENSE` for more information.
