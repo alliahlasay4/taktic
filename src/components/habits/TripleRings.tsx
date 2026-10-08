@@ -166,7 +166,7 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               className="flex flex-col items-center"
             >
-              <span className="font-heading text-2xl sm:text-3xl font-black text-[var(--text-primary)] leading-none tracking-tight">
+              <span className="font-heading text-2xl sm:text-3xl font-black text-[var(--text-primary)] leading-none tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_3px_12px_rgba(0,0,0,0.5)]">
                 {Math.round((taskPct + habitPct + focusPct) / 3)}%
               </span>
             </motion.div>
