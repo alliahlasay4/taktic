@@ -7,12 +7,13 @@
   </p>
 
   <p align="center">
+    <a href="https://github.com/alliahlasay4/taktic/actions/workflows/test.yml"><img src="https://github.com/alliahlasay4/taktic/actions/workflows/test.yml/badge.svg" alt="CI Tests" /></a>
     <a href="https://github.com/alliahlasay4/taktic"><img src="https://img.shields.io/badge/Vite-6.1-646CFF?style=flat-square&logo=vite&logoColor=white" alt="Vite" /></a>
     <a href="https://react.dev"><img src="https://img.shields.io/badge/React-19.0-61DAFB?style=flat-square&logo=react&logoColor=black" alt="React 19" /></a>
     <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/TailwindCSS-v4.0-38B2AC?style=flat-square&logo=tailwind-css&logoColor=white" alt="TailwindCSS" /></a>
     <a href="https://supabase.com"><img src="https://img.shields.io/badge/Supabase-Auth%20%26%20DB-3ECF8E?style=flat-square&logo=supabase&logoColor=white" alt="Supabase" /></a>
-    <a href="https://vitest.dev"><img src="https://img.shields.io/badge/Vitest-Unit%20Tests%20Passing-729B1B?style=flat-square&logo=vitest&logoColor=white" alt="Vitest" /></a>
-    <a href="https://playwright.dev"><img src="https://img.shields.io/badge/Playwright-E2E%20Verified-2EAD33?style=flat-square&logo=playwright&logoColor=white" alt="Playwright" /></a>
+    <a href="https://vitest.dev"><img src="https://img.shields.io/badge/Vitest-Unit%20Tests-729B1B?style=flat-square&logo=vitest&logoColor=white" alt="Vitest" /></a>
+    <a href="https://playwright.dev"><img src="https://img.shields.io/badge/Playwright-E2E-2EAD33?style=flat-square&logo=playwright&logoColor=white" alt="Playwright" /></a>
   </p>
 </div>
 
