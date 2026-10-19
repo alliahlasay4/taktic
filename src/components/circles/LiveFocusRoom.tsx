@@ -3,7 +3,6 @@ import {
   Users,
   Flame,
   Plus,
-  KeyRound,
   Copy,
   Check,
   Edit3,
@@ -362,7 +361,6 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
         {/* Live Active Co-Workers Overview */}
         {(() => {
           const liveFocusingMembers = members.filter((m) => m.status === 'focusing' && !m.isIncognito);
-          const visibleMembers = members.filter((m) => !m.isIncognito);
 
           return (
             <div className="pt-4 border-t border-[var(--border-subtle)] space-y-3">

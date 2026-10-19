@@ -277,7 +277,7 @@ export const ProfileView: React.FC = () => {
 
       {/* Sub-Tab Content Rendering */}
       {activeSubTab === 'overview' ? (
-        <ProfileOverview profile={profile} />
+        <ProfileOverview profile={profile} stats={stats} />
       ) : (
         <ProfileSettings profile={profile} onSave={updateProfile} />
       )}

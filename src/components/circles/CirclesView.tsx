@@ -14,16 +14,13 @@ import {
   Lock,
   Boxes,
   Search,
-  UserCheck,
   Mail,
-  Send,
   Copy,
   Check,
   X,
   SlidersHorizontal,
   ChevronDown,
   Compass,
-  HelpCircle,
 } from 'lucide-react';
 import { CircleMember, CircleFeedPost, CircleInvite, IncomingCircleInvite } from '../../types';
 import confetti from 'canvas-confetti';
@@ -78,7 +75,6 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   onRemoveMember,
   onSendInvite,
   onCancelInvite,
-  onResendInvite,
   onGenerateMagicLink,
   onAcceptInvite,
   onDeclineInvite,
@@ -92,7 +88,6 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   const [isInviteModalOpen, setIsInviteModalOpen] = useState(false);
   const [memberToRemove, setMemberToRemove] = useState<CircleMember | null>(null);
   const [copiedInviteId, setCopiedInviteId] = useState<string | null>(null);
-  const [newPartnerName, setNewPartnerName] = useState('');
   const [acceptingToken, setAcceptingToken] = useState<string | null>(null);
   const [decliningToken, setDecliningToken] = useState<string | null>(null);
   const [confirmingDeclineToken, setConfirmingDeclineToken] = useState<string | null>(null);
@@ -163,15 +158,6 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
 
   const handleCreateRoomWrapper = (roomData: { name: string; durationMinutes: number; code: string }) => {
     createRoom(roomData.name, roomData.durationMinutes, roomData.code);
-  };
-
-  const handleAddPartnerSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPartnerName.trim()) return;
-    if (onAddMemberByName) {
-      onAddMemberByName(newPartnerName.trim());
-    }
-    setNewPartnerName('');
   };
 
   const activeFocusingCount = members.filter((m) => m.status === 'focusing' && !m.isIncognito).length;

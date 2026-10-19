@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Mail, Link as LinkIcon, Copy, Check, ShieldCheck, Sparkles, Send, MessageCircle } from 'lucide-react';
+import { X, Mail, Link as LinkIcon, Copy, Check, Sparkles, Send, MessageCircle } from 'lucide-react';
 
 interface InvitePartnerModalProps {
   isOpen: boolean;

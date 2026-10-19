@@ -1,5 +1,6 @@
 import { supabase, isSupabaseConfigured } from './supabase';
 import { UserProfile, HeatmapDay, Badge } from '../types';
+import { getLocalDateString } from './streak';
 
 export const fetchUserProfileFromSupabase = async (userId: string): Promise<UserProfile | null> => {
   if (!isSupabaseConfigured || !userId || userId === 'demo-user-123') return null;
@@ -194,13 +195,6 @@ export const fetchProfileStatsFromSupabase = async (userId: string): Promise<Rea
     const totalEvents = totalFocusSessions + (habitLogsCount || 0) + (completedTasksCount || 0);
     const ringsRatePercent = totalEvents === 0 ? 0 : Math.min(100, Math.round((activeDatesLast30.size / 30) * 100));
 
-    // Persist computed streak to profiles table in background
-    supabase
-      .from('profiles')
-      .update({ current_streak: currentStreak })
-      .eq('id', userId)
-      .then();
-
     return {
       totalFocusHours,
       totalFocusSessions,
@@ -305,10 +299,10 @@ export const fetchProfileHeatmapFromSupabase = async (userId: string): Promise<H
 };
 
 export const fetchBadgesWithRealProgress = async (
-  userId: string,
+  _userId: string,
   stats: RealProfileStats
 ): Promise<Badge[]> => {
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
 
   return [
     {

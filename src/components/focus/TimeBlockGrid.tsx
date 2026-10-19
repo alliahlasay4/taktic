@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sun, Sunset, Moon, Clock, Play, GripVertical, Plus, Check } from 'lucide-react';
+import { Sun, Sunset, Moon, Clock, Play, GripVertical, Plus } from 'lucide-react';
 import { Task, TimeBlockSlot } from '../../types';
 
 interface TimeBlockGridProps {
@@ -70,7 +70,7 @@ export const TimeBlockGrid: React.FC<TimeBlockGridProps> = ({
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-start">
-        {blocks.map(({ slot, label, icon: Icon, color, badgeColor }) => {
+        {blocks.map(({ slot, icon: Icon, color, badgeColor }) => {
           const slotTasks = tasks.filter((t) => t.isTodayFocus && t.timeBlock === slot);
           const totalEst = slotTasks.reduce((sum, t) => sum + (t.estimatedMinutes || 25), 0);
           const isOver = draggedOverSlot === slot;

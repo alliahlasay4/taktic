@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flame, Sparkles, Volume2, VolumeX, Bell, Sun, Moon, StickyNote } from 'lucide-react';
+import { Flame, Volume2, Bell, Sun, Moon, StickyNote } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { InAppNotification, ActiveTab } from '../../types';
 import { NotificationCenterDropdown } from './NotificationCenterDropdown';
@@ -43,12 +43,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSelectTab,
   onAcceptCircleInvite,
 }) => {
-  const { user, profile, isDemo } = useAuth();
+  const { user, profile } = useAuth();
   const [isNotifOpen, setIsNotifOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
   const userName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-  const userAvatar = profile?.avatarUrl || (profile as any)?.avatar_url || user?.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+  const userAvatar = profile?.avatarUrl || user?.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
   return (
     <header className="sticky top-0 z-40 w-full border-b border-[var(--border-subtle)] bg-[var(--card-surface)]/80 backdrop-blur-md transition-colors duration-300">

@@ -12,9 +12,6 @@ import {
   CheckSquare,
   Square,
   Sparkles,
-  ArrowRight,
-  Maximize2,
-  Clock,
 } from 'lucide-react';
 import { QuickNote, NoteColor, Task } from '../../types';
 

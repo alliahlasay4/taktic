@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Clock, Repeat, Flame, Users, Bell, X, Sparkles } from 'lucide-react';
+import { Clock, Repeat, Flame, Users, X, Sparkles } from 'lucide-react';
 import { ToastItem } from '../../hooks/useInAppNotifications';
 
 interface NotificationToastOverlayProps {

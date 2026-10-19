@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { QuickNote, NoteColor } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
+import { createScopedStorage } from '../lib/storage';
 
 const INITIAL_QUICK_NOTES: QuickNote[] = [
   {
@@ -17,36 +18,27 @@ const INITIAL_QUICK_NOTES: QuickNote[] = [
 
 export function useQuickNotes() {
   const { user, isDemo } = useAuth();
-  const [notes, setNotes] = useState<QuickNote[]>([]);
+
+  const storage = useMemo(() => createScopedStorage<QuickNote[]>('quick_notes', user?.id, isDemo), [user?.id, isDemo]);
+  const seedStorage = useMemo(() => createScopedStorage<string>('scratchpad_seeded', user?.id, isDemo), [user?.id, isDemo]);
+
+  const [notes, setNotes] = useState<QuickNote[]>(() => {
+    const fallback = isDemo ? INITIAL_QUICK_NOTES : [];
+    return storage.get(fallback) || fallback;
+  });
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-
-  const userKey = user?.id || (isDemo ? 'demo' : 'guest');
-  const storageKey = `taktic_quick_notes_${userKey}`;
-  const seedKey = `taktic_scratchpad_seeded_${userKey}`;
 
   // Fetch Notes from LocalStorage or Supabase
   const fetchNotes = useCallback(async () => {
     setLoading(true);
     setError(null);
 
-    const currentKey = user?.id || (isDemo ? 'demo' : 'guest');
-    const curStorageKey = `taktic_quick_notes_${currentKey}`;
-    const curSeedKey = `taktic_scratchpad_seeded_${currentKey}`;
-
-    // Demo mode -> ephemeral sessionStorage
-    if (isDemo || userKey === 'demo' || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
-      const saved = sessionStorage.getItem('taktic_demo_quick_notes');
-      if (saved) {
-        try {
-          setNotes(JSON.parse(saved));
-        } catch (e) {
-          setNotes(INITIAL_QUICK_NOTES);
-        }
-      } else {
-        setNotes(INITIAL_QUICK_NOTES);
-        sessionStorage.setItem('taktic_demo_quick_notes', JSON.stringify(INITIAL_QUICK_NOTES));
-      }
+    // Demo mode -> ephemeral scoped storage
+    if (storage.isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
+      const saved = storage.get(INITIAL_QUICK_NOTES) || INITIAL_QUICK_NOTES;
+      setNotes(saved);
+      storage.set(saved);
       setLoading(false);
       return;
     }
@@ -74,13 +66,7 @@ export function useQuickNotes() {
       }));
 
       // Merge with user-scoped local archive cache in case Supabase columns were un-migrated
-      let localNotes: QuickNote[] = [];
-      const saved = localStorage.getItem(curStorageKey);
-      if (saved) {
-        try {
-          localNotes = JSON.parse(saved);
-        } catch {}
-      }
+      const localNotes = storage.get([]) || [];
 
       const merged = mapped.map((dbNote) => {
         const local = localNotes.find((l) => l.id === dbNote.id);
@@ -90,30 +76,30 @@ export function useQuickNotes() {
         return dbNote;
       });
 
-      const hasSeeded = localStorage.getItem(curSeedKey);
+      const hasSeeded = seedStorage.get();
       if (merged.length > 0) {
         setNotes(merged);
-        localStorage.setItem(curSeedKey, 'true');
-        localStorage.setItem(curStorageKey, JSON.stringify(merged));
+        seedStorage.set('true');
+        storage.set(merged);
       } else if (!hasSeeded) {
         // First time for this user: show single welcome note
         setNotes(INITIAL_QUICK_NOTES);
-        localStorage.setItem(curSeedKey, 'true');
-        localStorage.setItem(curStorageKey, JSON.stringify(INITIAL_QUICK_NOTES));
+        seedStorage.set('true');
+        storage.set(INITIAL_QUICK_NOTES);
       } else {
         // User deliberately deleted all notes
         setNotes([]);
-        localStorage.setItem(curStorageKey, JSON.stringify([]));
+        storage.set([]);
       }
     } catch (err: any) {
       console.error('Error fetching quick notes from Supabase:', err);
       setError(err.message || 'Failed to fetch notes.');
-      const saved = localStorage.getItem(curStorageKey);
-      setNotes(saved ? JSON.parse(saved) : []);
+      const saved = storage.get([]);
+      setNotes(saved || []);
     } finally {
       setLoading(false);
     }
-  }, [user, isDemo]);
+  }, [user, storage, seedStorage]);
 
   useEffect(() => {
     fetchNotes();
@@ -121,12 +107,8 @@ export function useQuickNotes() {
 
   // Write-through cache with strict demo isolation
   useEffect(() => {
-    if (isDemo || userKey === 'demo' || user?.id === 'demo-user-123') {
-      sessionStorage.setItem('taktic_demo_quick_notes', JSON.stringify(notes));
-    } else if (user?.id) {
-      localStorage.setItem(storageKey, JSON.stringify(notes));
-    }
-  }, [notes, storageKey, isDemo, userKey, user]);
+    storage.set(notes);
+  }, [notes, storage]);
 
   // Add Note
   const addNote = async (newNoteData: {
@@ -225,22 +207,10 @@ export function useQuickNotes() {
           .eq('user_id', user.id);
 
         if (res.error) {
-          // If archived column does not exist on database, delete it so it never reappears
-          await supabase
-            .from('quick_notes')
-            .delete()
-            .eq('id', id)
-            .eq('user_id', user.id);
+          console.error('Could not archive note in Supabase:', res.error);
         }
       } catch (err: any) {
-        console.warn('Could not archive note in Supabase:', err);
-        try {
-          await supabase
-            .from('quick_notes')
-            .delete()
-            .eq('id', id)
-            .eq('user_id', user.id);
-        } catch {}
+        console.error('Could not archive note in Supabase:', err);
       }
     }
   };

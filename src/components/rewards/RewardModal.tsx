@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import confetti from 'canvas-confetti';
-import { Sparkles, Trophy, Flame, CheckCircle, X } from 'lucide-react';
+import { Trophy, Flame, X } from 'lucide-react';
 import { soundEngine } from '../../lib/audio';
 
 interface RewardModalProps {

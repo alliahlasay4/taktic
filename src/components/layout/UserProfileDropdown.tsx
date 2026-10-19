@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { User, Sun, Moon, LogOut, Sparkles, Settings, Eye, EyeOff } from 'lucide-react';
+import { User, Sun, Moon, LogOut, Sparkles, Eye, EyeOff } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 
 interface UserProfileDropdownProps {
@@ -23,8 +23,8 @@ export const UserProfileDropdown: React.FC<UserProfileDropdownProps> = ({
   const menuRef = useRef<HTMLDivElement>(null);
 
   const userName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'User';
-  const userEmail = user?.email || (profile as any)?.email || (isDemo ? 'demo@taktic.app' : '');
-  const userAvatar = profile?.avatarUrl || (profile as any)?.avatar_url || user?.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+  const userEmail = user?.email || (isDemo ? 'demo@taktic.app' : '');
+  const userAvatar = profile?.avatarUrl || user?.user_metadata?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
 
   // Handle click outside to close dropdown
   useEffect(() => {

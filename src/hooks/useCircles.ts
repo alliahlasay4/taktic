@@ -169,20 +169,9 @@ export function useCircles() {
         };
 
         // 1. Invoke Supabase Edge Function to dispatch Auth Invite Email
-        let { data: edgeData, error: edgeErr } = await supabase.functions.invoke('invite-partner', {
+        const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('invite-partner', {
           body: payload,
         });
-
-        // If the function slug on Supabase is bright-responder, retry with bright-responder
-        if (edgeErr) {
-          const retryRes = await supabase.functions.invoke('bright-responder', {
-            body: payload,
-          });
-          if (!retryRes.error) {
-            edgeData = retryRes.data;
-            edgeErr = null;
-          }
-        }
 
         if (edgeErr) {
           console.warn('Edge function invite dispatch note:', edgeErr.message);
@@ -473,10 +462,6 @@ export function useCircles() {
           .map((m) => m.partner_user_id)
           .filter(Boolean) as string[];
 
-        const memberNames = membersData
-          .map((m) => m.member_name)
-          .filter(Boolean) as string[];
-
         let partnerProfilesMap: Record<string, any> = {};
 
         try {
@@ -557,13 +542,21 @@ export function useCircles() {
             console.warn('Could not read local profile cache:', e);
           }
 
-          // 1. Fetch all profiles from Supabase using select('*') to avoid any missing column issues
-          const { data: allProfiles, error: allProfilesErr } = await supabase
-            .from('profiles')
-            .select('*');
+          // 1. Fetch only relevant profiles for the user and their circle partners
+          const allRelevantUserIds = new Set<string>(partnerUserIds);
+          if (user?.id) {
+            allRelevantUserIds.add(user.id);
+          }
 
-          if (!allProfilesErr && allProfiles) {
-            addProfilesToMap(allProfiles);
+          if (allRelevantUserIds.size > 0) {
+            const { data: allProfiles, error: allProfilesErr } = await supabase
+              .from('profiles')
+              .select('*')
+              .in('id', Array.from(allRelevantUserIds));
+
+            if (!allProfilesErr && allProfiles) {
+              addProfilesToMap(allProfiles);
+            }
           }
         } catch (e) {
           console.warn('Could not fetch partner profiles for circle members:', e);
@@ -714,10 +707,16 @@ export function useCircles() {
         .order('created_at', { ascending: false })
         .limit(50);
 
-      // 4. Fetch post likes
-      const { data: likesData } = await supabase
-        .from('post_likes')
-        .select('*');
+      // 4. Fetch post likes (filtered by relevant post IDs)
+      const postIds = (postsData || []).map((p) => p.id).filter(Boolean);
+      let likesData: any[] = [];
+      if (postIds.length > 0) {
+        const { data: fetchedLikes } = await supabase
+          .from('post_likes')
+          .select('*')
+          .in('post_id', postIds);
+        likesData = fetchedLikes || [];
+      }
 
       if (!postsErr && postsData) {
         const mappedPosts: CircleFeedPost[] = postsData.map((p) => {
@@ -809,17 +808,6 @@ export function useCircles() {
         )
         .subscribe();
 
-      const likesChannel = supabase
-        .channel('public:post_likes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'post_likes' },
-          () => {
-            fetchCirclesData();
-          }
-        )
-        .subscribe();
-
       const feedBroadcastChannel = supabase
         .channel('public:circle_feed_broadcast')
         .on('broadcast', { event: 'reaction_sync' }, (payload) => {
@@ -862,17 +850,6 @@ export function useCircles() {
         )
         .subscribe();
 
-      const profilesChannel = supabase
-        .channel('public:profiles_sync')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'profiles' },
-          () => {
-            fetchCirclesData();
-          }
-        )
-        .subscribe();
-
       const handleVisibilityOrFocus = () => {
         if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
           fetchCirclesData();
@@ -892,11 +869,9 @@ export function useCircles() {
         window.removeEventListener('visibilitychange', handleVisibilityOrFocus);
         window.removeEventListener('storage', handleStorageChange);
         supabase.removeChannel(postsChannel);
-        supabase.removeChannel(likesChannel);
         supabase.removeChannel(feedBroadcastChannel);
         supabase.removeChannel(membersChannel);
         supabase.removeChannel(invitesChannel);
-        supabase.removeChannel(profilesChannel);
       };
     }
   }, [fetchCirclesData, isRealUser, user]);

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Users, ShieldCheck, Check, Sparkles, Calendar, Clock, Search, Layers, CheckSquare, Square } from 'lucide-react';
+import { X, Users, Check, Sparkles, Calendar, Clock, Search, Layers, CheckSquare, Square } from 'lucide-react';
 import { CircleMember } from '../../types';
 
 interface CreatePodModalProps {

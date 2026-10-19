@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Calendar, Clock, Tag as TagIcon, Trash2, CheckCircle2, Sparkles, AlertCircle, Repeat, Sun, Sunset, Moon } from 'lucide-react';
+import { X, Tag as TagIcon, Trash2 } from 'lucide-react';
 import { Task, PriorityLevel, TimeBlockSlot } from '../../types';
+import { getLocalDateString, getDateWithOffset } from '../../lib/streak';
 
 interface TaskFormModalProps {
   isOpen: boolean;
@@ -40,9 +41,9 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
   onSave,
   onDelete,
 }) => {
-  const todayStr = new Date().toISOString().split('T')[0];
-  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
-  const nextWeekStr = new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
+  const tomorrowStr = getDateWithOffset(todayStr, 1);
+  const nextWeekStr = getDateWithOffset(todayStr, 7);
 
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');

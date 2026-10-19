@@ -6,7 +6,6 @@ import {
   Repeat,
   Users,
   BarChart3,
-  User,
   Play,
   Pause,
   RotateCcw,
@@ -491,7 +490,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="flex items-center gap-3 min-w-0">
               <div className="relative shrink-0">
                 <img
-                  src={profile.avatarUrl || (profile as any)?.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
+                  src={profile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
                   alt={profile.fullName}
                   className="w-10 h-10 rounded-xl object-cover border border-[var(--border-subtle)] shadow-xs transition-transform group-hover:scale-105"
                   onError={(e) => {

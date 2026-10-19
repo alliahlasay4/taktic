@@ -16,7 +16,6 @@ import {
   StickyNote,
   Copy,
   Check,
-  Zap,
   X,
 } from 'lucide-react';
 import { Task, PriorityLevel, QuickNote, NoteColor } from '../../types';

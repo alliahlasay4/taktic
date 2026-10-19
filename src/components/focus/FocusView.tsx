@@ -4,6 +4,7 @@ import { Task, TimeBlockSlot } from '../../types';
 import { PomodoroTimer } from './PomodoroTimer';
 import { TimeBlockGrid } from './TimeBlockGrid';
 import { AmbientSoundCard } from './AmbientSoundCard';
+import { useTimer } from '../../context/TimerContext';
 
 interface FocusViewProps {
   tasks: Task[];
@@ -24,7 +25,7 @@ export const FocusView: React.FC<FocusViewProps> = ({
   totalFocusMinutesToday = 75,
   onExitImmersive,
 }) => {
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const { selectedTask, setSelectedTask } = useTimer();
   const [isQuickLogOpen, setIsQuickLogOpen] = useState(false);
   const quickLogRef = useRef<HTMLDivElement>(null);
 
@@ -193,7 +194,6 @@ export const FocusView: React.FC<FocusViewProps> = ({
         {/* Left Column (5 cols): Oversized Clean Pomodoro Timer Card */}
         <div className="lg:col-span-5">
           <PomodoroTimer
-            selectedTask={selectedTask}
             onFocusComplete={onFocusComplete}
             activeSoundscape={activeSoundscape}
             setActiveSoundscape={setActiveSoundscape}

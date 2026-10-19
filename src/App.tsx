@@ -106,7 +106,7 @@ function MainLayout() {
   }, [activeTab]);
 
   // Habits State from Custom Hook (Supabase + RLS + Demo mode)
-  const { habits, overallStreak, loading: habitsLoading, error: habitsError, addHabit, toggleHabit, deleteHabit } = useHabits();
+  const { habits, loading: habitsLoading, error: habitsError, addHabit, toggleHabit, deleteHabit } = useHabits();
 
   // Focus Sessions State from Custom Hook (Supabase + RLS + Demo mode)
   const { addFocusSession, totalFocusMinutesToday, focusSessions } = useFocusSessions();
@@ -114,8 +114,6 @@ function MainLayout() {
   // Tasks State from Custom Hook (Supabase + RLS + Demo mode)
   const {
     tasks,
-    loading: tasksLoading,
-    error: tasksError,
     addTask: handleAddTask,
     toggleCompleteTask: handleToggleCompleteTask,
     toggleTodayFocus: handleToggleTodayFocus,
@@ -125,7 +123,6 @@ function MainLayout() {
     archiveTask: handleArchiveTask,
     unarchiveTask: handleUnarchiveTask,
     sweepCompletedTasks: handleSweepCompletedTasks,
-    batchArchiveTasks: handleBatchArchiveTasks,
     batchUnarchiveTasks: handleBatchUnarchiveTasks,
     batchDeleteTasks: handleBatchDeleteTasks,
     rolloverOverdueTasksToToday: handleRolloverOverdueTasks,

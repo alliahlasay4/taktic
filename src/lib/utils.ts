@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { getLocalDateString } from './streak';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -21,5 +22,5 @@ export function formatTime(seconds: number): string {
 }
 
 export function getTodayDateString(): string {
-  return new Date().toISOString().split('T')[0];
+  return getLocalDateString();
 }

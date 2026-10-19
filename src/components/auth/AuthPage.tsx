@@ -11,7 +11,6 @@ import {
   AlertCircle,
   CheckCircle2,
   KeyRound,
-  ArrowRight,
   ArrowLeft,
   Sun,
   Moon,

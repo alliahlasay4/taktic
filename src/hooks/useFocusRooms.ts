@@ -33,40 +33,37 @@ function getLocalPods(userId?: string, isDemo?: boolean): FocusPod[] {
     return [];
   }
 
-  const keysToTry: string[] = [];
-  if (userId && userId !== 'demo-user-123') {
-    keysToTry.push(`taktic_focus_pods_${userId}`);
+  if (!userId || userId === 'demo-user-123') {
+    return [];
   }
-  keysToTry.push('taktic_focus_pods');
 
-  for (const key of keysToTry) {
-    const saved = localStorage.getItem(key);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          const clean = parsed.filter(
-            (p) => p && typeof p === 'object' && typeof p.id === 'string' && !p.name?.includes('Design Guild - Stale')
-          );
-          if (clean.length > 0) {
-            // Deduplicate by ID and name
-            const unique: FocusPod[] = [];
-            const seenIds = new Set<string>();
-            const seenNames = new Set<string>();
-            for (const p of clean) {
-              const nameKey = p.name?.toLowerCase().trim();
-              if (!seenIds.has(p.id) && !seenNames.has(nameKey)) {
-                seenIds.add(p.id);
-                seenNames.add(nameKey);
-                unique.push(p);
-              }
+  const key = `taktic_focus_pods_${userId}`;
+  const saved = localStorage.getItem(key);
+  if (saved) {
+    try {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        const clean = parsed.filter(
+          (p) => p && typeof p === 'object' && typeof p.id === 'string'
+        );
+        if (clean.length > 0) {
+          // Deduplicate by ID and name
+          const unique: FocusPod[] = [];
+          const seenIds = new Set<string>();
+          const seenNames = new Set<string>();
+          for (const p of clean) {
+            const nameKey = p.name?.toLowerCase().trim();
+            if (!seenIds.has(p.id) && !seenNames.has(nameKey)) {
+              seenIds.add(p.id);
+              seenNames.add(nameKey);
+              unique.push(p);
             }
-            return unique;
           }
+          return unique;
         }
-      } catch (e) {
-        console.error('Error parsing local focus pods:', e);
       }
+    } catch (e) {
+      console.error('Error parsing local focus pods:', e);
     }
   }
   return [];
@@ -96,10 +93,11 @@ export function useFocusRooms() {
 
   const saveFocusPods = (pods: FocusPod[]) => {
     setFocusPods(pods);
-    if (user?.id) {
+    if (isDemo) {
+      sessionStorage.setItem('taktic_demo_focus_pods', JSON.stringify(pods));
+    } else if (user?.id) {
       localStorage.setItem(`taktic_focus_pods_${user.id}`, JSON.stringify(pods));
     }
-    localStorage.setItem('taktic_focus_pods', JSON.stringify(pods));
   };
 
   // Fetch standing pods from Supabase or local cache
@@ -121,6 +119,7 @@ export function useFocusRooms() {
         const { data, error } = await supabase
           .from('focus_rooms')
           .select('*')
+          .or(`creator_id.eq.${user.id},allowed_member_ids.cs.{${user.id}}`)
           .order('created_at', { ascending: false });
 
         if (!error && Array.isArray(data)) {
@@ -161,9 +160,9 @@ export function useFocusRooms() {
           }));
 
           setFocusPods(mappedPods);
-          const userKey = user.id;
-          localStorage.setItem(`taktic_focus_pods_${userKey}`, JSON.stringify(mappedPods));
-          localStorage.setItem('taktic_focus_pods', JSON.stringify(mappedPods));
+          if (user?.id) {
+            localStorage.setItem(`taktic_focus_pods_${user.id}`, JSON.stringify(mappedPods));
+          }
         } else if (error) {
           console.warn('Could not fetch focus rooms from Supabase (retaining local cache):', error);
         }
@@ -321,7 +320,7 @@ export function useFocusRooms() {
 
     if (isRealUser && user) {
       try {
-        let res = await supabase
+        const { error } = await supabase
           .from('focus_rooms')
           .insert({
             id: podId,
@@ -336,36 +335,8 @@ export function useFocusRooms() {
             allowed_member_names: selectedMemberNames,
           });
 
-        if (res.error) {
-          // Retry without allowed_member_names if column doesn't exist yet on remote table
-          res = await supabase
-            .from('focus_rooms')
-            .insert({
-              id: podId,
-              code: podCode,
-              name: trimmedName,
-              creator_id: user.id,
-              duration_minutes: durationMinutes,
-              is_private: true,
-              is_permanent: true,
-              expires_at: expiresAt,
-              allowed_member_ids: selectedMemberIds,
-            });
-        }
-
-        if (res.error) {
-          // Fallback to minimal fields
-          res = await supabase
-            .from('focus_rooms')
-            .insert({
-              id: podId,
-              code: podCode,
-              name: trimmedName,
-              creator_id: user.id,
-              duration_minutes: durationMinutes,
-              is_private: true,
-              is_permanent: true,
-            });
+        if (error) {
+          console.error('Error inserting focus pod in Supabase:', error);
         }
       } catch (err) {
         console.error('Error inserting focus pod in Supabase:', err);

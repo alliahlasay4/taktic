@@ -1,6 +1,6 @@
 // Robust Web Audio API Synthesizer for Ambient Soundscapes & Haptic Micro-Sounds
 
-type SoundscapeType = 'Gentle Rain' | 'Ocean Waves' | 'Warm Chords' | 'Coffee Shop Ambience' | 'Lo-Fi Autumn Beats';
+export type SoundscapeType = 'Gentle Rain' | 'Ocean Waves' | 'Warm Chords' | 'Coffee Shop Ambience' | 'Lo-Fi Autumn Beats';
 
 interface ActiveSoundSession {
   id: number;
@@ -372,7 +372,7 @@ class SoundEngine {
   }
 
   // 2. Ocean Waves (Dynamic Low-Frequency Swell + Surf Wash)
-  private createOceanSound(ctx: AudioContext, output: GainNode, sessionId: number): () => void {
+  private createOceanSound(ctx: AudioContext, output: GainNode, _sessionId: number): () => void {
     const bufferSize = ctx.sampleRate * 4;
     const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
     const data = buffer.getChannelData(0);

@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { UserProfile, Badge, HeatmapDay } from '../../types';
 import { BadgeCard } from './BadgeCard';
-import { Calendar, Award, Zap, Flame, Clock, CheckCircle2, Users, Check } from 'lucide-react';
+import { Calendar, Award, Flame, Clock, Check } from 'lucide-react';
 import {
   fetchProfileStatsFromSupabase,
   fetchProfileHeatmapFromSupabase,
@@ -11,6 +11,7 @@ import {
 
 interface ProfileOverviewProps {
   profile: UserProfile;
+  stats?: RealProfileStats;
 }
 
 const HEATMAP_COLORS = [
@@ -23,7 +24,7 @@ const HEATMAP_COLORS = [
 
 type BadgeCategoryFilter = 'all' | 'unlocked' | 'focus' | 'streak' | 'habit' | 'social';
 
-export const ProfileOverview: React.FC<ProfileOverviewProps> = ({ profile }) => {
+export const ProfileOverview: React.FC<ProfileOverviewProps> = ({ profile, stats: initialStats }) => {
   const [heatmapData, setHeatmapData] = useState<HeatmapDay[]>(() => {
     if (profile?.id) {
       const cached = localStorage.getItem(`taktic_profile_heatmap_${profile.id}`);
@@ -82,7 +83,7 @@ export const ProfileOverview: React.FC<ProfileOverviewProps> = ({ profile }) => 
 
     const loadOverviewData = async () => {
       try {
-        const stats: RealProfileStats = await fetchProfileStatsFromSupabase(profile.id);
+        const stats: RealProfileStats = initialStats || await fetchProfileStatsFromSupabase(profile.id);
         const [heatmap, badgeList] = await Promise.all([
           fetchProfileHeatmapFromSupabase(profile.id),
           fetchBadgesWithRealProgress(profile.id, stats),
@@ -105,7 +106,7 @@ export const ProfileOverview: React.FC<ProfileOverviewProps> = ({ profile }) => 
     return () => {
       isMounted = false;
     };
-  }, [profile.id]);
+  }, [profile.id, initialStats]);
 
   const unlockedCount = badges.filter((b) => b.isUnlocked).length;
   

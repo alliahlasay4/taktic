@@ -1,15 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   Plus, 
   Repeat, 
   Sparkles, 
   X, 
   SlidersHorizontal, 
-  CheckCircle2, 
   Trophy, 
   Clock, 
   Sun, 
-  Sunset, 
   Moon, 
   Sunrise, 
   Search, 
@@ -32,6 +30,7 @@ import { MilestoneTrophyShelf } from './MilestoneTrophyShelf';
 import { IconRenderer } from '../common/IconRenderer';
 import { Pagination } from '../common/Pagination';
 import { soundEngine } from '../../lib/audio';
+import { getLocalDateString } from '../../lib/streak';
 
 interface HabitViewProps {
   habits: Habit[];
@@ -89,7 +88,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [quickAddTitle, setQuickAddTitle] = useState('');
-  const [quickAddCategory, setQuickAddCategory] = useState<'health' | 'mindset' | 'growth' | 'creative' | 'fitness'>('health');
+  const [quickAddCategory] = useState<'health' | 'mindset' | 'growth' | 'creative' | 'fitness'>('health');
   
   // Modal states
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -103,7 +102,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
   const [currentPage, setCurrentPage] = useState<number>(1);
   const [pageSize, setPageSize] = useState<number>(8);
 
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const habitsCompletedToday = habits.filter((h) => h.completedDates.includes(today)).length;
   const habitsPendingToday = habits.length - habitsCompletedToday;
 
@@ -133,11 +132,6 @@ export const HabitView: React.FC<HabitViewProps> = ({
 
     return true;
   });
-
-  // Reset pagination on filter or search changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [selectedCategory, selectedTimeOfDay, selectedStatus, searchQuery]);
 
   const totalPages = Math.max(1, Math.ceil(filteredHabits.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);

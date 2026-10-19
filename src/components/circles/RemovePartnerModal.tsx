@@ -1,5 +1,5 @@
 import React from 'react';
-import { UserX, X, AlertTriangle } from 'lucide-react';
+import { UserX, X } from 'lucide-react';
 import { CircleMember } from '../../types';
 
 interface RemovePartnerModalProps {

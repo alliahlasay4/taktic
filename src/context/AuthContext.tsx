@@ -50,6 +50,22 @@ const DEFAULT_PROFILE: UserProfile = {
   },
 };
 
+export const normalizeProfile = (raw: any): UserProfile => {
+  if (!raw) return DEFAULT_PROFILE;
+  return {
+    ...DEFAULT_PROFILE,
+    ...raw,
+    avatarUrl: raw.avatarUrl || raw.avatar_url || DEFAULT_PROFILE.avatarUrl,
+    privacySettings: {
+      ...DEFAULT_PROFILE.privacySettings,
+      ...(raw.privacySettings || {}),
+      isIncognito: raw.privacySettings?.isIncognito !== undefined
+        ? Boolean(raw.privacySettings.isIncognito)
+        : Boolean(raw.isIncognito ?? DEFAULT_PROFILE.privacySettings.isIncognito),
+    },
+  };
+};
+
 const DEMO_USER: DemoUser = {
   id: 'demo-user-123',
   email: 'reviewer@taktic.app',
@@ -178,7 +194,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const demoSaved = sessionStorage.getItem('taktic_demo_profile');
       if (demoSaved) {
         try {
-          return { ...DEFAULT_PROFILE, ...JSON.parse(demoSaved) };
+          return normalizeProfile(JSON.parse(demoSaved));
         } catch { }
       }
       return DEFAULT_PROFILE;
@@ -186,7 +202,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const saved = localStorage.getItem('taktic_user_profile');
     if (saved) {
       try {
-        return { ...DEFAULT_PROFILE, ...JSON.parse(saved) };
+        return normalizeProfile(JSON.parse(saved));
       } catch (e) {
         console.error('Error parsing saved profile:', e);
       }
@@ -198,10 +214,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const realUserId = (!isDemo && user?.id && user.id !== 'demo-user-123') ? user.id : undefined;
     const targetId = realUserId || profile.id || 'demo-user-123';
 
-    const updated: UserProfile = {
+    const updated: UserProfile = normalizeProfile({
       ...profile,
       ...updates,
       id: targetId,
+      avatarUrl: updates.avatarUrl || (updates as any)?.avatar_url || profile.avatarUrl,
       privacySettings: updates.privacySettings
         ? {
           showFocusHours: updates.privacySettings.showFocusHours ?? profile.privacySettings?.showFocusHours ?? true,
@@ -213,7 +230,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             : Boolean(profile.privacySettings?.isIncognito),
         }
         : profile.privacySettings,
-    };
+    });
 
     setProfile(updated);
 
@@ -240,7 +257,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     let cachedProfile: UserProfile | null = null;
     if (cachedStr) {
       try {
-        cachedProfile = JSON.parse(cachedStr);
+        cachedProfile = normalizeProfile(JSON.parse(cachedStr));
       } catch { }
     }
 
@@ -250,13 +267,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     const dbProfile = await fetchUserProfileFromSupabase(userId);
     if (dbProfile) {
-      const finalProfile: UserProfile = {
+      const finalProfile: UserProfile = normalizeProfile({
         ...dbProfile,
         privacySettings: {
           ...dbProfile.privacySettings,
           isIncognito: dbProfile.privacySettings?.isIncognito ?? cachedProfile?.privacySettings?.isIncognito ?? false,
         },
-      };
+      });
       setProfile(finalProfile);
       localStorage.setItem(`taktic_user_profile_${userId}`, JSON.stringify(finalProfile));
       localStorage.setItem('taktic_user_profile', JSON.stringify(finalProfile));
@@ -265,14 +282,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       const emailPrefix = currentSession.user.email ? currentSession.user.email.split('@')[0] : 'user';
       const fallbackName = userMetaName || (emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)) || 'New User';
 
-      const initialProfile: UserProfile = {
+      const initialProfile: UserProfile = normalizeProfile({
         ...DEFAULT_PROFILE,
         id: userId,
         fullName: fallbackName,
         username: `@${emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '')}`,
         avatarUrl: currentSession.user.user_metadata?.avatar_url || DEFAULT_PROFILE.avatarUrl,
         privacySettings: cachedProfile?.privacySettings || DEFAULT_PROFILE.privacySettings,
-      };
+      });
       setProfile(initialProfile);
       localStorage.setItem(`taktic_user_profile_${userId}`, JSON.stringify(initialProfile));
       localStorage.setItem('taktic_user_profile', JSON.stringify(initialProfile));

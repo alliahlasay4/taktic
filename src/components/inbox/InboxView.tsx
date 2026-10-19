@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Plus, Search, Inbox, Tag as TagIcon, X, Calendar as CalendarIcon, Zap, RefreshCw, Sparkles, FolderArchive, SlidersHorizontal, RotateCcw, ChevronDown, Archive } from 'lucide-react';
-import { Task, PriorityLevel, TimeBlockSlot } from '../../types';
+import { Task, PriorityLevel } from '../../types';
 import { TaskItem } from './TaskItem';
 import { FocusQueue } from './FocusQueue';
 import { InboxCalendarCard } from './InboxCalendarCard';
 import { TaskFormModal } from './TaskFormModal';
 import { Pagination } from '../common/Pagination';
+
+import { getLocalDateString, getDateWithOffset } from '../../lib/streak';
 
 interface InboxViewProps {
   tasks: Task[];
@@ -63,8 +65,8 @@ export const InboxView: React.FC<InboxViewProps> = ({
   // Extract unique tags
   const allTags = Array.from(new Set(activeInboxTasks.flatMap((t) => t.tags)));
 
-  const todayStr = new Date().toISOString().split('T')[0];
-  const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
+  const tomorrowStr = getDateWithOffset(todayStr, 1);
 
   // Calculate Overdue Tasks
   const overdueTasks = activeInboxTasks.filter((t) => {
@@ -122,11 +124,6 @@ export const InboxView: React.FC<InboxViewProps> = ({
     }
     return 0; // 'recent'
   });
-
-  // Reset pagination on filter, search, sort, or tab changes
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [searchQuery, selectedTag, selectedPriority, selectedCalendarDate, showCompleted, activeInboxTab, sortMode]);
 
   const totalPages = Math.max(1, Math.ceil(sortedTasks.length / pageSize));
   const safeCurrentPage = Math.min(currentPage, totalPages);

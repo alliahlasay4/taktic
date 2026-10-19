@@ -27,8 +27,6 @@ import {
   Lock,
   Layers,
   Check,
-  X,
-  Compass,
   AlertCircle,
 } from 'lucide-react';
 import { TakticLogo } from '../common/TakticLogo';

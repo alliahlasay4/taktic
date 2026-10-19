@@ -19,9 +19,7 @@ const BREAK_GUIDANCE_TIPS = [
   'Deep Breathing: Take 4 deep belly breaths to lower cognitive tension.',
 ];
 
-export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
-  selectedTask,
-}) => {
+export const PomodoroTimer: React.FC<PomodoroTimerProps> = () => {
   const {
     mode,
     preset,
@@ -29,6 +27,7 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     timeLeft,
     totalDuration,
     isRunning,
+    selectedTask,
     autoStartBreak,
     showRatingModal,
     pendingSessionData,
@@ -41,13 +40,6 @@ export const PomodoroTimer: React.FC<PomodoroTimerProps> = ({
     setSelectedTask,
     submitSessionComplete,
   } = useTimer();
-
-  // Sync selected task from props if passed
-  useEffect(() => {
-    if (selectedTask !== undefined) {
-      setSelectedTask(selectedTask);
-    }
-  }, [selectedTask, setSelectedTask]);
 
   // Break guidance rotating index
   const [breakTipIndex, setBreakTipIndex] = useState(0);

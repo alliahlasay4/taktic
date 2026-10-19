@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Users, Check, X, ShieldCheck, Flame, CircleDot } from 'lucide-react';
+import { Sparkles, Check, X } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 interface CircleInviteAcceptModalProps {

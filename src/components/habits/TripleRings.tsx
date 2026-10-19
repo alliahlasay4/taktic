@@ -1,6 +1,6 @@
 import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle, Flame, Clock, Sparkles } from 'lucide-react';
+import { CheckCircle, Flame, Clock } from 'lucide-react';
 
 interface TripleRingsProps {
   tasksCompleted: number;

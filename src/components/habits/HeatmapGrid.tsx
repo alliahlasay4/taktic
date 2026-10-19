@@ -1,5 +1,6 @@
 import React from 'react';
 import { Habit } from '../../types';
+import { getLocalDateString, getDateWithOffset } from '../../lib/streak';
 
 interface HeatmapGridProps {
   daysCount?: number; // default 90 days
@@ -16,10 +17,9 @@ export const HeatmapGrid: React.FC<HeatmapGridProps> = ({ daysCount = 90, habits
   });
 
   // Generate date grid for the last `daysCount` days
+  const todayStr = getLocalDateString();
   const days = Array.from({ length: daysCount }).map((_, i) => {
-    const d = new Date();
-    d.setDate(d.getDate() - (daysCount - 1 - i));
-    const dateStr = d.toISOString().split('T')[0];
+    const dateStr = getDateWithOffset(todayStr, -(daysCount - 1 - i));
     const count = dateCounts[dateStr] || 0;
 
     // Intensity level: 0 to 4

@@ -1,10 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   Users,
-  Sparkles,
   KeyRound,
   ShieldCheck,
-  Zap,
   UserPlus,
   ArrowRight,
   ArrowLeft,

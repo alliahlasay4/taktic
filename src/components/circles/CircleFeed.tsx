@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Heart, Sparkles, ShieldCheck, Flame, Lock, Trophy, Zap, Target, Filter, Plus, Settings, Trash2, User } from 'lucide-react';
+import { Heart, Sparkles, ShieldCheck, Flame, Lock, Trophy, Zap, Target, Filter, Plus, Settings, Trash2 } from 'lucide-react';
 import { CircleFeedPost, CircleMember } from '../../types';
 import { ShareMilestoneModal } from './ShareMilestoneModal';
 import { CircleManagerModal } from './CircleManagerModal';

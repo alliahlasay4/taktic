@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronLeft, ChevronRight, Calendar, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
 import { Task } from '../../types';
+import { getLocalDateString, getDateWithOffset } from '../../lib/streak';
 
 interface InboxCalendarCardProps {
   tasks: Task[];
@@ -37,7 +38,7 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
   const goToToday = () => {
     const now = new Date();
     setCurrentDate(now);
-    const todayStr = now.toISOString().split('T')[0];
+    const todayStr = getLocalDateString(now);
     onSelectDate(todayStr);
   };
 
@@ -47,11 +48,11 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
     return `${year}-${m}-${d}`;
   };
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
 
   const getTasksForDate = (dateKey: string) => {
     const isTodayKey = dateKey === todayStr;
-    const tomorrowStr = new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    const tomorrowStr = getDateWithOffset(todayStr, 1);
     const isTomorrowKey = dateKey === tomorrowStr;
 
     return tasks.filter((t) => {

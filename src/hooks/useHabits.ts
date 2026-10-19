@@ -1,39 +1,23 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Habit } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_HABITS } from '../lib/mockData';
-import { calculateConsecutiveStreak } from '../lib/streak';
+import { calculateConsecutiveStreak, getLocalDateString } from '../lib/streak';
+import { createScopedStorage } from '../lib/storage';
 
 export function useHabits() {
   const { user, isDemo } = useAuth();
-  const userKey = user?.id || (isDemo ? 'demo' : 'guest');
-  const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
+
+  const storage = useMemo(() => createScopedStorage<Habit[]>('habits', user?.id, isDemo), [user?.id, isDemo]);
 
   const [habits, setHabits] = useState<Habit[]>(() => {
-    if (isDemo || userKey === 'demo') {
-      const saved = sessionStorage.getItem('taktic_demo_habits');
-      const loaded: Habit[] = saved ? JSON.parse(saved) : INITIAL_HABITS;
-      return loaded.map((h) => ({
-        ...h,
-        streak: calculateConsecutiveStreak(h.completedDates, h.freezeShieldsRemaining),
-      }));
-    }
-    const saved = localStorage.getItem(`taktic_habits_${userKey}`);
-    if (saved) {
-      try {
-        const parsed: Habit[] = JSON.parse(saved);
-        if (Array.isArray(parsed)) {
-          return parsed.map((h) => ({
-            ...h,
-            streak: calculateConsecutiveStreak(h.completedDates, h.freezeShieldsRemaining),
-          }));
-        }
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
+    const fallback = isDemo ? INITIAL_HABITS : [];
+    const raw = storage.get(fallback) || fallback;
+    return raw.map((h) => ({
+      ...h,
+      streak: calculateConsecutiveStreak(h.completedDates, h.freezeShieldsRemaining),
+    }));
   });
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -44,10 +28,9 @@ export function useHabits() {
     setLoading(true);
     setError(null);
 
-    // Demo Mode -> sessionStorage
-    if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
-      const saved = sessionStorage.getItem('taktic_demo_habits');
-      const loaded: Habit[] = saved ? JSON.parse(saved) : INITIAL_HABITS;
+    // Demo Mode -> Scoped storage
+    if (storage.isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
+      const loaded = storage.get(INITIAL_HABITS) || INITIAL_HABITS;
       setHabits(
         loaded.map((h) => ({
           ...h,
@@ -106,48 +89,41 @@ export function useHabits() {
           targetDaysPerWeek: h.target_days_per_week || 7,
           timeOfDay: (h.time_of_day as Habit['timeOfDay']) || 'morning',
           freezeShieldsRemaining: freezeShields,
-          createdAt: h.created_at ? h.created_at.split('T')[0] : new Date().toISOString().split('T')[0],
+          createdAt: h.created_at ? h.created_at.split('T')[0] : getLocalDateString(),
         };
       });
 
       setHabits(mapped);
-      localStorage.setItem(`taktic_habits_${user.id}`, JSON.stringify(mapped));
+      storage.set(mapped);
     } catch (err: any) {
       console.error('Error fetching habits from Supabase:', err);
       setError(err.message || 'Failed to fetch habits from database.');
-      const saved = localStorage.getItem(`taktic_habits_${user?.id}`);
-      if (saved) {
-        try {
-          const parsed: Habit[] = JSON.parse(saved);
-          setHabits(
-            parsed.map((h) => ({
-              ...h,
-              streak: calculateConsecutiveStreak(h.completedDates, h.freezeShieldsRemaining),
-            }))
-          );
-        } catch {}
+      const saved = storage.get();
+      if (saved && Array.isArray(saved)) {
+        setHabits(
+          saved.map((h) => ({
+            ...h,
+            streak: calculateConsecutiveStreak(h.completedDates, h.freezeShieldsRemaining),
+          }))
+        );
       }
     } finally {
       setLoading(false);
     }
-  }, [user, isDemo]);
+  }, [user, storage]);
 
   useEffect(() => {
     fetchHabits();
   }, [fetchHabits]);
 
-  // Save to LocalStorage/sessionStorage with user isolation
+  // Save to Scoped Storage with user isolation
   useEffect(() => {
-    if (isDemo || userKey === 'demo') {
-      sessionStorage.setItem('taktic_demo_habits', JSON.stringify(habits));
-    } else if (user?.id) {
-      localStorage.setItem(`taktic_habits_${user.id}`, JSON.stringify(habits));
-    }
-  }, [habits, isDemo, userKey, user]);
+    storage.set(habits);
+  }, [habits, storage]);
 
   // Toggle Habit Completion (Optimistic UI with Dynamic Streak Evaluation)
   const toggleHabit = async (id: string) => {
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
     const habitToToggle = habits.find((h) => h.id === id);
     if (!habitToToggle) return;
 
@@ -205,7 +181,7 @@ export function useHabits() {
     newHabitData: Omit<Habit, 'id' | 'streak' | 'completedDates' | 'createdAt'>
   ) => {
     const tempId = `habit-${Date.now()}`;
-    const today = new Date().toISOString().split('T')[0];
+    const today = getLocalDateString();
 
     const tempHabit: Habit = {
       ...newHabitData,
@@ -280,12 +256,6 @@ export function useHabits() {
   // Calculate overall maximum active streak across user habits
   const overallStreak = habits.reduce((max, h) => Math.max(max, h.streak), 0);
 
-  // Always write-through cache to LocalStorage for offline support
-  useEffect(() => {
-    if (habits.length > 0) {
-      localStorage.setItem('taktic_habits', JSON.stringify(habits));
-    }
-  }, [habits]);
 
   return {
     habits,

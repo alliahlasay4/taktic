@@ -1,29 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Task, TimeBlockSlot, PriorityLevel } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_TASKS } from '../lib/mockData';
+import { getLocalDateString, getDateWithOffset } from '../lib/streak';
+import { createScopedStorage } from '../lib/storage';
 
 export function useTasks() {
   const { user, isDemo } = useAuth();
-  const userKey = user?.id || (isDemo ? 'demo' : 'guest');
-  const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
+
+  const storage = useMemo(() => createScopedStorage<Task[]>('tasks', user?.id, isDemo), [user?.id, isDemo]);
 
   const [tasks, setTasks] = useState<Task[]>(() => {
-    if (isDemo || userKey === 'demo') {
-      const saved = sessionStorage.getItem('taktic_demo_tasks');
-      return saved ? JSON.parse(saved) : INITIAL_TASKS;
-    }
-    const saved = localStorage.getItem(`taktic_tasks_${userKey}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
+    const fallback = isDemo ? INITIAL_TASKS : [];
+    return storage.get(fallback) || fallback;
   });
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -34,10 +24,9 @@ export function useTasks() {
     setLoading(true);
     setError(null);
 
-    // Demo mode or unconfigured -> LocalStorage/sessionStorage
-    if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
-      const saved = sessionStorage.getItem('taktic_demo_tasks');
-      setTasks(saved ? JSON.parse(saved) : INITIAL_TASKS);
+    // Demo mode or unconfigured -> Scoped storage
+    if (storage.isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
+      setTasks(storage.get(INITIAL_TASKS) || INITIAL_TASKS);
       setLoading(false);
       return;
     }
@@ -70,20 +59,18 @@ export function useTasks() {
       }));
 
       setTasks(mapped);
-      localStorage.setItem(`taktic_tasks_${user.id}`, JSON.stringify(mapped));
+      storage.set(mapped);
     } catch (err: any) {
       console.error('Error fetching tasks from Supabase:', err);
       setError(err.message || 'Failed to fetch tasks.');
-      const saved = localStorage.getItem(`taktic_tasks_${user?.id}`);
-      if (saved) {
-        try {
-          setTasks(JSON.parse(saved));
-        } catch {}
+      const saved = storage.get();
+      if (saved && Array.isArray(saved)) {
+        setTasks(saved);
       }
     } finally {
       setLoading(false);
     }
-  }, [user, isDemo]);
+  }, [user, storage]);
 
   useEffect(() => {
     fetchTasks();
@@ -91,19 +78,15 @@ export function useTasks() {
 
   // Always write-through cache with strict user isolation
   useEffect(() => {
-    if (isDemo || userKey === 'demo') {
-      sessionStorage.setItem('taktic_demo_tasks', JSON.stringify(tasks));
-    } else if (user?.id) {
-      localStorage.setItem(`taktic_tasks_${user.id}`, JSON.stringify(tasks));
-    }
-  }, [tasks, isDemo, userKey, user]);
+    storage.set(tasks);
+  }, [tasks, storage]);
 
   // Helper to ensure clean date formatting for Postgres
   const formatDueDateForDb = (dateStr?: string) => {
     if (!dateStr) return null;
     const lower = dateStr.trim().toLowerCase();
-    if (lower === 'today') return new Date().toISOString().split('T')[0];
-    if (lower === 'tomorrow') return new Date(Date.now() + 86400000).toISOString().split('T')[0];
+    if (lower === 'today') return getLocalDateString();
+    if (lower === 'tomorrow') return getDateWithOffset(getLocalDateString(), 1);
     return dateStr;
   };
 
@@ -210,7 +193,7 @@ export function useTasks() {
       }
     }
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     const shouldClearSomeday = nextFocus && targetTask.isSomeday;
     const nextDueDate = (nextFocus && !targetTask.dueDate) ? todayStr : targetTask.dueDate;
 
@@ -486,7 +469,7 @@ export function useTasks() {
 
   // Rollover Overdue Tasks to Today
   const rolloverOverdueTasksToToday = async () => {
-    const todayStr = new Date().toISOString().split('T')[0];
+    const todayStr = getLocalDateString();
     
     // Find uncompleted overdue tasks
     const overdueTasks = tasks.filter((t) => {

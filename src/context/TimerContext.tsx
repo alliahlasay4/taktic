@@ -67,45 +67,89 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusC
     setIsRunning(false);
   }, [mode, preset, customMinutesInput]);
 
-  // Main Timer Loop
+  const selectedTaskRef = useRef(selectedTask);
   useEffect(() => {
-    if (isRunning) {
+    selectedTaskRef.current = selectedTask;
+  }, [selectedTask]);
+
+  const autoStartBreakRef = useRef(autoStartBreak);
+  useEffect(() => {
+    autoStartBreakRef.current = autoStartBreak;
+  }, [autoStartBreak]);
+
+  const modeRef = useRef(mode);
+  useEffect(() => {
+    modeRef.current = mode;
+  }, [mode]);
+
+  const presetRef = useRef(preset);
+  useEffect(() => {
+    presetRef.current = preset;
+  }, [preset]);
+
+  const customMinutesInputRef = useRef(customMinutesInput);
+  useEffect(() => {
+    customMinutesInputRef.current = customMinutesInput;
+  }, [customMinutesInput]);
+
+  // Main Timer Loop (Wall-clock based to prevent background tab throttling drift)
+  useEffect(() => {
+    if (!isRunning) {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+      return;
+    }
+
+    if (mode === 'stopwatch') {
+      const startTimestamp = Date.now() - timeLeft * 1000;
       intervalRef.current = setInterval(() => {
-        setTimeLeft((prev) => {
-          if (mode === 'stopwatch') {
-            return prev + 1;
-          }
-          if (prev <= 1) {
-            clearInterval(intervalRef.current!);
-            setIsRunning(false);
-            soundEngine.playTimerCompleteSound();
-
-            const totalDurSecs = getDurationSeconds(mode, preset, customMinutesInput);
-            const elapsedMins = Math.max(1, Math.round(totalDurSecs / 60));
-
-            setPendingSessionData({ mins: elapsedMins, title: selectedTask?.title });
-            setShowRatingModal(true);
-
-            if (mode === 'pomodoro' && autoStartBreak) {
-              setTimeout(() => {
-                setModeState('shortBreak');
-                setIsRunning(true);
-              }, 1000);
-            }
-
-            return 0;
-          }
-          return prev - 1;
-        });
-      }, 1000);
+        const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
+        setTimeLeft(elapsed);
+      }, 500);
     } else {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      const endTime = Date.now() + timeLeft * 1000;
+      intervalRef.current = setInterval(() => {
+        const remaining = Math.max(0, Math.ceil((endTime - Date.now()) / 1000));
+        if (remaining <= 0) {
+          if (intervalRef.current) {
+            clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+          setTimeLeft(0);
+          setIsRunning(false);
+          soundEngine.playTimerCompleteSound();
+
+          const totalDurSecs = getDurationSeconds(
+            modeRef.current,
+            presetRef.current,
+            customMinutesInputRef.current
+          );
+          const elapsedMins = Math.max(1, Math.round(totalDurSecs / 60));
+
+          setPendingSessionData({ mins: elapsedMins, title: selectedTaskRef.current?.title });
+          setShowRatingModal(true);
+
+          if (modeRef.current === 'pomodoro' && autoStartBreakRef.current) {
+            setTimeout(() => {
+              setModeState('shortBreak');
+              setIsRunning(true);
+            }, 1000);
+          }
+        } else {
+          setTimeLeft(remaining);
+        }
+      }, 500);
     }
 
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current);
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
     };
-  }, [isRunning, mode, preset, customMinutesInput, selectedTask, autoStartBreak]);
+  }, [isRunning, mode]);
 
   const toggleTimer = () => {
     setIsRunning((prev) => !prev);

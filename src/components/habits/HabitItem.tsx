@@ -3,6 +3,7 @@ import { Flame, Check, Trash2, Sun, Sunrise, Moon, Shield, BarChart2 } from 'luc
 import { Habit } from '../../types';
 import { soundEngine } from '../../lib/audio';
 import { IconRenderer } from '../common/IconRenderer';
+import { getLocalDateString, getDateWithOffset } from '../../lib/streak';
 
 interface HabitItemProps {
   habit: Habit;
@@ -11,16 +12,11 @@ interface HabitItemProps {
 }
 
 export const HabitItem: React.FC<HabitItemProps> = ({ habit, onToggleHabit, onDeleteHabit }) => {
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const isCompletedToday = habit.completedDates.includes(today);
 
   // Calculate past 7 days completion count
-  const now = new Date();
-  const past7Days = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
-    return d.toISOString().split('T')[0];
-  });
+  const past7Days = Array.from({ length: 7 }, (_, i) => getDateWithOffset(today, -i));
   const completedThisWeek = habit.completedDates.filter((d) => past7Days.includes(d)).length;
   const targetWeekly = habit.targetDaysPerWeek || 7;
 

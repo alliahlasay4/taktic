@@ -1,29 +1,19 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { FocusSession } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_FOCUS_SESSIONS } from '../lib/mockData';
+import { getLocalDateString } from '../lib/streak';
+import { createScopedStorage } from '../lib/storage';
 
 export function useFocusSessions() {
   const { user, isDemo } = useAuth();
-  const userKey = user?.id || (isDemo ? 'demo' : 'guest');
-  const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
+
+  const storage = useMemo(() => createScopedStorage<FocusSession[]>('focus_sessions', user?.id, isDemo), [user?.id, isDemo]);
 
   const [focusSessions, setFocusSessions] = useState<FocusSession[]>(() => {
-    if (isDemo || userKey === 'demo') {
-      const saved = sessionStorage.getItem('taktic_demo_focus_sessions');
-      return saved ? JSON.parse(saved) : INITIAL_FOCUS_SESSIONS;
-    }
-    const saved = localStorage.getItem(`taktic_focus_sessions_${userKey}`);
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed)) return parsed;
-      } catch (e) {
-        console.error(e);
-      }
-    }
-    return [];
+    const fallback = isDemo ? INITIAL_FOCUS_SESSIONS : [];
+    return storage.get(fallback) || fallback;
   });
 
   const [loading, setLoading] = useState<boolean>(true);
@@ -34,10 +24,9 @@ export function useFocusSessions() {
     setLoading(true);
     setError(null);
 
-    // Demo mode -> sessionStorage
-    if (isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
-      const saved = sessionStorage.getItem('taktic_demo_focus_sessions');
-      setFocusSessions(saved ? JSON.parse(saved) : INITIAL_FOCUS_SESSIONS);
+    // Demo mode -> Scoped storage
+    if (storage.isDemo || !isSupabaseConfigured || !user || user.id === 'demo-user-123') {
+      setFocusSessions(storage.get(INITIAL_FOCUS_SESSIONS) || INITIAL_FOCUS_SESSIONS);
       setLoading(false);
       return;
     }
@@ -62,20 +51,18 @@ export function useFocusSessions() {
       }));
 
       setFocusSessions(mapped);
-      localStorage.setItem(`taktic_focus_sessions_${user.id}`, JSON.stringify(mapped));
+      storage.set(mapped);
     } catch (err: any) {
       console.error('Error fetching focus sessions from Supabase:', err);
       setError(err.message || 'Failed to load focus sessions.');
-      const saved = localStorage.getItem(`taktic_focus_sessions_${user?.id}`);
-      if (saved) {
-        try {
-          setFocusSessions(JSON.parse(saved));
-        } catch {}
+      const saved = storage.get();
+      if (saved && Array.isArray(saved)) {
+        setFocusSessions(saved);
       }
     } finally {
       setLoading(false);
     }
-  }, [user, isDemo]);
+  }, [user, storage]);
 
   useEffect(() => {
     fetchFocusSessions();
@@ -83,12 +70,8 @@ export function useFocusSessions() {
 
   // Persist write-through cache with strict user isolation
   useEffect(() => {
-    if (isDemo || userKey === 'demo') {
-      sessionStorage.setItem('taktic_demo_focus_sessions', JSON.stringify(focusSessions));
-    } else if (user?.id) {
-      localStorage.setItem(`taktic_focus_sessions_${user.id}`, JSON.stringify(focusSessions));
-    }
-  }, [focusSessions, isDemo, userKey, user]);
+    storage.set(focusSessions);
+  }, [focusSessions, storage]);
 
   // Log a new completed Focus Session (Optimistic UI)
   const addFocusSession = async (
@@ -146,7 +129,7 @@ export function useFocusSessions() {
   };
 
   // Calculate today's total focus minutes
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   const totalFocusMinutesToday = focusSessions
     .filter((s) => s.completedAt && s.completedAt.startsWith(todayStr))
     .reduce((sum, s) => sum + s.durationMinutes, 0);

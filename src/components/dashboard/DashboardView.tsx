@@ -1,11 +1,12 @@
 import React from 'react';
-import { Sparkles, ArrowRight, Flame, Clock, CheckCircle2, Users, Check } from 'lucide-react';
+import { Sparkles, ArrowRight, Flame, Clock, Users, Check } from 'lucide-react';
 import { Task, Habit, ActiveTab, CircleMember } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { TripleRings } from '../habits/TripleRings';
 import { TaskItem } from '../inbox/TaskItem';
 import { IconRenderer } from '../common/IconRenderer';
 import { soundEngine } from '../../lib/audio';
+import { getLocalDateString } from '../../lib/streak';
 
 interface DashboardViewProps {
   tasks: Task[];
@@ -18,7 +19,7 @@ interface DashboardViewProps {
   onDeleteTask: (id: string) => void;
   onToggleHabit: (id: string) => void;
   setActiveTab: (tab: ActiveTab) => void;
-  onOpenSummary: () => void;
+  onOpenSummary?: () => void;
 }
 
 export const DashboardView: React.FC<DashboardViewProps> = ({
@@ -32,11 +33,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onDeleteTask,
   onToggleHabit,
   setActiveTab,
-  onOpenSummary,
 }) => {
   const { profile } = useAuth();
   const firstName = profile?.fullName?.trim()?.split(/\s+/)[0] || 'there';
-  const today = new Date().toISOString().split('T')[0];
+  const today = getLocalDateString();
   const activeTasks = tasks.filter((t) => !t.archived);
   const focusTasks = activeTasks.filter((t) => t.isTodayFocus);
   const tasksCompletedToday = activeTasks.filter((t) => t.completed && t.completedAt?.startsWith(today)).length;

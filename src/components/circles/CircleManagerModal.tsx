@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Settings, ShieldCheck, UserPlus, Volume2, VolumeX, UserX, Lock, Users, Search, Sparkles } from 'lucide-react';
+import { X, Settings, ShieldCheck, UserPlus, Volume2, VolumeX, UserX, Lock, Search } from 'lucide-react';
 import { CircleMember } from '../../types';
 import { RemovePartnerModal } from './RemovePartnerModal';
 
