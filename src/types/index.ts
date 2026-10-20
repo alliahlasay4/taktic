@@ -10,7 +10,7 @@ export interface Task {
   dueDate?: string;
   completed: boolean;
   isTodayFocus: boolean;
-  timeBlock: TimeBlockSlot;
+  timeBlock?: TimeBlockSlot;
   estimatedMinutes?: number;
   completedAt?: string;
   isSomeday?: boolean;
@@ -138,6 +138,7 @@ export interface UserProfile {
     showStreak: boolean;
     isIncognito?: boolean;
   };
+  onboardingCompleted?: boolean;
 }
 
 export interface Badge {

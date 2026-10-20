@@ -300,7 +300,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   const [selectedSlashIndex, setSelectedSlashIndex] = useState(0);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
-  const activePartners = members.filter((m) => m.status === 'focusing' && !m.isIncognito);
+  const activePartners = members.filter(
+    (m) => m.status === 'focusing' && !m.isIncognito && m.statusText !== 'Offline'
+  );
   const ringProgressPercent = Math.min(100, Math.round((totalFocusMinutesToday / 100) * 100));
 
   // Slash commands calculation

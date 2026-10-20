@@ -242,7 +242,9 @@ export const CircleManagerModal: React.FC<CircleManagerModalProps> = ({
                                 )}
                               </div>
                               <p className="text-[10px] text-[var(--text-secondary)] truncate">
-                                {member.statusText || `${member.streak || 0}d streak • Active`}
+                                {member.isIncognito || member.statusText === 'Offline'
+                                  ? 'Offline'
+                                  : (member.statusText || `${member.streak || 0}d streak • Active`)}
                               </p>
                             </div>
                           </div>

@@ -63,6 +63,11 @@ export const normalizeProfile = (raw: any): UserProfile => {
         ? Boolean(raw.privacySettings.isIncognito)
         : Boolean(raw.isIncognito ?? DEFAULT_PROFILE.privacySettings.isIncognito),
     },
+    onboardingCompleted: raw.onboardingCompleted !== undefined
+      ? Boolean(raw.onboardingCompleted)
+      : raw.onboarding_completed !== undefined
+        ? Boolean(raw.onboarding_completed)
+        : undefined,
   };
 };
 
@@ -188,6 +193,8 @@ export const clearUserScopedStorage = (targetUserId?: string) => {
       'taktic_dark_mode',
       'taktic_ambient_volume',
       'taktic_notifications_enabled',
+      'taktic_onboarding_completed',
+      'taktic_stealth_status_map',
     ]);
 
     const keysToRemove: string[] = [];

@@ -358,9 +358,10 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
           )}
         </div>
 
-        {/* Live Active Co-Workers Overview */}
         {(() => {
-          const liveFocusingMembers = members.filter((m) => m.status === 'focusing' && !m.isIncognito);
+          const liveFocusingMembers = members.filter(
+            (m) => m.status === 'focusing' && !m.isIncognito && m.statusText !== 'Offline'
+          );
 
           return (
             <div className="pt-4 border-t border-[var(--border-subtle)] space-y-3">
@@ -802,21 +803,36 @@ export const LiveFocusRoom: React.FC<LiveFocusRoomProps> = ({
                       className="h-9 w-9 rounded-xl object-cover ring-1 ring-[var(--border-subtle)]"
                     />
                     <div>
-                      <p className="font-bold text-xs text-[var(--text-primary)]">{member.name}</p>
-                      <p className="text-[10px] text-[var(--text-secondary)] truncate max-w-[110px]">
-                        {member.statusText || 'Focusing'}
-                      </p>
+                      {(() => {
+                        const isOffline = Boolean(member.isIncognito || member.statusText === 'Offline');
+                        return (
+                          <>
+                            <p className="font-bold text-xs text-[var(--text-primary)]">{member.name}</p>
+                            <p className="text-[10px] text-[var(--text-secondary)] truncate max-w-[110px]">
+                              {isOffline ? 'Offline' : (member.statusText || 'Focusing')}
+                            </p>
+                          </>
+                        );
+                      })()}
                     </div>
                   </div>
-                  <span
-                    className={`h-2 w-2 rounded-full ${
-                      member.status === 'focusing'
-                        ? 'bg-[var(--accent-botanical-sage)] animate-ping'
-                        : member.status === 'completed_day'
-                        ? 'bg-[var(--accent-warm-ochre)]'
-                        : 'bg-amber-400'
-                    }`}
-                  />
+                  {(() => {
+                    const isOffline = Boolean(member.isIncognito || member.statusText === 'Offline');
+                    return (
+                      <span
+                        className={`h-2 w-2 rounded-full ${
+                          isOffline
+                            ? 'bg-slate-400 dark:bg-slate-500 opacity-60'
+                            : member.status === 'focusing'
+                            ? 'bg-[var(--accent-botanical-sage)] animate-ping'
+                            : member.status === 'completed_day'
+                            ? 'bg-[var(--accent-warm-ochre)]'
+                            : 'bg-amber-400'
+                        }`}
+                        title={isOffline ? 'Offline' : member.status}
+                      />
+                    );
+                  })()}
                 </div>
 
                 {/* Member Pinned Micro-Goal */}

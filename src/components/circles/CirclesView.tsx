@@ -160,7 +160,9 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
     createRoom(roomData.name, roomData.durationMinutes, roomData.code);
   };
 
-  const activeFocusingCount = members.filter((m) => m.status === 'focusing' && !m.isIncognito).length;
+  const activeFocusingCount = members.filter(
+    (m) => m.status === 'focusing' && !m.isIncognito && m.statusText !== 'Offline'
+  ).length;
   const partnerMembers = members.filter((m) => m.isCirclePartner !== false);
   const activePodsCount = focusPods.filter((p) => (p.activeMembersCount || 0) > 0).length;
 

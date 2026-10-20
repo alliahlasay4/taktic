@@ -356,16 +356,54 @@ export function useCircles() {
   const addMemberByName = async (name: string) => {
     if (!name.trim()) return;
     const tempId = `user-${Date.now()}`;
+    const cleanInput = name.trim();
+    const cleanLower = cleanInput.toLowerCase().replace(/^@/, '');
+
+    let matchedProfile: any = null;
+    if (isRealUser) {
+      try {
+        const { data: profs } = await supabase.from('profiles').select('*');
+        if (profs && profs.length > 0) {
+          matchedProfile = profs.find((p: any) => {
+            const fn = (p.full_name || p.fullName || '').trim().toLowerCase();
+            const un = (p.username || '').trim().toLowerCase().replace(/^@/, '');
+            const em = (p.email || '').trim().toLowerCase();
+            return (
+              fn === cleanLower ||
+              fn.replace(/\s+/g, '') === cleanLower.replace(/\s+/g, '') ||
+              un === cleanLower ||
+              em === cleanLower ||
+              em.split('@')[0] === cleanLower
+            );
+          });
+        }
+      } catch (e) {
+        console.warn('Error matching profile in addMemberByName:', e);
+      }
+    }
+
+    const rawPrivacy = matchedProfile?.privacy_settings || matchedProfile?.privacySettings;
+    const parsedPrivacy = typeof rawPrivacy === 'string'
+      ? (() => { try { return JSON.parse(rawPrivacy); } catch { return {}; } })()
+      : (rawPrivacy || {});
+    const isPartnerIncognito = Boolean(
+      parsedPrivacy.isIncognito ||
+      parsedPrivacy.is_incognito ||
+      matchedProfile?.isIncognito
+    );
+
     const newMember: CircleMember = {
       id: tempId,
-      name: name.trim(),
-      avatar: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-      status: 'focusing',
-      statusText: 'Active Partner',
+      partnerUserId: matchedProfile?.id || undefined,
+      name: matchedProfile?.full_name || matchedProfile?.username || cleanInput,
+      avatar: matchedProfile?.avatar_url || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
+      status: isPartnerIncognito ? 'idle' : (matchedProfile?.status_message ? 'focusing' : 'idle'),
+      statusText: isPartnerIncognito ? 'Offline' : (matchedProfile?.status_message || 'Online'),
       closedRingsCount: 0,
-      streak: 1,
+      streak: matchedProfile?.current_streak || 1,
       isCirclePartner: true,
       isMuted: false,
+      isIncognito: isPartnerIncognito,
     };
 
     const updated = [newMember, ...members];
@@ -377,6 +415,7 @@ export function useCircles() {
           .from('circle_members')
           .insert({
             user_id: user.id,
+            partner_user_id: matchedProfile?.id || null,
             member_name: newMember.name,
             member_avatar: newMember.avatar,
             status: newMember.status,
@@ -394,6 +433,7 @@ export function useCircles() {
             m.id === tempId ? { ...m, id: data.id } : m
           );
           saveMembers(updatedWithDbId);
+          fetchCirclesData();
         }
       } catch (err) {
         console.error('Error inserting member to Supabase:', err);
@@ -563,25 +603,52 @@ export function useCircles() {
             console.warn('Could not read local profile cache:', e);
           }
 
-          // 1. Fetch only relevant profiles for the user and their circle partners
+          // 1. Try fetching partner privacy settings via SECURITY DEFINER RPC (bypasses RLS)
+          try {
+            const { data: partnersPrivacy, error: rpcErr } = await supabase.rpc('get_circle_partners_privacy');
+            if (!rpcErr && Array.isArray(partnersPrivacy) && partnersPrivacy.length > 0) {
+              addProfilesToMap(partnersPrivacy);
+            }
+          } catch (rpcErr) {
+            console.warn('RPC get_circle_partners_privacy not available, using table queries:', rpcErr);
+          }
+
+          // 2. Fetch all profiles from Supabase to guarantee fresh privacy settings and incognito status
+          const { data: allProfiles, error: allProfilesErr } = await supabase
+            .from('profiles')
+            .select('*');
+
+          if (!allProfilesErr && allProfiles && allProfiles.length > 0) {
+            addProfilesToMap(allProfiles);
+          }
+
+          // 3. Always attempt targeted query for partner IDs in case wildcard select is filtered by RLS
           const allRelevantUserIds = new Set<string>(partnerUserIds);
           if (user?.id) {
             allRelevantUserIds.add(user.id);
           }
-
           if (allRelevantUserIds.size > 0) {
-            const { data: allProfiles, error: allProfilesErr } = await supabase
-              .from('profiles')
-              .select('*')
-              .in('id', Array.from(allRelevantUserIds));
-
-            if (!allProfilesErr && allProfiles) {
-              addProfilesToMap(allProfiles);
+            try {
+              const { data: idProfiles } = await supabase
+                .from('profiles')
+                .select('*')
+                .in('id', Array.from(allRelevantUserIds));
+              if (idProfiles && idProfiles.length > 0) {
+                addProfilesToMap(idProfiles);
+              }
+            } catch (targetErr) {
+              console.warn('Targeted partner profile fetch warning:', targetErr);
             }
           }
         } catch (e) {
           console.warn('Could not fetch partner profiles for circle members:', e);
         }
+
+        // Read persistent local stealth map for immediate cross-account synchronization
+        let localStealthMap: Record<string, boolean> = {};
+        try {
+          localStealthMap = JSON.parse(localStorage.getItem('taktic_stealth_status_map') || '{}');
+        } catch {}
 
         const dbMembers: CircleMember[] = membersData.map((m) => {
           const rawMemberName = (m.member_name || '').trim().toLowerCase();
@@ -598,12 +665,33 @@ export function useCircles() {
             (cleanNameNoSpace ? partnerProfilesMap[cleanNameNoSpace] : null) ||
             (cleanNameEmailPrefix ? partnerProfilesMap[cleanNameEmailPrefix] : null);
 
+          // If partner_user_id was missing on this row, backfill it in Supabase for permanent linking
+          if (!m.partner_user_id && partnerProfile?.id) {
+            supabase
+              .from('circle_members')
+              .update({ partner_user_id: partnerProfile.id })
+              .eq('id', m.id)
+              .then(() => {});
+          }
+
+          const partnerId = m.partner_user_id || partnerProfile?.id;
+          const isStealthInMap = partnerId
+            ? (localStealthMap[partnerId] ?? localStealthMap[partnerId.toLowerCase()])
+            : undefined;
+
+          // Determine partner incognito status across all persistent and realtime layers
           const isPartnerIncognito = Boolean(
-            partnerProfile?.privacy_settings?.isIncognito ||
-            partnerProfile?.privacySettings?.isIncognito ||
-            partnerProfile?.isIncognito ||
-            partnerProfile?.is_incognito
+            isStealthInMap !== undefined
+              ? isStealthInMap
+              : (
+                  partnerProfile?.privacy_settings?.isIncognito ||
+                  partnerProfile?.privacySettings?.isIncognito ||
+                  partnerProfile?.isIncognito ||
+                  partnerProfile?.is_incognito ||
+                  m.status_text === 'Offline'
+                )
           );
+
           const isShowStreak = partnerProfile?.privacy_settings?.showStreak !== false;
           const liveStreak = partnerProfile?.current_streak !== undefined 
             ? partnerProfile.current_streak 
@@ -611,15 +699,19 @@ export function useCircles() {
 
           const cleanStatusText = isPartnerIncognito
             ? 'Offline'
-            : (partnerProfile?.status_message || (m.status_text || 'Online'));
+            : (partnerProfile?.status_message || (m.status_text === 'Offline' ? 'Online' : (m.status_text || 'Online')));
+
+          const cleanStatus = isPartnerIncognito
+            ? 'idle'
+            : (partnerProfile?.status_message ? 'focusing' : (m.status === 'focusing' ? 'focusing' : 'idle'));
 
           return {
             id: m.id,
-            partnerUserId: m.partner_user_id || partnerProfile?.id || undefined,
+            partnerUserId: partnerId || undefined,
             name: partnerProfile?.full_name || partnerProfile?.fullName || partnerProfile?.username || m.member_name,
             avatar: partnerProfile?.avatar_url || partnerProfile?.avatarUrl || m.member_avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
             // If the partner turned on incognito mode, their live status is stealth/offline
-            status: isPartnerIncognito ? 'idle' : (partnerProfile?.status_message ? 'focusing' : (m.status || 'idle')),
+            status: cleanStatus,
             statusText: cleanStatusText,
             closedRingsCount: m.closed_rings_count || 0,
             streak: liveStreak,
@@ -841,6 +933,44 @@ export function useCircles() {
             );
           }
         })
+        .on('broadcast', { event: 'profile_privacy_sync' }, (payload) => {
+          if (payload?.payload?.userId) {
+            const { userId, isIncognito, statusMessage } = payload.payload;
+            const targetUserId = String(userId).toLowerCase();
+            const partnerIsIncognito = Boolean(isIncognito);
+
+            // Persist to local stealth map for fast cross-page/account consistency
+            try {
+              const currentMap = JSON.parse(localStorage.getItem('taktic_stealth_status_map') || '{}');
+              currentMap[userId] = partnerIsIncognito;
+              currentMap[targetUserId] = partnerIsIncognito;
+              localStorage.setItem('taktic_stealth_status_map', JSON.stringify(currentMap));
+            } catch {}
+
+            // 1. Instantly update in-memory members list for this user
+            setMembers((prevMembers) =>
+              prevMembers.map((member) => {
+                const isMatch =
+                  (member.partnerUserId && member.partnerUserId.toLowerCase() === targetUserId) ||
+                  (member.id && member.id.toLowerCase() === targetUserId);
+
+                if (isMatch) {
+                  const partnerIsIncognito = Boolean(isIncognito);
+                  return {
+                    ...member,
+                    isIncognito: partnerIsIncognito,
+                    status: partnerIsIncognito ? 'idle' : (statusMessage ? 'focusing' : member.status),
+                    statusText: partnerIsIncognito ? 'Offline' : (statusMessage || 'Online'),
+                  };
+                }
+                return member;
+              })
+            );
+
+            // 2. Fetch fresh circles data to keep full consistency
+            fetchCirclesData();
+          }
+        })
         .subscribe();
 
       const membersChannel = supabase
@@ -859,6 +989,17 @@ export function useCircles() {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'circle_invites', filter: `user_id=eq.${user.id}` },
+          () => {
+            fetchCirclesData();
+          }
+        )
+        .subscribe();
+
+      const profilesChannel = supabase
+        .channel('public:profiles_realtime_sync')
+        .on(
+          'postgres_changes',
+          { event: '*', schema: 'public', table: 'profiles' },
           () => {
             fetchCirclesData();
           }
@@ -887,6 +1028,7 @@ export function useCircles() {
         supabase.removeChannel(feedBroadcastChannel);
         supabase.removeChannel(membersChannel);
         supabase.removeChannel(invitesChannel);
+        supabase.removeChannel(profilesChannel);
       };
     }
   }, [fetchCirclesData, isRealUser, user]);

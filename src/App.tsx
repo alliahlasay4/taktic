@@ -176,7 +176,7 @@ function MainLayout() {
     clearAll,
   } = useInAppNotifications();
 
-  const { user, profile } = useAuth();
+  const { user, profile, isDemo } = useAuth();
   const currentUserName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
 
   // Social Circles & Feed State from Custom Hook (Supabase Realtime + RLS)
@@ -339,9 +339,31 @@ function MainLayout() {
   }, [habits, focusSessions, tasks]);
 
   // Onboarding Modal State
-  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(() => {
-    return localStorage.getItem('taktic_onboarding_completed') !== 'true';
-  });
+  const [isOnboardingOpen, setIsOnboardingOpen] = useState<boolean>(false);
+
+  // Determine whether onboarding should be shown once user & profile state is resolved
+  useEffect(() => {
+    // If not authenticated yet or demo mode, do not show
+    if (!user || isDemo) {
+      setIsOnboardingOpen(false);
+      return;
+    }
+
+    // Check if user has already completed onboarding
+    const isCompletedInProfile = Boolean(profile?.onboardingCompleted);
+    const isCompletedForUser = localStorage.getItem(`taktic_onboarding_completed_${user.id}`) === 'true';
+    const isCompletedGlobally = localStorage.getItem('taktic_onboarding_completed') === 'true';
+
+    if (isCompletedInProfile || isCompletedForUser || isCompletedGlobally) {
+      localStorage.setItem('taktic_onboarding_completed', 'true');
+      localStorage.setItem(`taktic_onboarding_completed_${user.id}`, 'true');
+      setIsOnboardingOpen(false);
+      return;
+    }
+
+    // Only open onboarding for newly registered accounts whose onboarding has not been completed
+    setIsOnboardingOpen(true);
+  }, [user, profile?.onboardingCompleted, isDemo]);
 
   // Modals
   const [rewardModal, setRewardModal] = useState<{ open: boolean; title: string; message: string }>({

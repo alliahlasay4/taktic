@@ -67,6 +67,7 @@ export const fetchUserProfileFromSupabase = async (userId: string): Promise<User
         showStreak: dbPrivacy.showStreak !== false,
         isIncognito: Boolean(dbPrivacy.isIncognito),
       },
+      onboardingCompleted: Boolean(data.onboarding_completed),
     };
   } catch (err) {
     console.error('Error fetching user profile from Supabase:', err);
@@ -108,42 +109,114 @@ export const saveUserProfileToSupabase = async (
       work_hours_end: profile.workHoursEnd || '17:00',
       favorite_soundscape: profile.favoriteSoundscape || 'Gentle Rain',
       privacy_settings: normalizedPrivacy,
+      ...(profile.onboardingCompleted !== undefined ? { onboarding_completed: Boolean(profile.onboardingCompleted) } : {}),
     };
 
     // 1. Try direct UPDATE on profiles table
+    const updatePayload: Record<string, any> = {
+      full_name: payload.full_name,
+      username: payload.username,
+      avatar_url: payload.avatar_url,
+      bio: payload.bio,
+      micro_goal: payload.micro_goal,
+      status_message: payload.status_message,
+      timezone: payload.timezone,
+      work_hours_start: payload.work_hours_start,
+      work_hours_end: payload.work_hours_end,
+      favorite_soundscape: payload.favorite_soundscape,
+      privacy_settings: payload.privacy_settings,
+    };
+    if (profile.onboardingCompleted !== undefined) {
+      updatePayload.onboarding_completed = Boolean(profile.onboardingCompleted);
+    }
+
     const { data: updateData, error: updateErr } = await supabase
       .from('profiles')
-      .update({
-        full_name: payload.full_name,
-        username: payload.username,
-        avatar_url: payload.avatar_url,
-        bio: payload.bio,
-        micro_goal: payload.micro_goal,
-        status_message: payload.status_message,
-        timezone: payload.timezone,
-        work_hours_start: payload.work_hours_start,
-        work_hours_end: payload.work_hours_end,
-        favorite_soundscape: payload.favorite_soundscape,
-        privacy_settings: payload.privacy_settings,
-      })
+      .update(updatePayload)
       .eq('id', targetId)
       .select();
 
+    let savedSuccessfully = false;
+
     if (!updateErr && updateData && updateData.length > 0) {
-      return { error: null };
+      savedSuccessfully = true;
+    } else {
+      // 2. If update didn't match a row or errored, try UPSERT with email included
+      const authUser = (await supabase.auth.getUser())?.data?.user;
+      if (authUser?.email) {
+        payload.email = authUser.email;
+      }
+
+      const { error: upsertErr } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
+      if (upsertErr) {
+        console.error('Supabase profile save error:', upsertErr);
+        return { error: new Error(upsertErr.message) };
+      }
+      savedSuccessfully = true;
     }
 
-    // 2. If update didn't match a row or errored, try UPSERT with email included
-    const authUser = (await supabase.auth.getUser())?.data?.user;
-    if (authUser?.email) {
-      payload.email = authUser.email;
+    if (savedSuccessfully) {
+      const isIncognitoState = Boolean(normalizedPrivacy.isIncognito);
+
+      // 1. Maintain local persistent stealth map for cross-account synchronization
+      try {
+        const currentMap = JSON.parse(localStorage.getItem('taktic_stealth_status_map') || '{}');
+        currentMap[targetId] = isIncognitoState;
+        if (targetId) {
+          currentMap[targetId.toLowerCase()] = isIncognitoState;
+        }
+        localStorage.setItem('taktic_stealth_status_map', JSON.stringify(currentMap));
+      } catch (mapErr) {
+        console.warn('Could not update taktic_stealth_status_map in localStorage:', mapErr);
+      }
+
+      // 2. Cascade stealth mode to all partners' circle_members rosters via SECURITY DEFINER RPC
+      try {
+        await supabase.rpc('sync_my_stealth_mode', {
+          p_is_incognito: isIncognitoState,
+          p_status_text: isIncognitoState ? 'Offline' : (profile.statusMessage || 'Online'),
+        });
+      } catch (rpcErr) {
+        console.warn('Could not call sync_my_stealth_mode RPC (will fall back to direct update):', rpcErr);
+      }
+
+      // 3. Fallback direct update to circle_members where this user is the partner
+      try {
+        await supabase
+          .from('circle_members')
+          .update({
+            status: isIncognitoState ? 'idle' : 'focusing',
+            status_text: isIncognitoState ? 'Offline' : (profile.statusMessage || 'Online'),
+          })
+          .eq('partner_user_id', targetId);
+      } catch (directErr) {
+        console.warn('Direct circle_members partner update failed:', directErr);
+      }
+
+      // 4. If stealth mode is ON, remove presence from live focus rooms immediately
+      if (isIncognitoState) {
+        try {
+          await supabase.from('room_members').delete().eq('user_id', targetId);
+        } catch {}
+      }
+
+      // 5. Broadcast profile/privacy updates to all circle partners via Realtime
+      try {
+        await supabase.channel('public:circle_feed_broadcast').send({
+          type: 'broadcast',
+          event: 'profile_privacy_sync',
+          payload: {
+            userId: targetId,
+            privacySettings: normalizedPrivacy,
+            isIncognito: isIncognitoState,
+            statusMessage: profile.statusMessage || '',
+          },
+        });
+      } catch (broadcastErr) {
+        console.warn('Could not broadcast profile privacy sync:', broadcastErr);
+      }
     }
 
-    const { error: upsertErr } = await supabase.from('profiles').upsert(payload, { onConflict: 'id' });
-    if (upsertErr) {
-      console.error('Supabase profile save error:', upsertErr);
-      return { error: new Error(upsertErr.message) };
-    }
     return { error: null };
   } catch (err: any) {
     console.error('Error saving user profile to Supabase:', err);

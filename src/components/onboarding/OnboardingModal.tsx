@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Sparkles, Target, CheckCircle2, Volume2, Bell, ArrowRight, ArrowLeft, CloudRain, Waves, Headphones, Coffee } from 'lucide-react';
+import { Sparkles, Target, CheckCircle2, Volume2, Bell, ArrowRight, ArrowLeft, CloudRain, Waves, Headphones, Coffee, X } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import { Habit, Task } from '../../types';
@@ -26,7 +26,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   onAddTask,
   requestNotificationPermission,
 }) => {
-  const { user, isDemo } = useAuth();
+  const { user, isDemo, updateProfile } = useAuth();
   const [step, setStep] = useState(1);
 
   // Form states
@@ -38,6 +38,44 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
   const [notificationsRequested, setNotificationsRequested] = useState(false);
 
   if (!isOpen) return null;
+
+  const markOnboardingDone = async (customMicroGoal?: string, customSoundscape?: string) => {
+    localStorage.setItem('taktic_onboarding_completed', 'true');
+    if (user?.id) {
+      localStorage.setItem(`taktic_onboarding_completed_${user.id}`, 'true');
+    }
+
+    try {
+      await updateProfile({
+        ...(customMicroGoal ? { microGoal: customMicroGoal } : {}),
+        ...(customSoundscape ? { favoriteSoundscape: customSoundscape } : {}),
+        onboardingCompleted: true,
+      });
+    } catch (err) {
+      console.error('Error updating onboarding status in profile:', err);
+    }
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        await supabase
+          .from('profiles')
+          .update({
+            onboarding_completed: true,
+            ...(customMicroGoal ? { micro_goal: customMicroGoal } : {}),
+            ...(customSoundscape ? { favorite_soundscape: customSoundscape } : {}),
+          })
+          .eq('id', user.id);
+      } catch (err) {
+        console.error('Error saving onboarding data to DB:', err);
+      }
+    }
+
+    onComplete();
+  };
+
+  const handleDismiss = () => {
+    markOnboardingDone();
+  };
 
   const handleFinish = async () => {
     // 1. Add sample habit
@@ -65,24 +103,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
       });
     }
 
-    // 3. Save profile micro_goal & onboarding_completed
-    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
-      try {
-        await supabase
-          .from('profiles')
-          .update({
-            micro_goal: microGoal,
-            favorite_soundscape: soundscape,
-            onboarding_completed: true,
-          })
-          .eq('id', user.id);
-      } catch (err) {
-        console.error('Error saving onboarding data to DB:', err);
-      }
-    }
-
-    localStorage.setItem('taktic_onboarding_completed', 'true');
-    onComplete();
+    await markOnboardingDone(microGoal, soundscape);
   };
 
   return (
@@ -92,7 +113,7 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
         <div className="absolute -top-24 -left-24 h-56 w-56 rounded-full bg-emerald-500/20 blur-3xl pointer-events-none" />
         <div className="absolute -bottom-24 -right-24 h-56 w-56 rounded-full bg-teal-500/20 blur-3xl pointer-events-none" />
 
-        {/* Progress Dots */}
+        {/* Progress Dots & Close */}
         <div className="flex items-center justify-between mb-8">
           <div className="flex items-center gap-2">
             <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400 font-semibold text-xs border border-emerald-500/30">
@@ -106,15 +127,27 @@ export const OnboardingModal: React.FC<OnboardingModalProps> = ({
             </span>
           </div>
 
-          <div className="flex items-center gap-1.5">
-            {[1, 2, 3, 4].map((i) => (
-              <div
-                key={i}
-                className={`h-1.5 rounded-full transition-all duration-300 ${
-                  i === step ? 'w-6 bg-emerald-400' : i < step ? 'w-3 bg-emerald-600' : 'w-3 bg-gray-800'
-                }`}
-              />
-            ))}
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-1.5">
+              {[1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className={`h-1.5 rounded-full transition-all duration-300 ${
+                    i === step ? 'w-6 bg-emerald-400' : i < step ? 'w-3 bg-emerald-600' : 'w-3 bg-gray-800'
+                  }`}
+                />
+              ))}
+            </div>
+
+            <button
+              type="button"
+              onClick={handleDismiss}
+              className="p-1.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800/60 transition"
+              title="Skip onboarding"
+              aria-label="Skip onboarding"
+            >
+              <X className="h-4 w-4" />
+            </button>
           </div>
         </div>
 
