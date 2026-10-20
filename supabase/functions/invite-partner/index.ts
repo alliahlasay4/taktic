@@ -5,6 +5,17 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
+// Allowed origins for email redirect links (whitelisted to prevent open redirect token theft)
+const ALLOWED_ORIGINS = [
+  'https://taktic.app',
+  'https://taktic-1.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+];
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 Deno.serve(async (req: Request) => {
   // Handle CORS preflight requests
   if (req.method === 'OPTIONS') {
@@ -12,26 +23,128 @@ Deno.serve(async (req: Request) => {
   }
 
   try {
-    const { email, name, inviterName, inviterId, redirectUrl, inviteToken } = await req.json();
-
-    if (!email) {
-      return new Response(
-        JSON.stringify({ error: 'Email is required' }),
-        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
     const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
     const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
 
     if (!supabaseUrl || !supabaseServiceRoleKey) {
       return new Response(
-        JSON.stringify({ error: 'Supabase admin credentials (SUPABASE_URL / SUPABASE_SERVICE_ROLE_KEY) are missing' }),
+        JSON.stringify({ error: 'Supabase admin credentials are missing in Edge Function environment' }),
         { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
-    // Initialize Supabase Admin client with Service Role Key
+    // 1. Strict Authentication Check: Verify Caller's JWT
+    const authHeader = req.headers.get('Authorization') || req.headers.get('authorization');
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Missing or invalid Authorization header' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const token = authHeader.replace(/^Bearer\s+/i, '').trim();
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Empty token' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Authenticate the user with standard client
+    const supabaseUserClient = createClient(supabaseUrl, supabaseAnonKey || supabaseServiceRoleKey, {
+      global: {
+        headers: { Authorization: `Bearer ${token}` },
+      },
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    });
+
+    const {
+      data: { user: callerUser },
+      error: userAuthError,
+    } = await supabaseUserClient.auth.getUser(token);
+
+    if (userAuthError || !callerUser) {
+      console.warn('Caller JWT verification failed:', userAuthError?.message);
+      return new Response(
+        JSON.stringify({ error: 'Unauthorized: Invalid or expired session' }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 2. Parse & Validate Payload
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch {
+      return new Response(
+        JSON.stringify({ error: 'Invalid JSON request payload' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const { email, name, inviterName, origin, inviteToken } = body;
+
+    if (!email || typeof email !== 'string') {
+      return new Response(
+        JSON.stringify({ error: 'Valid recipient email is required' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    const targetEmail = email.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(targetEmail) || targetEmail.length > 254) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid email format' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // Prevent self-invitation
+    if (callerUser.email && callerUser.email.toLowerCase() === targetEmail) {
+      return new Response(
+        JSON.stringify({ error: 'You cannot invite your own email address as a circle partner' }),
+        { status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    // 3. Resolve & Sanitize Redirect URL against Allowed Origins (Prevent Open Redirect)
+    let appOrigin = 'https://taktic.app';
+    if (origin && typeof origin === 'string') {
+      try {
+        const parsedUrl = new URL(origin);
+        const resolvedOrigin = parsedUrl.origin;
+        if (ALLOWED_ORIGINS.includes(resolvedOrigin)) {
+          appOrigin = resolvedOrigin;
+        } else {
+          console.warn(`Untrusted origin provided (${resolvedOrigin}); falling back to default.`);
+        }
+      } catch {
+        // invalid URL; fall back to default
+      }
+    }
+
+    // Securely derive inviter parameters (never trust client-supplied inviterId)
+    const verifiedInviterId = callerUser.id;
+    const inviterDisplayName = inviterName && typeof inviterName === 'string'
+      ? inviterName.trim().slice(0, 50)
+      : (callerUser.user_metadata?.full_name || callerUser.user_metadata?.name || 'A colleague');
+
+    const sanitizedPartnerName = name && typeof name === 'string'
+      ? name.trim().slice(0, 50)
+      : targetEmail.split('@')[0];
+
+    // Generate safe, tamper-evident random invite token if not a valid format
+    const safeToken = typeof inviteToken === 'string' && /^[a-zA-Z0-9_-]{10,64}$/.test(inviteToken)
+      ? inviteToken
+      : `tok_${Date.now().toString(36)}_${crypto.randomUUID().replace(/-/g, '').substring(0, 12)}`;
+
+    const effectiveRedirectUrl = `${appOrigin}/login?circle_invite=${encodeURIComponent(safeToken)}&inviter=${encodeURIComponent(inviterDisplayName)}`;
+
+    // 4. Initialize Privileged Supabase Admin Client
     const supabaseAdmin = createClient(supabaseUrl, supabaseServiceRoleKey, {
       auth: {
         autoRefreshToken: false,
@@ -39,25 +152,34 @@ Deno.serve(async (req: Request) => {
       },
     });
 
-    const targetEmail = String(email).trim().toLowerCase();
-    const inviterDisplayName = inviterName ? String(inviterName).trim() : 'A colleague';
-    const effectiveToken = inviteToken || `tok_${Date.now().toString(36)}_${Math.random().toString(36).substring(2, 7)}`;
-    const effectiveRedirectUrl = redirectUrl || `https://taktic.app/login?circle_invite=${effectiveToken}&inviter=${encodeURIComponent(inviterDisplayName)}`;
+    // 5. Rate-limit check: Ensure caller has not exceeded pending invites threshold (anti-abuse)
+    const { count: pendingCount, error: countErr } = await supabaseAdmin
+      .from('circle_invites')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', verifiedInviterId)
+      .eq('status', 'pending');
 
-    console.log(`Processing circle partner invite for ${targetEmail} from ${inviterDisplayName}...`);
+    if (!countErr && typeof pendingCount === 'number' && pendingCount >= 20) {
+      return new Response(
+        JSON.stringify({ error: 'You have too many pending invitations. Please revoke existing pending invites before sending new ones.' }),
+        { status: 429, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+      );
+    }
+
+    console.log(`Processing verified circle partner invite for ${targetEmail} from user ${verifiedInviterId}...`);
 
     let inviteSent = false;
     let fallbackUsed = false;
     let inviteData = null;
 
-    // 1. First, attempt Supabase Built-in Auth Invite Email (standard flow for new accounts)
+    // 6. Attempt Supabase Auth Admin Invite Email
     const { data: adminInviteData, error: inviteError } = await supabaseAdmin.auth.admin.inviteUserByEmail(
       targetEmail,
       {
         data: {
           inviter_name: inviterDisplayName,
-          inviter_id: inviterId || null,
-          partner_name: name || null,
+          inviter_id: verifiedInviterId,
+          partner_name: sanitizedPartnerName,
         },
         redirectTo: effectiveRedirectUrl,
       }
@@ -70,7 +192,7 @@ Deno.serve(async (req: Request) => {
     } else {
       console.warn('inviteUserByEmail note/error:', inviteError.message);
 
-      // 2. If user already exists (HTTP 422 / already registered message), fallback to magic link OTP
+      // Check if user is already registered, fallback to OTP magic link
       const isAlreadyRegistered =
         inviteError.status === 422 ||
         inviteError.message?.toLowerCase().includes('already') ||
@@ -78,13 +200,14 @@ Deno.serve(async (req: Request) => {
         inviteError.message?.toLowerCase().includes('exists');
 
       if (isAlreadyRegistered) {
-        console.log(`User ${targetEmail} is already registered. Triggering magic link invite to existing account...`);
+        console.log(`User ${targetEmail} already registered. Sending OTP invite...`);
         const { data: otpData, error: otpError } = await supabaseAdmin.auth.signInWithOtp({
           email: targetEmail,
           options: {
             emailRedirectTo: effectiveRedirectUrl,
             data: {
               inviter_name: inviterDisplayName,
+              inviter_id: verifiedInviterId,
             },
           },
         });
@@ -93,15 +216,13 @@ Deno.serve(async (req: Request) => {
           inviteSent = true;
           fallbackUsed = true;
           inviteData = otpData;
-          console.log(`Magic link OTP dispatched to existing user ${targetEmail}`);
         } else {
           console.warn('signInWithOtp error:', otpError.message);
-          // Even if rate limited or OTP fails, record the pending invite so when they log in they can still accept
+          // Persist the invite even if OTP dispatch encountered email rate limit
           inviteSent = true;
           fallbackUsed = true;
         }
       } else {
-        // Different error occurred
         return new Response(
           JSON.stringify({
             success: false,
@@ -116,23 +237,21 @@ Deno.serve(async (req: Request) => {
       }
     }
 
-    // 3. Persist record into circle_invites table
-    if (inviterId) {
-      try {
-        await supabaseAdmin.from('circle_invites').upsert(
-          {
-            user_id: inviterId,
-            email: targetEmail,
-            name: name || targetEmail.split('@')[0],
-            status: 'pending',
-            invite_token: effectiveToken,
-            invite_link: effectiveRedirectUrl,
-          },
-          { onConflict: 'user_id,email' }
-        );
-      } catch (dbErr) {
-        console.warn('Could not upsert into circle_invites:', dbErr);
-      }
+    // 7. Persist record into circle_invites table under verified caller user_id
+    try {
+      await supabaseAdmin.from('circle_invites').upsert(
+        {
+          user_id: verifiedInviterId,
+          email: targetEmail,
+          name: sanitizedPartnerName,
+          status: 'pending',
+          invite_token: safeToken,
+          invite_link: effectiveRedirectUrl,
+        },
+        { onConflict: 'user_id,email' }
+      );
+    } catch (dbErr) {
+      console.warn('Could not upsert into circle_invites:', dbErr);
     }
 
     return new Response(
@@ -141,7 +260,7 @@ Deno.serve(async (req: Request) => {
         message: fallbackUsed
           ? `Invitation sent to existing account: ${targetEmail}`
           : `Invitation email dispatched to ${targetEmail}`,
-        token: effectiveToken,
+        token: safeToken,
         inviteLink: effectiveRedirectUrl,
         data: inviteData,
       }),

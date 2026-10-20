@@ -177,7 +177,7 @@ export const NotificationCenterDropdown: React.FC<NotificationCenterDropdownProp
                 <p className="mt-0.5 text-xs text-[var(--text-secondary)] leading-relaxed break-words">{item.message}</p>
 
                 {/* Inline Action Buttons for Circle Partner Invitations */}
-                {item.inviteToken && onAcceptCircleInvite && (
+                {item.inviteToken && /^[a-zA-Z0-9_-]{10,64}$/.test(item.inviteToken) && onAcceptCircleInvite && (
                   <div className="mt-2.5 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
                     <button
                       type="button"

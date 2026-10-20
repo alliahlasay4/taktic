@@ -31,6 +31,7 @@ import {
 } from 'lucide-react';
 import { useAnalytics, TimeHorizon, FocusQualityStat, CategoryDistributionStat } from '../../hooks/useAnalytics';
 import { exportAnalyticsPdf } from '../../lib/exportAnalyticsReport';
+import { downloadCsvFile } from '../../lib/csvSecurity';
 
 interface AnalyticsViewProps {
   tasksCompleted: number;
@@ -141,8 +142,6 @@ ${
 
   // 2. Export CSV / Excel Spreadsheet (All Data + Trends + Habits & Energy Included)
   const handleExportCSV = () => {
-    const escapeCsv = (str: string | number) => `"${String(str).replace(/"/g, '""')}"`;
-
     const totalTimeOfDayMinutes = timeOfDayData.reduce((acc, curr) => acc + curr.minutes, 0);
 
     const rows: (string | number)[][] = [
@@ -213,16 +212,7 @@ ${
         : [['No focus sessions logged in this timeframe', '-', '-', '-', '-']]),
     ];
 
-    const csvContent =
-      'data:text/csv;charset=utf-8,\uFEFF' +
-      rows.map((row) => row.map(escapeCsv).join(',')).join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `taktic-productivity-telemetry-${timeHorizon}-${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCsvFile(`taktic-productivity-telemetry-${timeHorizon}-${new Date().toISOString().split('T')[0]}.csv`, rows);
     setIsExportMenuOpen(false);
   };
 

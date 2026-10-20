@@ -157,18 +157,18 @@ export function useCircles() {
     const updated = [newInvite, ...invites.filter((i) => i.email !== targetEmail)];
     saveInvites(updated);
 
-    if (isSupabaseConfigured) {
+    // If user is authenticated with Supabase, dispatch email invite through the secured Edge Function
+    if (isSupabaseConfigured && isRealUser && user) {
       try {
         const payload = {
           email: targetEmail,
           name: partnerName,
           inviterName: userName || 'A colleague',
-          inviterId: user?.id || null,
-          redirectUrl: link,
+          origin: typeof window !== 'undefined' ? window.location.origin : 'https://taktic.app',
           inviteToken: token,
         };
 
-        // 1. Invoke Supabase Edge Function to dispatch Auth Invite Email
+        // 1. Invoke Supabase Edge Function to dispatch Auth Invite Email with caller JWT
         const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('invite-partner', {
           body: payload,
         });
@@ -179,34 +179,32 @@ export function useCircles() {
           console.log('Invite email dispatched successfully via Supabase:', edgeData);
         }
 
-        // 2. Persist record to circle_invites table if logged in
-        if (isRealUser && user) {
-          const { data, error: dbErr } = await supabase
-            .from('circle_invites')
-            .insert({
-              user_id: user.id,
-              email: newInvite.email,
-              name: newInvite.name,
-              status: 'pending',
-              invite_token: token,
-              invite_link: link,
-            })
-            .select()
-            .single();
+        // 2. Persist record to circle_invites table under logged in user
+        const { data, error: dbErr } = await supabase
+          .from('circle_invites')
+          .insert({
+            user_id: user.id,
+            email: newInvite.email,
+            name: newInvite.name,
+            status: 'pending',
+            invite_token: token,
+            invite_link: link,
+          })
+          .select()
+          .single();
 
-          if (!dbErr && data) {
-            const updatedWithDbId = updated.map((inv) =>
-              inv.id === tempId ? { ...inv, id: data.id } : inv
-            );
-            saveInvites(updatedWithDbId);
-          }
+        if (!dbErr && data) {
+          const updatedWithDbId = updated.map((inv) =>
+            inv.id === tempId ? { ...inv, id: data.id } : inv
+          );
+          saveInvites(updatedWithDbId);
         }
       } catch (err) {
         console.error('Error in sendCircleInvite:', err);
       }
     }
 
-    return { success: true, inviteLink: link, message: `Invite email dispatched to ${targetEmail}` };
+    return { success: true, inviteLink: link, message: `Invite link created for ${targetEmail}` };
   };
 
   // Accept Circle Partner Invite (calls PostgreSQL SECURITY DEFINER RPC)
@@ -813,13 +811,21 @@ export function useCircles() {
         .on('broadcast', { event: 'reaction_sync' }, (payload) => {
           if (payload?.payload?.postId) {
             const { postId, newLikesCount, reactingUserId, reaction, isRemoving } = payload.payload;
+
+            // Validate payload structure to prevent arbitrary broadcast state spoofing
+            const isValidId = typeof postId === 'string' && /^[0-9a-f-]{36}$/i.test(postId);
+            const isValidCount = typeof newLikesCount === 'number' && newLikesCount >= 0 && Number.isFinite(newLikesCount);
+            if (!isValidId || !isValidCount) {
+              return;
+            }
+
             setFeedPosts((prev) =>
               prev.map((p) => {
                 if (p.id !== postId) return p;
                 const isMe = user && reactingUserId === user.id;
                 return {
                   ...p,
-                  likes: typeof newLikesCount === 'number' ? newLikesCount : p.likes,
+                  likes: newLikesCount,
                   ...(isMe ? { userLiked: !isRemoving, userReaction: isRemoving ? null : reaction } : {}),
                 };
               })

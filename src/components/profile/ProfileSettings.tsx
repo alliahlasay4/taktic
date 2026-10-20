@@ -48,16 +48,58 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      alert('Please select a valid image file (e.g., JPG, PNG, WEBP).');
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!allowedMimeTypes.includes(file.type.toLowerCase())) {
+      alert('Please select a valid image file (JPG, PNG, WEBP, or GIF).');
+      return;
+    }
+
+    // Limit upload file size to 2MB
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Avatar file is too large. Please select an image under 2MB.');
       return;
     }
 
     const reader = new FileReader();
     reader.onload = (event) => {
-      if (event.target?.result) {
-        setAvatarUrl(event.target.result as string);
-      }
+      const dataUrl = event.target?.result as string;
+      if (!dataUrl) return;
+
+      // Downscale avatar to a clean 256x256 thumbnail to avoid huge payloads in DB / storage
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const maxDim = 256;
+        let width = img.width;
+        let height = img.height;
+
+        if (width > height) {
+          if (width > maxDim) {
+            height = Math.round((height * maxDim) / width);
+            width = maxDim;
+          }
+        } else {
+          if (height > maxDim) {
+            width = Math.round((width * maxDim) / height);
+            height = maxDim;
+          }
+        }
+
+        canvas.width = width;
+        canvas.height = height;
+        const ctx = canvas.getContext('2d');
+        if (ctx) {
+          ctx.drawImage(img, 0, 0, width, height);
+          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.85);
+          setAvatarUrl(compressedDataUrl);
+        } else {
+          setAvatarUrl(dataUrl);
+        }
+      };
+      img.onerror = () => {
+        alert('Could not decode the selected image file.');
+      };
+      img.src = dataUrl;
     };
     reader.readAsDataURL(file);
   };

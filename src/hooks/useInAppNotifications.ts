@@ -315,19 +315,28 @@ export function useInAppNotifications() {
     [isRealUser, user, showToast]
   );
 
-  // Send a notification to another user (e.g. circle partner who authored a post)
+  // Send a notification to another user via the secured partner-verified RPC
   const sendPartnerNotification = useCallback(
-    async (targetUserId: string, title: string, message: string, type: InAppNotification['type'] = 'circle', actionTab: ActiveTab = 'circles') => {
+    async (
+      targetUserId: string,
+      title: string,
+      message: string,
+      type: InAppNotification['type'] = 'circle',
+      actionTab: ActiveTab = 'circles'
+    ) => {
       if (!isRealUser || !user || !targetUserId || targetUserId === user.id) return;
       try {
-        await supabase.from('notifications').insert({
-          user_id: targetUserId,
-          title,
-          message,
-          type,
-          read: false,
-          action_tab: actionTab,
+        const { error } = await supabase.rpc('send_partner_notification', {
+          p_target_user_id: targetUserId,
+          p_title: title.slice(0, 100),
+          p_message: message.slice(0, 300),
+          p_type: type,
+          p_action_tab: actionTab,
         });
+
+        if (error) {
+          console.warn('send_partner_notification RPC note:', error.message);
+        }
       } catch (e) {
         console.warn('Could not send notification to partner:', e);
       }

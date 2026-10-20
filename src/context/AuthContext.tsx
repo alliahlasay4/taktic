@@ -173,6 +173,53 @@ export const clearDemoData = () => {
   }
 };
 
+/**
+ * Completely flushes user-scoped cached data from localStorage upon sign-out
+ * to prevent cross-account data leakage on shared computers.
+ * Preserves generic device preferences like dark mode and volume.
+ */
+export const clearUserScopedStorage = (targetUserId?: string) => {
+  if (typeof window === 'undefined') return;
+
+  try {
+    sessionStorage.clear();
+
+    const preservedKeys = new Set([
+      'taktic_dark_mode',
+      'taktic_ambient_volume',
+      'taktic_notifications_enabled',
+    ]);
+
+    const keysToRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+
+      if (preservedKeys.has(key)) {
+        continue;
+      }
+
+      // If a specific userId was provided, purge keys containing that ID
+      if (targetUserId && key.includes(targetUserId)) {
+        keysToRemove.push(key);
+        continue;
+      }
+
+      // Otherwise purge all taktic cache keys except preserved preferences
+      if (
+        key.startsWith('taktic_') ||
+        key.startsWith('sb-') // Supabase auth tokens
+      ) {
+        keysToRemove.push(key);
+      }
+    }
+
+    keysToRemove.forEach((k) => localStorage.removeItem(k));
+  } catch (err) {
+    console.error('Error clearing user scoped storage:', err);
+  }
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | DemoUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
@@ -553,13 +600,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
+    const currentUserId = user?.id;
+
     if (isSupabaseConfigured) {
       await supabase.auth.signOut();
     }
     setUser(null);
     setSession(null);
     setProfile(DEFAULT_PROFILE);
-    localStorage.removeItem('taktic_user_profile');
+
+    // Completely clear private cached data for the user on this browser
+    clearUserScopedStorage(currentUserId);
+
     if (typeof window !== 'undefined') {
       window.history.replaceState(null, '', '/landing');
       window.scrollTo({ top: 0, behavior: 'smooth' });

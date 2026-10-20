@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Task, PriorityLevel, QuickNote, NoteColor } from '../../types';
 import { Pagination } from '../common/Pagination';
+import { downloadCsvFile } from '../../lib/csvSecurity';
 
 interface ArchiveViewProps {
   tasks: Task[];
@@ -422,23 +423,16 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
       ['Task ID', 'Title', 'Priority', 'Tags', 'Archived Date', 'Completed Date', 'Estimated Minutes'],
       ...tasksToExport.map((t) => [
         t.id,
-        `"${t.title.replace(/"/g, '""')}"`,
+        t.title,
         t.priority,
-        `"${(t.tags || []).join(', ')}"`,
+        (t.tags || []).join(', '),
         t.archivedAt ? new Date(t.archivedAt).toLocaleString() : '',
         t.completedAt ? new Date(t.completedAt).toLocaleString() : '',
         t.estimatedMinutes || '',
       ]),
     ];
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + rows.map((e) => e.join(',')).join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `taktic-tasks-archive-${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCsvFile(`taktic-tasks-archive-${new Date().toISOString().split('T')[0]}.csv`, rows);
     setIsExportMenuOpen(false);
   };
 
@@ -450,22 +444,15 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
       ['Note ID', 'Title', 'Content', 'Color', 'Archived Date', 'Created Date'],
       ...notesToExport.map((n) => [
         n.id,
-        `"${(n.title || '').replace(/"/g, '""')}"`,
-        `"${n.content.replace(/"/g, '""')}"`,
+        n.title || '',
+        n.content,
         n.color,
         n.archivedAt ? new Date(n.archivedAt).toLocaleString() : '',
         new Date(n.createdAt).toLocaleString(),
       ]),
     ];
 
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + rows.map((e) => e.join(',')).join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `taktic-notes-archive-${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCsvFile(`taktic-notes-archive-${new Date().toISOString().split('T')[0]}.csv`, rows);
     setIsExportMenuOpen(false);
   };
 

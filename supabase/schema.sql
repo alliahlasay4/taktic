@@ -35,13 +35,21 @@ CREATE TABLE IF NOT EXISTS public.profiles (
 -- Enable RLS on Profiles
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can view all profiles" 
+CREATE POLICY "Authenticated users can view profiles" 
   ON public.profiles FOR SELECT 
+  TO authenticated
   USING (true);
+
+CREATE POLICY "Users can insert own profile" 
+  ON public.profiles FOR INSERT 
+  TO authenticated
+  WITH CHECK (auth.uid() = id);
 
 CREATE POLICY "Users can update own profile" 
   ON public.profiles FOR UPDATE 
-  USING (auth.uid() = id);
+  TO authenticated
+  USING (auth.uid() = id)
+  WITH CHECK (auth.uid() = id);
 
 -- Trigger to auto-create profile row on auth sign-up
 CREATE OR REPLACE FUNCTION public.handle_new_user()
@@ -237,26 +245,36 @@ CREATE TABLE IF NOT EXISTS public.circle_invites (
   status TEXT DEFAULT 'pending' NOT NULL,
   invite_token TEXT UNIQUE NOT NULL,
   invite_link TEXT NOT NULL,
+  expires_at TIMESTAMPTZ DEFAULT (NOW() + INTERVAL '7 days') NOT NULL,
   created_at TIMESTAMPTZ DEFAULT NOW() NOT NULL
 );
 
 -- Enable RLS on Circle Invites
 ALTER TABLE public.circle_invites ENABLE ROW LEVEL SECURITY;
 
-CREATE POLICY "Users can select own circle invites"
+CREATE POLICY "Users can view relevant circle invites"
   ON public.circle_invites FOR SELECT
-  USING (auth.uid() = user_id);
+  TO authenticated
+  USING (
+    auth.uid() = user_id 
+    OR 
+    (LOWER(email) = LOWER(COALESCE(auth.jwt()->>'email', '')))
+  );
 
 CREATE POLICY "Users can insert own circle invites"
   ON public.circle_invites FOR INSERT
+  TO authenticated
   WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can update own circle invites"
   ON public.circle_invites FOR UPDATE
-  USING (auth.uid() = user_id);
+  TO authenticated
+  USING (auth.uid() = user_id)
+  WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own circle invites"
   ON public.circle_invites FOR DELETE
+  TO authenticated
   USING (auth.uid() = user_id);
 
 
@@ -341,20 +359,83 @@ ALTER TABLE public.notifications ENABLE ROW LEVEL SECURITY;
 
 CREATE POLICY "Users can view own notifications"
   ON public.notifications FOR SELECT
+  TO authenticated
   USING (auth.uid() = user_id);
 
-CREATE POLICY "Authenticated users can create notifications for others"
+CREATE POLICY "Users can insert own notifications"
   ON public.notifications FOR INSERT
-  WITH CHECK (auth.role() = 'authenticated');
+  TO authenticated
+  WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can update own notifications"
   ON public.notifications FOR UPDATE
+  TO authenticated
   USING (auth.uid() = user_id)
   WITH CHECK (auth.uid() = user_id);
 
 CREATE POLICY "Users can delete own notifications"
   ON public.notifications FOR DELETE
+  TO authenticated
   USING (auth.uid() = user_id);
+
+-- 10c. Secure RPC for cross-partner notifications (validates partner connection)
+CREATE OR REPLACE FUNCTION public.send_partner_notification(
+  p_target_user_id UUID,
+  p_title TEXT,
+  p_message TEXT,
+  p_type TEXT DEFAULT 'circle',
+  p_action_tab TEXT DEFAULT 'circles'
+)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public, auth, pg_temp
+AS $$
+DECLARE
+  v_caller_id UUID;
+  v_is_partner BOOLEAN;
+  v_clean_title TEXT;
+  v_clean_message TEXT;
+  v_clean_type TEXT;
+  v_clean_tab TEXT;
+BEGIN
+  v_caller_id := auth.uid();
+  IF v_caller_id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Authentication required');
+  END IF;
+
+  IF p_target_user_id IS NULL OR p_target_user_id = v_caller_id THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid target recipient');
+  END IF;
+
+  -- Verify caller and target are mutual circle partners
+  SELECT EXISTS (
+    SELECT 1 FROM public.circle_members
+    WHERE user_id = v_caller_id
+      AND partner_user_id = p_target_user_id
+      AND is_circle_partner = true
+  ) INTO v_is_partner;
+
+  IF NOT v_is_partner THEN
+    RETURN jsonb_build_object('success', false, 'error', 'You can only send notifications to connected circle partners');
+  END IF;
+
+  v_clean_title := SUBSTRING(TRIM(COALESCE(p_title, 'New activity')) FROM 1 FOR 100);
+  v_clean_message := SUBSTRING(TRIM(COALESCE(p_message, '')) FROM 1 FOR 300);
+  v_clean_type := CASE WHEN p_type IN ('timer', 'habit', 'streak', 'circle', 'system') THEN p_type ELSE 'circle' END;
+  v_clean_tab := CASE WHEN p_action_tab IN ('dashboard', 'inbox', 'focus', 'habits', 'circles', 'analytics', 'archive', 'profile') THEN p_action_tab ELSE 'circles' END;
+
+  INSERT INTO public.notifications (
+    user_id, title, message, type, read, action_tab
+  ) VALUES (
+    p_target_user_id, v_clean_title, v_clean_message, v_clean_type, false, v_clean_tab
+  );
+
+  RETURN jsonb_build_object('success', true);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.send_partner_notification(UUID, TEXT, TEXT, TEXT, TEXT) TO authenticated;
 
 
 -- 11. Create Focus Rooms Table (Private Focus Rooms & Permanent Focus Pods)
@@ -508,24 +589,47 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Authentication required to accept invite');
   END IF;
 
-  -- 1. Locate invite token
+  -- 1. Locate invite token with FOR UPDATE to prevent race conditions
   SELECT * INTO v_invite
   FROM public.circle_invites
   WHERE invite_token = p_invite_token
-  LIMIT 1;
+  FOR UPDATE;
 
   IF v_invite.id IS NULL THEN
-    RETURN jsonb_build_object('success', false, 'error', 'Invalid or expired invitation token');
+    RETURN jsonb_build_object('success', false, 'error', 'Invalid invitation token');
+  END IF;
+
+  -- 2. Validate invite status
+  IF v_invite.status <> 'pending' THEN
+    RETURN jsonb_build_object('success', false, 'error', 'This invitation has already been ' || v_invite.status);
+  END IF;
+
+  -- 3. Check expiration
+  IF v_invite.expires_at IS NOT NULL AND v_invite.expires_at < NOW() THEN
+    UPDATE public.circle_invites SET status = 'expired' WHERE id = v_invite.id;
+    RETURN jsonb_build_object('success', false, 'error', 'This invitation has expired');
   END IF;
 
   v_inviter_id := v_invite.user_id;
 
-  -- Disallow accepting your own invitation
+  -- 4. Disallow accepting your own invitation
   IF v_inviter_id = v_invitee_id THEN
     RETURN jsonb_build_object('success', false, 'error', 'You cannot accept your own invitation');
   END IF;
 
-  -- 2. Fetch profiles for display names and avatars
+  -- 5. Recipient validation: If invite is bound to an email, ensure caller email matches
+  IF v_invite.email IS NOT NULL AND TRIM(v_invite.email) <> '' THEN
+    DECLARE
+      v_caller_email TEXT;
+    BEGIN
+      SELECT email INTO v_caller_email FROM auth.users WHERE id = v_invitee_id;
+      IF v_caller_email IS NULL OR LOWER(TRIM(v_invite.email)) <> LOWER(TRIM(v_caller_email)) THEN
+        RETURN jsonb_build_object('success', false, 'error', 'This invitation was addressed to a different email account');
+      END IF;
+    END;
+  END IF;
+
+  -- 6. Fetch profiles for display names and avatars
   SELECT * INTO v_inviter_profile FROM public.profiles WHERE id = v_inviter_id;
   SELECT * INTO v_invitee_profile FROM public.profiles WHERE id = v_invitee_id;
 
@@ -541,7 +645,7 @@ BEGIN
     'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80'
   );
 
-  -- 3. Upsert into Inviter's circle_members roster (adding the Invitee)
+  -- 7. Upsert into Inviter's circle_members roster (adding the Invitee)
   INSERT INTO public.circle_members (
     user_id, partner_user_id, member_name, member_avatar, status, status_text, closed_rings_count, streak, is_circle_partner, is_muted
   ) VALUES (
@@ -552,7 +656,7 @@ BEGIN
     member_avatar = EXCLUDED.member_avatar,
     is_circle_partner = true;
 
-  -- 4. Upsert into Invitee's circle_members roster (adding the Inviter)
+  -- 8. Upsert into Invitee's circle_members roster (adding the Inviter)
   INSERT INTO public.circle_members (
     user_id, partner_user_id, member_name, member_avatar, status, status_text, closed_rings_count, streak, is_circle_partner, is_muted
   ) VALUES (
@@ -563,12 +667,12 @@ BEGIN
     member_avatar = EXCLUDED.member_avatar,
     is_circle_partner = true;
 
-  -- 5. Mark invite as accepted in circle_invites
+  -- 9. Mark invite as accepted in circle_invites
   UPDATE public.circle_invites
   SET status = 'accepted'
   WHERE id = v_invite.id;
 
-  -- 6. Insert celebratory post in circle_posts
+  -- 10. Insert celebratory post in circle_posts
   INSERT INTO public.circle_posts (
     user_id, user_name, user_avatar, type, title, detail
   ) VALUES (
@@ -615,7 +719,7 @@ BEGIN
     RETURN jsonb_build_object('success', false, 'error', 'Authentication required');
   END IF;
 
-  -- 1. Locate current user's circle_members entry
+  -- 1. Strictly locate current user's circle_members entry where user_id = auth.uid()
   IF p_member_id IS NOT NULL THEN
     SELECT * INTO v_target_row
     FROM public.circle_members
@@ -637,33 +741,24 @@ BEGIN
     LIMIT 1;
   END IF;
 
-  IF v_target_row.id IS NOT NULL THEN
-    v_partner_id := v_target_row.partner_user_id;
-    v_partner_name := v_target_row.member_name;
-
-    -- Delete current user's roster row
-    DELETE FROM public.circle_members
-    WHERE id = v_target_row.id;
-  ELSE
-    -- If no direct row was found by id, attempt deletion using provided partner parameters
-    v_partner_id := p_partner_user_id;
-    v_partner_name := p_partner_name;
-
-    IF p_partner_user_id IS NOT NULL THEN
-      DELETE FROM public.circle_members
-      WHERE user_id = v_user_id AND partner_user_id = p_partner_user_id;
-    ELSIF p_partner_name IS NOT NULL THEN
-      DELETE FROM public.circle_members
-      WHERE user_id = v_user_id AND LOWER(TRIM(member_name)) = LOWER(TRIM(p_partner_name));
-    END IF;
+  -- If no valid row owned by the current user was found, fail gracefully without touching other users
+  IF v_target_row.id IS NULL THEN
+    RETURN jsonb_build_object('success', false, 'error', 'Partner relationship not found');
   END IF;
 
-  -- 2. Reciprocal removal: Delete current user from partner's roster
+  v_partner_id := v_target_row.partner_user_id;
+  v_partner_name := v_target_row.member_name;
+
+  -- Delete current user's roster row
+  DELETE FROM public.circle_members
+  WHERE id = v_target_row.id AND user_id = v_user_id;
+
+  -- 2. Reciprocal removal: ONLY delete from partner's roster if they are linked to the calling user
   IF v_partner_id IS NOT NULL THEN
     DELETE FROM public.circle_members
     WHERE user_id = v_partner_id AND partner_user_id = v_user_id;
 
-    -- Also check by profile name/email in case partner_user_id was unset on their side
+    -- Also check by profile name in case partner_user_id was unset on their side
     SELECT * INTO v_my_profile FROM public.profiles WHERE id = v_user_id;
     IF v_my_profile.id IS NOT NULL THEN
       v_my_name := COALESCE(NULLIF(TRIM(v_my_profile.full_name), ''), NULLIF(TRIM(v_my_profile.email), ''));
@@ -672,30 +767,8 @@ BEGIN
         WHERE user_id = v_partner_id AND LOWER(TRIM(member_name)) = LOWER(TRIM(v_my_name));
       END IF;
     END IF;
-  ELSIF v_partner_name IS NOT NULL THEN
-    -- If partner_user_id was null, look up partner by name/profile to clean up reciprocal record
-    SELECT id INTO v_partner_id FROM public.profiles 
-    WHERE LOWER(TRIM(full_name)) = LOWER(TRIM(v_partner_name)) 
-       OR LOWER(TRIM(email)) = LOWER(TRIM(v_partner_name))
-    LIMIT 1;
 
-    IF v_partner_id IS NOT NULL THEN
-      DELETE FROM public.circle_members
-      WHERE user_id = v_partner_id AND partner_user_id = v_user_id;
-
-      SELECT * INTO v_my_profile FROM public.profiles WHERE id = v_user_id;
-      IF v_my_profile.id IS NOT NULL THEN
-        v_my_name := COALESCE(NULLIF(TRIM(v_my_profile.full_name), ''), NULLIF(TRIM(v_my_profile.email), ''));
-        IF v_my_name IS NOT NULL THEN
-          DELETE FROM public.circle_members
-          WHERE user_id = v_partner_id AND LOWER(TRIM(member_name)) = LOWER(TRIM(v_my_name));
-        END IF;
-      END IF;
-    END IF;
-  END IF;
-
-  -- 3. Clear any existing invites between both parties so they have a clean slate to re-invite
-  IF v_partner_id IS NOT NULL THEN
+    -- 3. Clear any pending/existing invites between the two verified parties
     DELETE FROM public.circle_invites
     WHERE (user_id = v_user_id AND email IN (SELECT email FROM public.profiles WHERE id = v_partner_id))
        OR (user_id = v_partner_id AND email IN (SELECT email FROM public.profiles WHERE id = v_user_id));

@@ -116,6 +116,13 @@ export function useFocusRooms() {
 
     if (isRealUser && user) {
       try {
+        // Validate user ID format (strictly UUID) to prevent PostgREST query filter injection
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(user.id);
+        if (!isUuid) {
+          console.warn('Invalid user UUID format; skipping room query.');
+          return;
+        }
+
         const { data, error } = await supabase
           .from('focus_rooms')
           .select('*')

@@ -4,6 +4,7 @@ import {
   isPasswordRecoveryLink,
   hasIncomingAuthLink,
   clearDemoData,
+  clearUserScopedStorage,
 } from '../context/AuthContext';
 
 describe('AuthContext Link & Token Helpers', () => {
@@ -52,5 +53,22 @@ describe('AuthContext Link & Token Helpers', () => {
     expect(localStorage.getItem('taktic_demo_mode')).toBeNull();
     expect(localStorage.getItem('taktic_habits_demo')).toBeNull();
     expect(localStorage.getItem('taktic_user_real_data')).toBe('keep-me');
+  });
+
+  it('clears private user-scoped storage on signOut while preserving device preferences', () => {
+    const userId = 'user-abc-123';
+    localStorage.setItem(`taktic_circle_members_${userId}`, JSON.stringify([{ id: '1' }]));
+    localStorage.setItem(`taktic_focus_pods_${userId}`, JSON.stringify([{ id: 'pod1' }]));
+    localStorage.setItem(`taktic_user_profile_${userId}`, JSON.stringify({ fullName: 'Alice' }));
+    localStorage.setItem('taktic_dark_mode', 'true');
+    localStorage.setItem('taktic_ambient_volume', '0.5');
+
+    clearUserScopedStorage(userId);
+
+    expect(localStorage.getItem(`taktic_circle_members_${userId}`)).toBeNull();
+    expect(localStorage.getItem(`taktic_focus_pods_${userId}`)).toBeNull();
+    expect(localStorage.getItem(`taktic_user_profile_${userId}`)).toBeNull();
+    expect(localStorage.getItem('taktic_dark_mode')).toBe('true');
+    expect(localStorage.getItem('taktic_ambient_volume')).toBe('0.5');
   });
 });

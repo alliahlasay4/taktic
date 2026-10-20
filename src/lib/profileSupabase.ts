@@ -2,6 +2,35 @@ import { supabase, isSupabaseConfigured } from './supabase';
 import { UserProfile, HeatmapDay, Badge } from '../types';
 import { getLocalDateString } from './streak';
 
+export const DEFAULT_AVATAR = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
+
+// Allowed schemes for avatars (strictly HTTPS, HTTP in dev, or safe data:image with capped size)
+export function sanitizeAvatarUrl(url: unknown): string {
+  if (typeof url !== 'string' || !url.trim()) {
+    return DEFAULT_AVATAR;
+  }
+
+  const clean = url.trim();
+
+  // Allow standard image URLs (https or local http)
+  if (/^https?:\/\/[^\s$.?#].[^\s]*$/i.test(clean)) {
+    return clean;
+  }
+
+  // Allow safe embedded data:image URIs capped at 500KB (prevents DoS and payload injection)
+  if (/^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/=]+$/i.test(clean)) {
+    if (clean.length <= 500 * 1024) {
+      return clean;
+    }
+    console.warn('Avatar data URI exceeds maximum size (500KB); falling back to default.');
+    return DEFAULT_AVATAR;
+  }
+
+  // Reject javascript:, data:text/html, vbscript:, and relative malicious vectors
+  console.warn('Rejected insecure avatar URI scheme:', clean.slice(0, 30));
+  return DEFAULT_AVATAR;
+}
+
 export const fetchUserProfileFromSupabase = async (userId: string): Promise<UserProfile | null> => {
   if (!isSupabaseConfigured || !userId || userId === 'demo-user-123') return null;
 
@@ -23,7 +52,7 @@ export const fetchUserProfileFromSupabase = async (userId: string): Promise<User
       id: data.id,
       fullName: data.full_name || 'Taktic Member',
       username: data.username || `@${(data.full_name || 'member').toLowerCase().replace(/\s+/g, '')}`,
-      avatarUrl: data.avatar_url || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+      avatarUrl: sanitizeAvatarUrl(data.avatar_url),
       bio: data.bio || '',
       microGoal: data.micro_goal || '',
       statusMessage: data.status_message || '',
@@ -64,14 +93,16 @@ export const saveUserProfileToSupabase = async (
       isIncognito: Boolean(rawPrivacy.isIncognito),
     };
 
+    const sanitizedAvatar = sanitizeAvatarUrl(profile.avatarUrl);
+
     const payload: Record<string, any> = {
       id: targetId,
-      full_name: profile.fullName,
-      username: profile.username,
-      avatar_url: profile.avatarUrl,
-      bio: profile.bio || '',
-      micro_goal: profile.microGoal || '',
-      status_message: profile.statusMessage || '',
+      full_name: profile.fullName?.slice(0, 100),
+      username: profile.username?.slice(0, 50),
+      avatar_url: sanitizedAvatar,
+      bio: (profile.bio || '').slice(0, 500),
+      micro_goal: (profile.microGoal || '').slice(0, 200),
+      status_message: (profile.statusMessage || '').slice(0, 100),
       timezone: profile.timezone || 'GMT+8 (Asia/Manila)',
       work_hours_start: profile.workHoursStart || '09:00',
       work_hours_end: profile.workHoursEnd || '17:00',
@@ -83,17 +114,17 @@ export const saveUserProfileToSupabase = async (
     const { data: updateData, error: updateErr } = await supabase
       .from('profiles')
       .update({
-        full_name: profile.fullName,
-        username: profile.username,
-        avatar_url: profile.avatarUrl,
-        bio: profile.bio || '',
-        micro_goal: profile.microGoal || '',
-        status_message: profile.statusMessage || '',
-        timezone: profile.timezone || 'GMT+8 (Asia/Manila)',
-        work_hours_start: profile.workHoursStart || '09:00',
-        work_hours_end: profile.workHoursEnd || '17:00',
-        favorite_soundscape: profile.favoriteSoundscape || 'Gentle Rain',
-        privacy_settings: normalizedPrivacy,
+        full_name: payload.full_name,
+        username: payload.username,
+        avatar_url: payload.avatar_url,
+        bio: payload.bio,
+        micro_goal: payload.micro_goal,
+        status_message: payload.status_message,
+        timezone: payload.timezone,
+        work_hours_start: payload.work_hours_start,
+        work_hours_end: payload.work_hours_end,
+        favorite_soundscape: payload.favorite_soundscape,
+        privacy_settings: payload.privacy_settings,
       })
       .eq('id', targetId)
       .select();
