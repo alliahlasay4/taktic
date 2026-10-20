@@ -89,4 +89,14 @@ describe('AuthContext Link & Token Helpers', () => {
     expect(isAuthPath('/signup')).toBe(true);
     expect(isAuthPath('/focushub')).toBe(false);
   });
+
+  it('keeps DEFAULT_PROFILE neutral and separates DEMO_PROFILE to prevent demo flash on sign in', async () => {
+    const { DEFAULT_PROFILE, DEMO_PROFILE } = await import('../context/AuthContext');
+    expect(DEFAULT_PROFILE.fullName).toBe('');
+    expect(DEFAULT_PROFILE.username).toBe('');
+    expect(DEFAULT_PROFILE.id).toBe('');
+    expect(DEMO_PROFILE.fullName).toBe('Portfolio Reviewer');
+    expect(DEMO_PROFILE.username).toBe('@reviewer');
+    expect(DEMO_PROFILE.id).toBe('demo-user-123');
+  });
 });

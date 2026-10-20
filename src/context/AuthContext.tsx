@@ -32,7 +32,28 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const DEFAULT_PROFILE: UserProfile = {
+export const DEFAULT_PROFILE: UserProfile = {
+  id: '',
+  fullName: '',
+  username: '',
+  avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
+  bio: '',
+  microGoal: '',
+  statusMessage: '',
+  timezone: 'GMT+8 (Asia/Manila)',
+  workHoursStart: '09:00',
+  workHoursEnd: '17:00',
+  favoriteSoundscape: 'Gentle Rain',
+  privacySettings: {
+    showFocusHours: true,
+    showMicroGoal: true,
+    showActivityFeed: true,
+    showStreak: true,
+    isIncognito: false,
+  },
+};
+
+export const DEMO_PROFILE: UserProfile = {
   id: 'demo-user-123',
   fullName: 'Portfolio Reviewer',
   username: '@reviewer',
@@ -261,12 +282,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           return normalizeProfile(JSON.parse(demoSaved));
         } catch { }
       }
-      return DEFAULT_PROFILE;
+      return DEMO_PROFILE;
     }
     const saved = localStorage.getItem('taktic_user_profile');
     if (saved) {
       try {
-        return normalizeProfile(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (parsed?.id && parsed.id !== 'demo-user-123') {
+          return normalizeProfile(parsed);
+        }
       } catch (e) {
         console.error('Error parsing saved profile:', e);
       }
@@ -327,6 +351,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     if (cachedProfile) {
       setProfile(cachedProfile);
+    } else {
+      const userMetaName = currentSession.user.user_metadata?.full_name?.trim();
+      const emailPrefix = currentSession.user.email ? currentSession.user.email.split('@')[0] : 'user';
+      const fallbackName = userMetaName || (emailPrefix.charAt(0).toUpperCase() + emailPrefix.slice(1)) || 'New User';
+
+      const immediateProfile: UserProfile = normalizeProfile({
+        ...DEFAULT_PROFILE,
+        id: userId,
+        fullName: fallbackName,
+        username: `@${emailPrefix.toLowerCase().replace(/[^a-z0-9_]/g, '')}`,
+        avatarUrl: currentSession.user.user_metadata?.avatar_url || DEFAULT_PROFILE.avatarUrl,
+        privacySettings: DEFAULT_PROFILE.privacySettings,
+      });
+      setProfile(immediateProfile);
     }
 
     const dbProfile = await fetchUserProfileFromSupabase(userId);
@@ -581,8 +619,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isSupabaseConfigured) {
       return { error: new Error('Supabase credentials are not configured in .env.local') };
     }
+    clearDemoData();
     setIsDemo(false);
     localStorage.removeItem('taktic_demo_mode');
+    setProfile(DEFAULT_PROFILE);
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     return { error };
   };
@@ -591,8 +631,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isSupabaseConfigured) {
       return { error: new Error('Supabase credentials are not configured in .env.local') };
     }
+    clearDemoData();
     setIsDemo(false);
     localStorage.removeItem('taktic_demo_mode');
+    setProfile(DEFAULT_PROFILE);
 
     let emailRedirectTo = typeof window !== 'undefined' ? `${window.location.origin}/login` : undefined;
     const pendingRaw = typeof window !== 'undefined' ? (localStorage.getItem('taktic_pending_circle_invite') || sessionStorage.getItem('taktic_pending_circle_invite')) : null;
@@ -622,8 +664,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isSupabaseConfigured) {
       return { error: new Error('Supabase credentials are not configured in .env.local') };
     }
+    clearDemoData();
     setIsDemo(false);
     localStorage.removeItem('taktic_demo_mode');
+    setProfile(DEFAULT_PROFILE);
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
@@ -638,7 +682,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     localStorage.setItem('taktic_demo_mode', 'true');
     setUser(DEMO_USER);
     setSession(null);
-    setProfile(DEFAULT_PROFILE);
+    setProfile(DEMO_PROFILE);
     setIsDemo(true);
     setLoading(false);
   };
