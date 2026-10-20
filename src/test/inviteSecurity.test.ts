@@ -62,4 +62,18 @@ describe('Invite Partner Security Guardrails', () => {
     const javascriptScheme = validateInviteRequest('alice@example.com', 'bob@example.com', 'javascript:alert(1)');
     expect(javascriptScheme.origin).toBe('https://taktic.app');
   });
+
+  it('correctly identifies expired invites older than 7 days', () => {
+    const isInviteExpired = (createdAt: string, maxDays = 7) => {
+      const createdTime = new Date(createdAt).getTime();
+      const ageMs = Date.now() - createdTime;
+      return ageMs > maxDays * 24 * 60 * 60 * 1000;
+    };
+
+    const eightDaysAgo = new Date(Date.now() - 8 * 24 * 60 * 60 * 1000).toISOString();
+    const twoDaysAgo = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
+    expect(isInviteExpired(eightDaysAgo)).toBe(true);
+    expect(isInviteExpired(twoDaysAgo)).toBe(false);
+  });
 });

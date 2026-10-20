@@ -245,6 +245,10 @@ export function useCircles() {
         throw new Error(rpcErr.message || 'Failed to accept invitation');
       }
 
+      if (data && data.success === false) {
+        throw new Error(data.error || 'Failed to accept invitation');
+      }
+
       await fetchCirclesData();
       return data;
     } else {
@@ -830,12 +834,16 @@ export function useCircles() {
         if (savedRaw) {
           try {
             const parsed = JSON.parse(savedRaw);
-            if (parsed?.token && !incomingList.some((i) => i.token === parsed.token)) {
+            const isStale = parsed?.createdAt && (Date.now() - new Date(parsed.createdAt).getTime() > 7 * 24 * 60 * 60 * 1000);
+            if (isStale) {
+              localStorage.removeItem('taktic_pending_circle_invite');
+              sessionStorage.removeItem('taktic_pending_circle_invite');
+            } else if (parsed?.token && !incomingList.some((i) => i.token === parsed.token)) {
               if (!existingNames.has((parsed.inviter || '').toLowerCase())) {
                 incomingList.push({
                   token: parsed.token,
                   inviter: parsed.inviter || 'Circle Partner',
-                  createdAt: new Date().toISOString(),
+                  createdAt: parsed.createdAt || new Date().toISOString(),
                 });
               }
             }

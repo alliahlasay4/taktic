@@ -286,9 +286,21 @@ function MainLayout() {
         url.searchParams.delete('inviter');
         window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
       }
-      setActiveTab('circles');
     } catch (err: any) {
       console.error('Failed to accept circle invite:', err);
+      // If the invite is expired, cancelled, or orphaned, clean up storage so it won't repeatedly re-prompt
+      const isFatal = /expired|not found|cancelled|no longer has an active account/i.test(err?.message || '');
+      if (isFatal) {
+        localStorage.removeItem('taktic_pending_circle_invite');
+        sessionStorage.removeItem('taktic_pending_circle_invite');
+        sessionStorage.removeItem(`taktic_snoozed_circle_invite_${token}`);
+        if (typeof window !== 'undefined') {
+          const url = new URL(window.location.href);
+          url.searchParams.delete('circle_invite');
+          url.searchParams.delete('inviter');
+          window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
+        }
+      }
       throw err;
     }
   };
