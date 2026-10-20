@@ -903,6 +903,8 @@ export function useCircles() {
     } finally {
       setLoading(false);
     }
+  }, [user, isDemo, userName]);
+
   // Instantly hydrate cached circle data when userKey resolves to eliminate sidebar latency
   useEffect(() => {
     if (userKey && userKey !== 'guest') {
