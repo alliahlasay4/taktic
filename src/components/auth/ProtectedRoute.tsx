@@ -12,7 +12,7 @@ const AuthPage = lazy(() => import('./AuthPage').then((m) => ({ default: m.AuthP
 const LandingPage = lazy(() => import('../landing/LandingPage').then((m) => ({ default: m.LandingPage })));
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading } = useAuth();
+  const { user, loading, isPasswordRecovery } = useAuth();
 
   const getAuthStateFromLocation = () => {
     if (typeof window === 'undefined') return { open: false, signUp: false };
@@ -46,9 +46,12 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
       pathname === '/login' ||
       pathname === '/signin' ||
       pathname === '/auth' ||
+      pathname === '/reset-password' ||
+      pathname === '/update-password' ||
       hash === '#login' ||
       hash === '#signin' ||
       hash === '#auth' ||
+      hash === '#reset' ||
       hasAuthError ||
       isAuthLink ||
       hasNotice;
@@ -85,7 +88,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
   // When user is authenticated:
   // Clean up any public/auth URLs (e.g. /login, /signup, /landing, #login) to the canonical app path
   useEffect(() => {
-    if (user) {
+    if (user && !isPasswordRecovery) {
       setIsAuthOpen(false);
       prevUserRef.current = user;
       if (typeof window !== 'undefined') {
@@ -94,10 +97,10 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
           window.history.replaceState(null, '', '/focushub');
         }
       }
-    } else {
+    } else if (!user) {
       prevUserRef.current = null;
     }
-  }, [user]);
+  }, [user, isPasswordRecovery]);
 
   // When user is NOT authenticated:
   // If they are on a protected tab (e.g. after signout or navigating directly to /focushub),
@@ -134,6 +137,25 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
           </div>
         </div>
       </div>
+    );
+  }
+
+  if (isPasswordRecovery) {
+    return (
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center p-4">
+            <div className="flex flex-col items-center gap-3">
+              <TakticLogo className="h-10 w-10 animate-pulse text-[var(--accent-terracotta)]" />
+              <div className="text-xs font-semibold tracking-wider uppercase text-[var(--text-secondary)]">
+                Loading password recovery...
+              </div>
+            </div>
+          </div>
+        }
+      >
+        <AuthPage isUpdatePassword={true} />
+      </Suspense>
     );
   }
 

@@ -18,25 +18,52 @@ import {
   Square,
   Eye,
   EyeOff,
+  ShieldCheck,
 } from 'lucide-react';
 import { TakticLogo } from '../common/TakticLogo';
 
 interface AuthPageProps {
   onBackToHome?: () => void;
   defaultSignUp?: boolean;
+  isUpdatePassword?: boolean;
 }
 
-export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp = false }) => {
-  const { signInWithEmail, signUpWithEmail, signInWithGoogle, loginAsDemo } = useAuth();
+export const AuthPage: React.FC<AuthPageProps> = ({
+  onBackToHome,
+  defaultSignUp = false,
+  isUpdatePassword = false,
+}) => {
+  const {
+    signInWithEmail,
+    signUpWithEmail,
+    signInWithGoogle,
+    loginAsDemo,
+    isPasswordRecovery,
+    updatePassword,
+    cancelPasswordRecovery,
+  } = useAuth();
+
+  const isRecoveryMode = Boolean(isUpdatePassword || isPasswordRecovery);
 
   const [isSignUp, setIsSignUp] = useState(defaultSignUp);
   const [isResetPassword, setIsResetPassword] = useState(false);
+
+  const [email, setEmail] = useState<string>('');
+  const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [fullName, setFullName] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmNewPassword, setConfirmNewPassword] = useState('');
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
   const resetFormFields = () => {
     setEmail('');
     setPassword('');
     setConfirmPassword('');
     setFullName('');
+    setNewPassword('');
+    setConfirmNewPassword('');
     setErrorMsg(null);
     setSuccessMsg(null);
   };
@@ -48,19 +75,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
   }, [defaultSignUp]);
 
   useEffect(() => {
-    if (isResetPassword) {
+    if (isRecoveryMode) {
+      document.title = 'Set New Password | Taktic';
+    } else if (isResetPassword) {
       document.title = 'Reset Password | Taktic';
     } else if (isSignUp) {
       document.title = 'Create Account | Taktic';
     } else {
       document.title = 'Sign In | Taktic';
     }
-  }, [isSignUp, isResetPassword]);
+  }, [isSignUp, isResetPassword, isRecoveryMode]);
 
-  const [email, setEmail] = useState<string>('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [rememberMe, setRememberMe] = useState(true);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(() => {
@@ -166,6 +191,46 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
     setErrorMsg(null);
     setSuccessMsg(null);
 
+    // Case 1: Updating password during recovery
+    if (isRecoveryMode) {
+      if (!newPassword.trim() || !confirmNewPassword.trim()) {
+        setErrorMsg('Please enter and confirm your new password.');
+        return;
+      }
+
+      if (newPassword.length < 6) {
+        setErrorMsg('Password must be at least 6 characters.');
+        return;
+      }
+
+      if (newPassword !== confirmNewPassword) {
+        setErrorMsg('Passwords do not match. Please verify your new password.');
+        return;
+      }
+
+      setIsSubmitting(true);
+      try {
+        const { error } = await updatePassword(newPassword);
+        if (error) {
+          setErrorMsg(error.message || 'Failed to update password. Your reset link may have expired.');
+        } else {
+          setSuccessMsg('Your password has been successfully updated! Entering your Focus Hub...');
+          if (typeof window !== 'undefined') {
+            setTimeout(() => {
+              window.history.replaceState(null, '', '/focushub');
+              window.dispatchEvent(new Event('popstate'));
+            }, 600);
+          }
+        }
+      } catch (err: any) {
+        setErrorMsg(err.message || 'An error occurred while updating your password.');
+      } finally {
+        setIsSubmitting(false);
+      }
+      return;
+    }
+
+    // Case 2: Requesting reset link email
     if (isResetPassword) {
       if (!email.trim()) {
         setErrorMsg('Please enter your email address.');
@@ -174,7 +239,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
       setIsSubmitting(true);
       try {
         const { error } = await supabase.auth.resetPasswordForEmail(email.trim(), {
-          redirectTo: window.location.origin,
+          redirectTo: `${window.location.origin}/login`,
         });
         if (error) {
           setErrorMsg(error.message);
@@ -337,7 +402,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
           </div>
 
           <h1 className="font-heading text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight leading-[1.1] text-white drop-shadow-sm">
-            {isResetPassword ? (
+            {isRecoveryMode ? (
+              <>
+                Set New <br /> Password.
+              </>
+            ) : isResetPassword ? (
               <>
                 Reset <br /> Password.
               </>
@@ -353,7 +422,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
           </h1>
 
           <p className="text-xs sm:text-sm lg:text-base text-white/90 dark:text-neutral-200 leading-relaxed font-normal">
-            {isResetPassword
+            {isRecoveryMode
+              ? 'Choose a strong, memorable password to secure your account.'
+              : isResetPassword
               ? 'Enter your registered email to receive password reset instructions and reclaim your workspace.'
               : isSignUp
               ? 'Turn scattered to-do lists into 3–5 sharp focus priorities, streak-protected habits, and deep flow sessions.'
@@ -420,11 +491,25 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
           
           {/* Header Title & Subtitle */}
           <div className="space-y-1 text-left">
+            {isRecoveryMode && (
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-[#C06C4C]/10 border border-[#C06C4C]/25 text-[#C06C4C] text-[11px] font-semibold mb-1">
+                <KeyRound className="h-3 w-3" />
+                <span>Account Security</span>
+              </div>
+            )}
             <h2 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--text-primary)]">
-              {isResetPassword ? 'Reset Password' : isSignUp ? 'Create Account' : 'Login'}
+              {isRecoveryMode
+                ? 'Set New Password'
+                : isResetPassword
+                ? 'Reset Password'
+                : isSignUp
+                ? 'Create Account'
+                : 'Login'}
             </h2>
             <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-              {isResetPassword
+              {isRecoveryMode
+                ? 'Enter your new password below to secure and access your Taktic account.'
+                : isResetPassword
                 ? 'Please enter your email to receive recovery instructions.'
                 : isSignUp
                 ? 'Welcome to Taktic! Fill in your details to get started.'
@@ -433,7 +518,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
           </div>
 
           {/* Pending Circle Partner Invitation Banner */}
-          {pendingInvite && !isResetPassword && (
+          {pendingInvite && !isResetPassword && !isRecoveryMode && (
             <div className="flex items-start gap-2.5 rounded-2xl border border-[#C06C4C]/35 bg-gradient-to-r from-[#C06C4C]/15 via-[#C87D87]/15 to-[#CFA052]/10 p-3.5 text-xs text-[var(--text-primary)] shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
               <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-[#C06C4C] text-white shrink-0 shadow-xs">
                 <Sparkles className="h-4 w-4" />
@@ -450,7 +535,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
           )}
 
           {/* Prominent Segmented Switcher (Sign In vs Create Account) */}
-          {!isResetPassword && (
+          {!isResetPassword && !isRecoveryMode && (
             <div className="flex rounded-xl bg-[var(--card-surface)] p-1 border border-[var(--border-subtle)] shadow-xs">
               <button
                 type="button"
@@ -503,142 +588,212 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-2.5 sm:space-y-3">
-            {/* Full Name Input (Sign Up only) */}
-            {isSignUp && (
-              <div className="space-y-1">
-                <label htmlFor="auth-full-name" className="block text-xs font-bold text-[var(--text-primary)]">
-                  Full Name
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
-                  <input
-                    id="auth-full-name"
-                    name="fullName"
-                    type="text"
-                    autoComplete="name"
-                    placeholder="Alex Rivera"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[#282421] py-2.5 pl-9 pr-3 text-xs sm:text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[#C06C4C] focus:outline-hidden focus:ring-2 focus:ring-[#C06C4C]/20 transition shadow-2xs"
-                    required={isSignUp}
-                  />
+            {/* Recovery Mode: New Password & Confirm New Password */}
+            {isRecoveryMode ? (
+              <>
+                <div className="space-y-1">
+                  <label htmlFor="auth-new-password" className="block text-xs font-bold text-[var(--text-primary)]">
+                    New Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+                    <input
+                      id="auth-new-password"
+                      name="newPassword"
+                      type={showNewPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      placeholder="At least 6 characters"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      className="w-full rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[#282421] py-2.5 pl-9 pr-10 text-xs sm:text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[#C06C4C] focus:outline-hidden focus:ring-2 focus:ring-[#C06C4C]/20 transition shadow-2xs"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowNewPassword((prev) => !prev)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+                      aria-label={showNewPassword ? 'Hide password' : 'Show password'}
+                      title={showNewPassword ? 'Hide password' : 'Show password'}
+                    >
+                      {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Email Address */}
-            <div className="space-y-1">
-              <label htmlFor="auth-email-address" className="block text-xs font-bold text-[var(--text-primary)]">
-                Email Address
-              </label>
-              <div className="relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
-                <input
-                  id="auth-email-address"
-                  name="email"
-                  type="email"
-                  autoComplete="username email"
-                  placeholder="username@gmail.com"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[#282421] py-2.5 pl-9 pr-3 text-xs sm:text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[#C06C4C] focus:outline-hidden focus:ring-2 focus:ring-[#C06C4C]/20 transition shadow-2xs"
-                  required
-                />
-              </div>
-            </div>
-
-            {/* Password */}
-            {!isResetPassword && (
-              <div className="space-y-1">
-                <label htmlFor="auth-password" className="block text-xs font-bold text-[var(--text-primary)]">
-                  Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
-                  <input
-                    id="auth-password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    autoComplete={isSignUp ? 'new-password' : 'current-password'}
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[#282421] py-2.5 pl-9 pr-10 text-xs sm:text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[#C06C4C] focus:outline-hidden focus:ring-2 focus:ring-[#C06C4C]/20 transition shadow-2xs"
-                    required={!isResetPassword}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
-                    aria-label={showPassword ? 'Hide password' : 'Show password'}
-                    title={showPassword ? 'Hide password' : 'Show password'}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                <div className="space-y-1">
+                  <label htmlFor="auth-confirm-new-password" className="block text-xs font-bold text-[var(--text-primary)]">
+                    Confirm New Password
+                  </label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+                    <input
+                      id="auth-confirm-new-password"
+                      name="confirmNewPassword"
+                      type={showConfirmNewPassword ? 'text' : 'password'}
+                      autoComplete="new-password"
+                      placeholder="Confirm your new password"
+                      value={confirmNewPassword}
+                      onChange={(e) => setConfirmNewPassword(e.target.value)}
+                      className="w-full rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[#282421] py-2.5 pl-9 pr-10 text-xs sm:text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[#C06C4C] focus:outline-hidden focus:ring-2 focus:ring-[#C06C4C]/20 transition shadow-2xs"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowConfirmNewPassword((prev) => !prev)}
+                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+                      aria-label={showConfirmNewPassword ? 'Hide confirm password' : 'Show confirm password'}
+                      title={showConfirmNewPassword ? 'Hide confirm password' : 'Show confirm password'}
+                    >
+                      {showConfirmNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Confirm Password (Sign Up only) */}
-            {isSignUp && !isResetPassword && (
-              <div className="space-y-1">
-                <label htmlFor="auth-confirm-password" className="block text-xs font-bold text-[var(--text-primary)]">
-                  Confirm Password
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
-                  <input
-                    id="auth-confirm-password"
-                    name="confirmPassword"
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    autoComplete="new-password"
-                    placeholder="••••••••"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[#282421] py-2.5 pl-9 pr-10 text-xs sm:text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[#C06C4C] focus:outline-hidden focus:ring-2 focus:ring-[#C06C4C]/20 transition shadow-2xs"
-                    required={isSignUp}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword((prev) => !prev)}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
-                    aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                    title={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
-                  >
-                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+                <p className="text-[11px] text-[var(--text-muted)] flex items-center gap-1.5 pt-0.5">
+                  <CheckCircle2 className="h-3 w-3 text-[#C06C4C]" />
+                  <span>Password must contain at least 6 characters.</span>
+                </p>
+              </>
+            ) : (
+              <>
+                {/* Full Name Input (Sign Up only) */}
+                {isSignUp && (
+                  <div className="space-y-1">
+                    <label htmlFor="auth-full-name" className="block text-xs font-bold text-[var(--text-primary)]">
+                      Full Name
+                    </label>
+                    <div className="relative">
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+                      <input
+                        id="auth-full-name"
+                        name="fullName"
+                        type="text"
+                        autoComplete="name"
+                        placeholder="Alex Rivera"
+                        value={fullName}
+                        onChange={(e) => setFullName(e.target.value)}
+                        className="w-full rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[#282421] py-2.5 pl-9 pr-3 text-xs sm:text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[#C06C4C] focus:outline-hidden focus:ring-2 focus:ring-[#C06C4C]/20 transition shadow-2xs"
+                        required={isSignUp}
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Email Address */}
+                <div className="space-y-1">
+                  <label htmlFor="auth-email-address" className="block text-xs font-bold text-[var(--text-primary)]">
+                    Email Address
+                  </label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+                    <input
+                      id="auth-email-address"
+                      name="email"
+                      type="email"
+                      autoComplete="username email"
+                      placeholder="username@gmail.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="w-full rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[#282421] py-2.5 pl-9 pr-3 text-xs sm:text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[#C06C4C] focus:outline-hidden focus:ring-2 focus:ring-[#C06C4C]/20 transition shadow-2xs"
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Remember Me & Forgot Password Row */}
-            {!isResetPassword && !isSignUp && (
-              <div className="flex items-center justify-between pt-0.5">
-                <label
-                  onClick={() => setRememberMe(!rememberMe)}
-                  className="flex items-center gap-1.5 cursor-pointer text-xs text-[var(--text-secondary)] select-none hover:text-[var(--text-primary)]"
-                >
-                  <span className="text-[#C06C4C]">
-                    {rememberMe ? (
-                      <CheckSquare className="w-3.5 h-3.5 fill-[#C06C4C] text-white" />
-                    ) : (
-                      <Square className="w-3.5 h-3.5 text-[var(--text-muted)]" />
-                    )}
-                  </span>
-                  <span>Remember Me</span>
-                </label>
+                {/* Password */}
+                {!isResetPassword && (
+                  <div className="space-y-1">
+                    <label htmlFor="auth-password" className="block text-xs font-bold text-[var(--text-primary)]">
+                      Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+                      <input
+                        id="auth-password"
+                        name="password"
+                        type={showPassword ? 'text' : 'password'}
+                        autoComplete={isSignUp ? 'new-password' : 'current-password'}
+                        placeholder="••••••••"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        className="w-full rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[#282421] py-2.5 pl-9 pr-10 text-xs sm:text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[#C06C4C] focus:outline-hidden focus:ring-2 focus:ring-[#C06C4C]/20 transition shadow-2xs"
+                        required={!isResetPassword}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword((prev) => !prev)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+                        aria-label={showPassword ? 'Hide password' : 'Show password'}
+                        title={showPassword ? 'Hide password' : 'Show password'}
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
 
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsResetPassword(true);
-                    resetFormFields();
-                  }}
-                  className="text-xs font-semibold text-[#C06C4C] hover:underline cursor-pointer"
-                >
-                  Forgot Password?
-                </button>
-              </div>
+                {/* Confirm Password (Sign Up only) */}
+                {isSignUp && !isResetPassword && (
+                  <div className="space-y-1">
+                    <label htmlFor="auth-confirm-password" className="block text-xs font-bold text-[var(--text-primary)]">
+                      Confirm Password
+                    </label>
+                    <div className="relative">
+                      <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[var(--text-muted)]" />
+                      <input
+                        id="auth-confirm-password"
+                        name="confirmPassword"
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        autoComplete="new-password"
+                        placeholder="••••••••"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        className="w-full rounded-xl border border-[var(--border-subtle)] bg-white dark:bg-[#282421] py-2.5 pl-9 pr-10 text-xs sm:text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[#C06C4C] focus:outline-hidden focus:ring-2 focus:ring-[#C06C4C]/20 transition shadow-2xs"
+                        required={isSignUp}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword((prev) => !prev)}
+                        className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] transition-colors cursor-pointer rounded-lg hover:bg-black/5 dark:hover:bg-white/5"
+                        aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                        title={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Remember Me & Forgot Password Row */}
+                {!isResetPassword && !isSignUp && (
+                  <div className="flex items-center justify-between pt-0.5">
+                    <label
+                      onClick={() => setRememberMe(!rememberMe)}
+                      className="flex items-center gap-1.5 cursor-pointer text-xs text-[var(--text-secondary)] select-none hover:text-[var(--text-primary)]"
+                    >
+                      <span className="text-[#C06C4C]">
+                        {rememberMe ? (
+                          <CheckSquare className="w-3.5 h-3.5 fill-[#C06C4C] text-white" />
+                        ) : (
+                          <Square className="w-3.5 h-3.5 text-[var(--text-muted)]" />
+                        )}
+                      </span>
+                      <span>Remember Me</span>
+                    </label>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsResetPassword(true);
+                        resetFormFields();
+                      }}
+                      className="text-xs font-semibold text-[#C06C4C] hover:underline cursor-pointer"
+                    >
+                      Forgot Password?
+                    </button>
+                  </div>
+                )}
+              </>
             )}
 
             {/* Primary Submit Button */}
@@ -649,6 +804,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
             >
               {isSubmitting ? (
                 <span className="inline-block h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
+              ) : isRecoveryMode ? (
+                <>
+                  <ShieldCheck className="h-4 w-4" />
+                  <span>Update Password & Sign In</span>
+                </>
               ) : isResetPassword ? (
                 <>
                   <KeyRound className="h-4 w-4" />
@@ -668,8 +828,29 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
             </button>
           </form>
 
-          {/* Back to Sign In Link for Password Reset */}
-          {isResetPassword && (
+          {/* Back to Sign In Link for Password Recovery */}
+          {isRecoveryMode && (
+            <div className="text-center pt-1">
+              <button
+                type="button"
+                onClick={async () => {
+                  await cancelPasswordRecovery();
+                  if (onBackToHome) {
+                    onBackToHome();
+                  } else if (typeof window !== 'undefined') {
+                    window.history.replaceState(null, '', '/login');
+                    window.dispatchEvent(new Event('popstate'));
+                  }
+                }}
+                className="text-xs font-bold text-[#C06C4C] hover:underline cursor-pointer"
+              >
+                ← Cancel and return to Sign In
+              </button>
+            </div>
+          )}
+
+          {/* Back to Sign In Link for Password Reset Email */}
+          {isResetPassword && !isRecoveryMode && (
             <div className="text-center pt-1">
               <button
                 type="button"
@@ -685,7 +866,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({ onBackToHome, defaultSignUp 
           )}
 
           {/* Social Sign In (Google) */}
-          {!isResetPassword && (
+          {!isResetPassword && !isRecoveryMode && (
             <div className="space-y-3 pt-1">
               <div className="relative flex items-center justify-center">
                 <div className="absolute inset-0 flex items-center">

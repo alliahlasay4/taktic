@@ -50,7 +50,9 @@ export function isAuthPath(path: string): boolean {
     normalized === '/signin' ||
     normalized === '/signup' ||
     normalized === '/register' ||
-    normalized === '/auth'
+    normalized === '/auth' ||
+    normalized === '/reset-password' ||
+    normalized === '/update-password'
   );
 }
 

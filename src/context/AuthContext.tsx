@@ -19,12 +19,15 @@ interface AuthContextType {
   profile: UserProfile;
   isDemo: boolean;
   loading: boolean;
+  isPasswordRecovery: boolean;
   signInWithEmail: (email: string, password: string) => Promise<{ error: Error | null }>;
   signUpWithEmail: (email: string, password: string, fullName: string) => Promise<{ error: Error | null }>;
   signInWithGoogle: () => Promise<{ error: Error | null }>;
   loginAsDemo: () => void;
   signOut: () => Promise<void>;
   updateProfile: (updates: Partial<UserProfile>) => Promise<UserProfile>;
+  updatePassword: (newPassword: string) => Promise<{ error: Error | null }>;
+  cancelPasswordRecovery: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -239,6 +242,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return localStorage.getItem('taktic_demo_mode') === 'true';
   });
   const [loading, setLoading] = useState<boolean>(true);
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    return (
+      sessionStorage.getItem('taktic_password_recovery') === 'true' ||
+      isPasswordRecoveryLink()
+    );
+  });
 
   const [profile, setProfile] = useState<UserProfile>(() => {
     if (hasIncomingAuthLink()) {
@@ -436,6 +446,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Case B: Password Recovery Link
         if (isPasswordRecoveryLink()) {
+          clearDemoData();
+          localStorage.removeItem('taktic_demo_mode');
+          setIsDemo(false);
+          setIsPasswordRecovery(true);
+          if (typeof window !== 'undefined') {
+            sessionStorage.setItem('taktic_password_recovery', 'true');
+          }
+
+          // If PKCE code is present in recovery link, exchange it for session
+          if (isSupabaseConfigured && search.includes('code=')) {
+            try {
+              const searchParams = new URLSearchParams(search);
+              const code = searchParams.get('code');
+              if (code) {
+                const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+                if (!error && data?.session?.user) {
+                  setSession(data.session);
+                  setUser(data.session.user);
+                  await syncSupabaseProfile(data.session);
+                }
+              }
+            } catch (err) {
+              console.error('Error exchanging recovery code:', err);
+            }
+          } else if (isSupabaseConfigured) {
+            // Implicit flow: get session from hash
+            const { data: { session: currentSession } } = await supabase.auth.getSession();
+            if (currentSession?.user) {
+              setSession(currentSession);
+              setUser(currentSession.user);
+              await syncSupabaseProfile(currentSession);
+            }
+          }
+
           window.history.replaceState(null, '', '/login#reset');
           window.dispatchEvent(new Event('popstate'));
           setLoading(false);
@@ -503,12 +547,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (!isSupabaseConfigured) return;
 
     // Listen for auth state changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       // If we are currently handling an email confirmation redirect, do not auto-login
       if (isEmailConfirmationLink()) return;
 
       // If user switched to demo mode, do not allow Supabase empty session to clear demo user
       if (isDemo || localStorage.getItem('taktic_demo_mode') === 'true') return;
+
+      if (event === 'PASSWORD_RECOVERY') {
+        setIsPasswordRecovery(true);
+        if (typeof window !== 'undefined') {
+          sessionStorage.setItem('taktic_password_recovery', 'true');
+        }
+      }
 
       setSession(session);
       setUser(session?.user ?? null);
@@ -593,6 +644,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
+    setIsPasswordRecovery(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('taktic_password_recovery');
+    }
+
     if (isDemo) {
       clearDemoData();
       setIsDemo(false);
@@ -625,6 +681,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  const updatePassword = async (newPassword: string): Promise<{ error: Error | null }> => {
+    if (!isSupabaseConfigured) {
+      return { error: new Error('Supabase credentials are not configured in .env.local') };
+    }
+    const { error } = await supabase.auth.updateUser({ password: newPassword });
+    if (!error) {
+      setIsPasswordRecovery(false);
+      if (typeof window !== 'undefined') {
+        sessionStorage.removeItem('taktic_password_recovery');
+      }
+    }
+    return { error };
+  };
+
+  const cancelPasswordRecovery = async (): Promise<void> => {
+    setIsPasswordRecovery(false);
+    if (typeof window !== 'undefined') {
+      sessionStorage.removeItem('taktic_password_recovery');
+    }
+    await signOut();
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -633,12 +711,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         profile,
         isDemo,
         loading,
+        isPasswordRecovery,
         signInWithEmail,
         signUpWithEmail,
         signInWithGoogle,
         loginAsDemo,
         signOut,
         updateProfile,
+        updatePassword,
+        cancelPasswordRecovery,
       }}
     >
       {children}

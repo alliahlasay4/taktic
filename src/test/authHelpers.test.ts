@@ -25,11 +25,20 @@ describe('AuthContext Link & Token Helpers', () => {
     expect(isEmailConfirmationLink()).toBe(false);
   });
 
-  it('detects password recovery links accurately', () => {
+  it('detects password recovery links accurately across search and hash', () => {
     window.history.replaceState(null, '', '/#type=recovery');
     expect(isPasswordRecoveryLink()).toBe(true);
 
+    window.history.replaceState(null, '', '/?type=recovery');
+    expect(isPasswordRecoveryLink()).toBe(true);
+
+    window.history.replaceState(null, '', '/#access_token=test_tok&refresh_token=ref_tok&type=recovery');
+    expect(isPasswordRecoveryLink()).toBe(true);
+
     window.history.replaceState(null, '', '/#type=signup');
+    expect(isPasswordRecoveryLink()).toBe(false);
+
+    window.history.replaceState(null, '', '/login');
     expect(isPasswordRecoveryLink()).toBe(false);
   });
 
@@ -70,5 +79,14 @@ describe('AuthContext Link & Token Helpers', () => {
     expect(localStorage.getItem(`taktic_user_profile_${userId}`)).toBeNull();
     expect(localStorage.getItem('taktic_dark_mode')).toBe('true');
     expect(localStorage.getItem('taktic_ambient_volume')).toBe('0.5');
+  });
+
+  it('recognizes reset-password and update-password paths as auth routes', async () => {
+    const { isAuthPath } = await import('../lib/routes');
+    expect(isAuthPath('/reset-password')).toBe(true);
+    expect(isAuthPath('/update-password')).toBe(true);
+    expect(isAuthPath('/login')).toBe(true);
+    expect(isAuthPath('/signup')).toBe(true);
+    expect(isAuthPath('/focushub')).toBe(false);
   });
 });
