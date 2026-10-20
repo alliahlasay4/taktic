@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Task } from '../types';
 import { soundEngine } from '../lib/audio';
 
@@ -40,9 +40,9 @@ interface TimerProviderProps {
 export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusComplete }) => {
   const [mode, setModeState] = useState<TimerMode>('pomodoro');
   const [preset, setPresetState] = useState<PresetOption>(25);
-  const [customMinutesInput, setCustomMinutesInput] = useState<number>(45);
-  const [autoStartBreak, setAutoStartBreak] = useState<boolean>(false);
-  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [customMinutesInput, setCustomMinutesInputState] = useState<number>(45);
+  const [autoStartBreak, setAutoStartBreakState] = useState<boolean>(false);
+  const [selectedTask, setSelectedTaskState] = useState<Task | null>(null);
 
   // Helper to get total duration in seconds
   const getDurationSeconds = (m: TimerMode, p: PresetOption, customMins: number): number => {
@@ -58,7 +58,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusC
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   // Rating Modal state
-  const [showRatingModal, setShowRatingModal] = useState<boolean>(false);
+  const [showRatingModal, setShowRatingModalState] = useState<boolean>(false);
   const [pendingSessionData, setPendingSessionData] = useState<{ mins: number; title?: string } | null>(null);
 
   // Sync timeLeft when mode or preset changes
@@ -92,6 +92,11 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusC
     customMinutesInputRef.current = customMinutesInput;
   }, [customMinutesInput]);
 
+  const onFocusCompleteRef = useRef(onFocusComplete);
+  useEffect(() => {
+    onFocusCompleteRef.current = onFocusComplete;
+  }, [onFocusComplete]);
+
   // Main Timer Loop (Wall-clock based to prevent background tab throttling drift)
   useEffect(() => {
     if (!isRunning) {
@@ -106,7 +111,8 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusC
       const startTimestamp = Date.now() - timeLeft * 1000;
       intervalRef.current = setInterval(() => {
         const elapsed = Math.floor((Date.now() - startTimestamp) / 1000);
-        setTimeLeft(elapsed);
+        // Guard update: only set state when elapsed integer second actually changes
+        setTimeLeft((prev) => (prev !== elapsed ? elapsed : prev));
       }, 500);
     } else {
       const endTime = Date.now() + timeLeft * 1000;
@@ -129,7 +135,7 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusC
           const elapsedMins = Math.max(1, Math.round(totalDurSecs / 60));
 
           setPendingSessionData({ mins: elapsedMins, title: selectedTaskRef.current?.title });
-          setShowRatingModal(true);
+          setShowRatingModalState(true);
 
           if (modeRef.current === 'pomodoro' && autoStartBreakRef.current) {
             setTimeout(() => {
@@ -138,7 +144,8 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusC
             }, 1000);
           }
         } else {
-          setTimeLeft(remaining);
+          // Guard update: only set state when remaining integer second actually changes
+          setTimeLeft((prev) => (prev !== remaining ? remaining : prev));
         }
       }, 500);
     }
@@ -151,62 +158,108 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusC
     };
   }, [isRunning, mode]);
 
-  const toggleTimer = () => {
+  const toggleTimer = useCallback(() => {
     setIsRunning((prev) => !prev);
-  };
+  }, []);
 
-  const resetTimer = () => {
+  const resetTimer = useCallback(() => {
     setIsRunning(false);
-    setTimeLeft(getDurationSeconds(mode, preset, customMinutesInput));
-  };
+    setTimeLeft(getDurationSeconds(modeRef.current, presetRef.current, customMinutesInputRef.current));
+  }, []);
 
-  const setMode = (newMode: TimerMode) => {
+  const setMode = useCallback((newMode: TimerMode) => {
     setModeState(newMode);
-  };
+  }, []);
 
-  const setPreset = (newPreset: PresetOption) => {
+  const setPreset = useCallback((newPreset: PresetOption) => {
     setPresetState(newPreset);
-  };
+  }, []);
 
-  const clearPendingSessionData = () => {
-    setShowRatingModal(false);
+  const setCustomMinutesInput = useCallback((mins: number) => {
+    setCustomMinutesInputState(mins);
+  }, []);
+
+  const setAutoStartBreak = useCallback((auto: boolean) => {
+    setAutoStartBreakState(auto);
+  }, []);
+
+  const setSelectedTask = useCallback((task: Task | null) => {
+    setSelectedTaskState(task);
+  }, []);
+
+  const setShowRatingModal = useCallback((show: boolean) => {
+    setShowRatingModalState(show);
+  }, []);
+
+  const clearPendingSessionData = useCallback(() => {
+    setShowRatingModalState(false);
     setPendingSessionData(null);
-  };
+  }, []);
 
-  const submitSessionComplete = (quality?: 'high_flow' | 'moderate' | 'distracted') => {
-    if (pendingSessionData) {
-      onFocusComplete(pendingSessionData.mins, pendingSessionData.title, quality);
-    }
-    clearPendingSessionData();
-  };
+  const submitSessionComplete = useCallback((quality?: 'high_flow' | 'moderate' | 'distracted') => {
+    setPendingSessionData((currentData) => {
+      if (currentData) {
+        onFocusCompleteRef.current(currentData.mins, currentData.title, quality);
+      }
+      return null;
+    });
+    setShowRatingModalState(false);
+  }, []);
 
-  const totalDuration = getDurationSeconds(mode, preset, customMinutesInput);
+  const totalDuration = useMemo(
+    () => getDurationSeconds(mode, preset, customMinutesInput),
+    [mode, preset, customMinutesInput]
+  );
+
+  const contextValue = useMemo<TimerContextType>(
+    () => ({
+      mode,
+      preset,
+      customMinutesInput,
+      timeLeft,
+      totalDuration,
+      isRunning,
+      selectedTask,
+      autoStartBreak,
+      showRatingModal,
+      pendingSessionData,
+      toggleTimer,
+      resetTimer,
+      setMode,
+      setPreset,
+      setCustomMinutesInput,
+      setAutoStartBreak,
+      setSelectedTask,
+      setShowRatingModal,
+      clearPendingSessionData,
+      submitSessionComplete,
+    }),
+    [
+      mode,
+      preset,
+      customMinutesInput,
+      timeLeft,
+      totalDuration,
+      isRunning,
+      selectedTask,
+      autoStartBreak,
+      showRatingModal,
+      pendingSessionData,
+      toggleTimer,
+      resetTimer,
+      setMode,
+      setPreset,
+      setCustomMinutesInput,
+      setAutoStartBreak,
+      setSelectedTask,
+      setShowRatingModal,
+      clearPendingSessionData,
+      submitSessionComplete,
+    ]
+  );
 
   return (
-    <TimerContext.Provider
-      value={{
-        mode,
-        preset,
-        customMinutesInput,
-        timeLeft,
-        totalDuration,
-        isRunning,
-        selectedTask,
-        autoStartBreak,
-        showRatingModal,
-        pendingSessionData,
-        toggleTimer,
-        resetTimer,
-        setMode,
-        setPreset,
-        setCustomMinutesInput,
-        setAutoStartBreak,
-        setSelectedTask,
-        setShowRatingModal,
-        clearPendingSessionData,
-        submitSessionComplete,
-      }}
-    >
+    <TimerContext.Provider value={contextValue}>
       {children}
     </TimerContext.Provider>
   );

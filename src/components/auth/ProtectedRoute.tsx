@@ -1,7 +1,5 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, lazy, Suspense } from 'react';
 import { useAuth, isEmailConfirmationLink, isPasswordRecoveryLink } from '../../context/AuthContext';
-import { AuthPage } from './AuthPage';
-import { LandingPage } from '../landing/LandingPage';
 import {
   LANDING_PATH,
   isAuthPath,
@@ -9,6 +7,9 @@ import {
   normalizePath,
 } from '../../lib/routes';
 import { TakticLogo } from '../common/TakticLogo';
+
+const AuthPage = lazy(() => import('./AuthPage').then((m) => ({ default: m.AuthPage })));
+const LandingPage = lazy(() => import('../landing/LandingPage').then((m) => ({ default: m.LandingPage })));
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading } = useAuth();
@@ -141,30 +142,56 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 
     if (shouldShowAuth) {
       return (
-        <AuthPage
-          onBackToHome={() => {
-            setIsAuthOpen(false);
-            if (typeof window !== 'undefined') {
-              sessionStorage.removeItem('taktic_auth_confirmation_notice');
-              window.history.pushState(null, '', LANDING_PATH);
-            }
-          }}
-          defaultSignUp={defaultSignUp}
-        />
+        <Suspense
+          fallback={
+            <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center p-4">
+              <div className="flex flex-col items-center gap-3">
+                <TakticLogo className="h-10 w-10 animate-pulse text-[var(--accent-terracotta)]" />
+                <div className="text-xs font-semibold tracking-wider uppercase text-[var(--text-secondary)]">
+                  Loading secure portal...
+                </div>
+              </div>
+            </div>
+          }
+        >
+          <AuthPage
+            onBackToHome={() => {
+              setIsAuthOpen(false);
+              if (typeof window !== 'undefined') {
+                sessionStorage.removeItem('taktic_auth_confirmation_notice');
+                window.history.pushState(null, '', LANDING_PATH);
+              }
+            }}
+            defaultSignUp={defaultSignUp}
+          />
+        </Suspense>
       );
     }
 
     return (
-      <LandingPage
-        onOpenAuth={(signUpMode = false) => {
-          setDefaultSignUp(signUpMode);
-          setIsAuthOpen(true);
-          if (typeof window !== 'undefined') {
-            const authPath = signUpMode ? '/signup' : '/login';
-            window.history.pushState(null, '', authPath);
-          }
-        }}
-      />
+      <Suspense
+        fallback={
+          <div className="min-h-screen bg-[var(--bg-main)] flex items-center justify-center p-4">
+            <div className="flex flex-col items-center gap-3">
+              <TakticLogo className="h-10 w-10 animate-pulse text-[var(--accent-terracotta)]" />
+              <div className="text-xs font-semibold tracking-wider uppercase text-[var(--text-secondary)]">
+                Loading Taktic...
+              </div>
+            </div>
+          </div>
+        }
+      >
+        <LandingPage
+          onOpenAuth={(signUpMode = false) => {
+            setDefaultSignUp(signUpMode);
+            setIsAuthOpen(true);
+            if (typeof window !== 'undefined') {
+              const authPath = signUpMode ? '/signup' : '/login';
+              window.history.pushState(null, '', authPath);
+            }
+          }}
+        />
+      </Suspense>
     );
   }
 

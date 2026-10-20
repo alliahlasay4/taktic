@@ -173,30 +173,32 @@ export const fetchProfileStatsFromSupabase = async (userId: string): Promise<Rea
   }
 
   try {
-    // 1. Fetch total focus sessions & sum duration
-    const { data: focusSessions } = await supabase
-      .from('focus_sessions')
-      .select('duration_minutes, completed_at')
-      .eq('user_id', userId);
+    // 1, 2, & 3. Fetch focus sessions, habit logs, and completed tasks in parallel
+    const [
+      { data: focusSessions },
+      { data: habitLogs, count: habitLogsCount },
+      { data: completedTasks, count: completedTasksCount },
+    ] = await Promise.all([
+      supabase
+        .from('focus_sessions')
+        .select('duration_minutes, completed_at')
+        .eq('user_id', userId),
+      supabase
+        .from('habit_logs')
+        .select('completed_date', { count: 'exact' })
+        .eq('user_id', userId),
+      supabase
+        .from('tasks')
+        .select('completed_at', { count: 'exact' })
+        .eq('user_id', userId)
+        .eq('completed', true),
+    ]);
 
     const totalMinutes = focusSessions
       ? focusSessions.reduce((sum, s) => sum + (s.duration_minutes || 0), 0)
       : 0;
     const totalFocusHours = Math.round((totalMinutes / 60) * 10) / 10;
     const totalFocusSessions = focusSessions ? focusSessions.length : 0;
-
-    // 2. Fetch completed habits logs
-    const { data: habitLogs, count: habitLogsCount } = await supabase
-      .from('habit_logs')
-      .select('completed_date', { count: 'exact' })
-      .eq('user_id', userId);
-
-    // 3. Fetch completed tasks
-    const { data: completedTasks, count: completedTasksCount } = await supabase
-      .from('tasks')
-      .select('completed_at', { count: 'exact' })
-      .eq('user_id', userId)
-      .eq('completed', true);
 
     // 4. Calculate authentic streak across all 3 core productivity pillars
     const focusDates = (focusSessions || [])

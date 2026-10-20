@@ -42,21 +42,23 @@ export function useHabits() {
     }
 
     try {
-      // 1. Fetch habits from Supabase
-      const { data: dbHabits, error: habitError } = await supabase
-        .from('habits')
-        .select('*')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false });
+      // 1 & 2. Fetch habits and habit logs concurrently in parallel
+      const [
+        { data: dbHabits, error: habitError },
+        { data: dbLogs, error: logError },
+      ] = await Promise.all([
+        supabase
+          .from('habits')
+          .select('*')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false }),
+        supabase
+          .from('habit_logs')
+          .select('habit_id, completed_date')
+          .eq('user_id', user.id),
+      ]);
 
       if (habitError) throw habitError;
-
-      // 2. Fetch habit logs for current user
-      const { data: dbLogs, error: logError } = await supabase
-        .from('habit_logs')
-        .select('habit_id, completed_date')
-        .eq('user_id', user.id);
-
       if (logError) throw logError;
 
       // Category Icon Map Fallback

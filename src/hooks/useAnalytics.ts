@@ -164,22 +164,26 @@ export function useAnalytics() {
       }
       cutoffDate.setHours(0, 0, 0, 0);
 
-      // 1. Fetch focus sessions from Supabase
-      const { data: sessions, error: sessionsErr } = await supabase
-        .from('focus_sessions')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('completed_at', cutoffDate.toISOString())
-        .order('completed_at', { ascending: false });
+      // 1 & 2. Fetch focus sessions and habit logs in parallel
+      const [
+        { data: sessions, error: sessionsErr },
+        { data: habitLogs, error: habitLogsErr },
+      ] = await Promise.all([
+        supabase
+          .from('focus_sessions')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('completed_at', cutoffDate.toISOString())
+          .order('completed_at', { ascending: false }),
+        supabase
+          .from('habit_logs')
+          .select('*')
+          .eq('user_id', user.id)
+          .gte('completed_date', getLocalDateString(cutoffDate)),
+      ]);
 
       if (sessionsErr) throw sessionsErr;
-
-      // 2. Fetch habit logs from Supabase
-      const { data: habitLogs } = await supabase
-        .from('habit_logs')
-        .select('*')
-        .eq('user_id', user.id)
-        .gte('completed_date', getLocalDateString(cutoffDate));
+      if (habitLogsErr) throw habitLogsErr;
 
       setRawData({
         sessions: sessions || [],

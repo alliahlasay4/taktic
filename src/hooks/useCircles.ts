@@ -448,11 +448,34 @@ export function useCircles() {
     }
 
     try {
-      // 1. Fetch user's circle members from DB
-      const { data: membersData, error: membersErr } = await supabase
-        .from('circle_members')
-        .select('*')
-        .eq('user_id', user.id);
+      const isInvitesDisabled = localStorage.getItem('taktic_circle_invites_disabled') === 'true';
+
+      // 1. Concurrently fetch circle members, outgoing invites, incoming RPC invite, and posts
+      const [
+        { data: membersData, error: membersErr },
+        invitesResult,
+        rpcResult,
+        { data: postsData, error: postsErr },
+      ] = await Promise.all([
+        supabase
+          .from('circle_members')
+          .select('*')
+          .eq('user_id', user.id),
+        !isInvitesDisabled
+          ? supabase
+              .from('circle_invites')
+              .select('*')
+              .eq('user_id', user.id)
+              .eq('status', 'pending')
+              .order('created_at', { ascending: false })
+          : Promise.resolve({ data: null, error: null }),
+        supabase.rpc('get_my_pending_circle_invite'),
+        supabase
+          .from('circle_posts')
+          .select('*')
+          .order('created_at', { ascending: false })
+          .limit(50),
+      ]);
 
       if (!membersErr && membersData) {
         // Fetch real partner profiles, streaks, and privacy_settings from profiles table
@@ -613,16 +636,9 @@ export function useCircles() {
         localStorage.setItem(`taktic_circle_members_${user.id}`, JSON.stringify(dbMembers));
       }
 
-      // 2. Fetch user's circle invites from DB (only active pending invites for non-members)
-      const isInvitesDisabled = localStorage.getItem('taktic_circle_invites_disabled') === 'true';
-      if (!isInvitesDisabled) {
-        const { data: invitesData, error: invitesErr } = await supabase
-          .from('circle_invites')
-          .select('*')
-          .eq('user_id', user.id)
-          .eq('status', 'pending')
-          .order('created_at', { ascending: false });
-
+      // 2. Process user's circle invites from DB
+      if (!isInvitesDisabled && invitesResult) {
+        const { data: invitesData, error: invitesErr } = invitesResult;
         if (invitesErr) {
           const isTableMissing =
             invitesErr.code === 'PGRST205' ||
@@ -656,12 +672,12 @@ export function useCircles() {
         }
       }
 
-      // 3. Fetch incoming invites for this user (where user's email was invited)
+      // 3. Process incoming invites for this user (where user's email was invited)
       try {
         const existingNames = new Set(
           (membersData || []).map((m) => (m.member_name || '').toLowerCase())
         );
-        const { data: pendingRpc } = await supabase.rpc('get_my_pending_circle_invite');
+        const pendingRpc = rpcResult?.data;
         let incomingList: IncomingCircleInvite[] = [];
 
         if (pendingRpc && pendingRpc.invite_token) {
@@ -695,15 +711,8 @@ export function useCircles() {
 
         saveIncomingInvites(incomingList);
       } catch (err) {
-        console.warn('Could not fetch incoming circle invites:', err);
+        console.warn('Could not process incoming circle invites:', err);
       }
-
-      // 4. Fetch circle posts from DB
-      const { data: postsData, error: postsErr } = await supabase
-        .from('circle_posts')
-        .select('*')
-        .order('created_at', { ascending: false })
-        .limit(50);
 
       // 4. Fetch post likes (filtered by relevant post IDs)
       const postIds = (postsData || []).map((p) => p.id).filter(Boolean);

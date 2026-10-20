@@ -25,6 +25,70 @@ interface IconRendererProps {
   fallback?: React.ComponentType<LucideProps>;
 }
 
+// Static lookup mapping for Lucide icon components
+const ICON_COMPONENT_MAP: Record<string, React.ComponentType<LucideProps>> = {
+  flame: Flame,
+  '🔥': Flame,
+  streak: Flame,
+  water: Droplets,
+  droplet: Droplets,
+  droplets: Droplets,
+  '💧': Droplets,
+  hydration: Droplets,
+  book: BookOpen,
+  read: BookOpen,
+  '📚': BookOpen,
+  learn: BookOpen,
+  run: Activity,
+  walk: Activity,
+  exercise: Activity,
+  '🏃': Activity,
+  activity: Activity,
+  meditate: Heart,
+  zen: Heart,
+  heart: Heart,
+  '🧘': Heart,
+  health: Heart,
+  morning: Sunrise,
+  sunrise: Sunrise,
+  '🌅': Sunrise,
+  afternoon: Sun,
+  sun: Sun,
+  '☀️': Sun,
+  evening: Moon,
+  night: Moon,
+  moon: Moon,
+  '🌙': Moon,
+  chart: BarChart2,
+  stats: BarChart2,
+  '📊': BarChart2,
+  coffee: Coffee,
+  break: Coffee,
+  '☕': Coffee,
+  target: Target,
+  goal: Target,
+  '🎯': Target,
+  zap: Zap,
+  energy: Zap,
+  '⚡': Zap,
+  shield: Shield,
+  freeze: Shield,
+  '🛡️': Shield,
+  trophy: Award,
+  reward: Award,
+  '🏆': Award,
+};
+
+function getIconComponent(key: string): React.ComponentType<LucideProps> | null {
+  if (ICON_COMPONENT_MAP[key]) return ICON_COMPONENT_MAP[key];
+
+  // Substring match fallback for composite category/icon names
+  for (const [pattern, IconComp] of Object.entries(ICON_COMPONENT_MAP)) {
+    if (key.includes(pattern)) return IconComp;
+  }
+  return null;
+}
+
 export const IconRenderer: React.FC<IconRendererProps> = ({
   name,
   className = 'h-4 w-4',
@@ -36,50 +100,7 @@ export const IconRenderer: React.FC<IconRendererProps> = ({
   }
 
   const key = name.toLowerCase().trim();
+  const IconComponent = getIconComponent(key) || FallbackIcon;
 
-  // Map keys and legacy unicode emojis to vector components
-  if (key.includes('flame') || key.includes('🔥') || key.includes('streak')) {
-    return <Flame className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('water') || key.includes('droplet') || key.includes('💧') || key.includes('hydration')) {
-    return <Droplets className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('book') || key.includes('read') || key.includes('📚') || key.includes('learn')) {
-    return <BookOpen className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('run') || key.includes('walk') || key.includes('exercise') || key.includes('🏃') || key.includes('activity')) {
-    return <Activity className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('meditate') || key.includes('zen') || key.includes('heart') || key.includes('🧘') || key.includes('health')) {
-    return <Heart className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('morning') || key.includes('sunrise') || key.includes('🌅')) {
-    return <Sunrise className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('afternoon') || key.includes('sun') || key.includes('☀️')) {
-    return <Sun className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('evening') || key.includes('night') || key.includes('moon') || key.includes('🌙')) {
-    return <Moon className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('chart') || key.includes('stats') || key.includes('📊')) {
-    return <BarChart2 className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('coffee') || key.includes('break') || key.includes('☕')) {
-    return <Coffee className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('target') || key.includes('goal') || key.includes('🎯')) {
-    return <Target className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('zap') || key.includes('energy') || key.includes('⚡')) {
-    return <Zap className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('shield') || key.includes('freeze') || key.includes('🛡️')) {
-    return <Shield className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-  if (key.includes('trophy') || key.includes('reward') || key.includes('🏆')) {
-    return <Award className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
-  }
-
-  return <FallbackIcon className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
+  return <IconComponent className={className} strokeWidth={strokeWidth} aria-hidden="true" />;
 };
