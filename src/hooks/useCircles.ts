@@ -166,15 +166,34 @@ export function useCircles() {
           inviterName: userName || 'A colleague',
           origin: typeof window !== 'undefined' ? window.location.origin : 'https://taktic.app',
           inviteToken: token,
+          inviterId: user.id,
+          redirectUrl: link,
         };
 
-        // 1. Invoke Supabase Edge Function to dispatch Auth Invite Email with caller JWT
-        const { data: edgeData, error: edgeErr } = await supabase.functions.invoke('invite-partner', {
+        // 1. Invoke Supabase Edge Function: try 'bright-responder' (live deployed slug) with fallback to 'invite-partner'
+        let edgeData = null;
+        let edgeErr = null;
+
+        const resPrimary = await supabase.functions.invoke('bright-responder', {
           body: payload,
         });
 
+        if (!resPrimary.error) {
+          edgeData = resPrimary.data;
+        } else {
+          // Fall back to standard slug in case the function was renamed or redeployed
+          const resFallback = await supabase.functions.invoke('invite-partner', {
+            body: payload,
+          });
+          if (!resFallback.error) {
+            edgeData = resFallback.data;
+          } else {
+            edgeErr = resPrimary.error || resFallback.error;
+          }
+        }
+
         if (edgeErr) {
-          console.warn('Edge function invite dispatch note:', edgeErr.message);
+          console.warn('Edge function invite dispatch note:', edgeErr.message || edgeErr);
         } else if (edgeData) {
           console.log('Invite email dispatched successfully via Supabase:', edgeData);
         }
@@ -304,6 +323,28 @@ export function useCircles() {
   const resendCircleInvite = async (inviteId: string) => {
     const target = invites.find((i) => i.id === inviteId);
     if (!target) return { success: false, inviteLink: '' };
+
+    if (isSupabaseConfigured && isRealUser && user) {
+      try {
+        const payload = {
+          email: target.email,
+          name: target.name,
+          inviterName: userName || 'A colleague',
+          origin: typeof window !== 'undefined' ? window.location.origin : 'https://taktic.app',
+          inviteToken: target.inviteToken,
+          inviterId: user.id,
+          redirectUrl: target.inviteLink,
+        };
+
+        const resPrimary = await supabase.functions.invoke('bright-responder', { body: payload });
+        if (resPrimary.error) {
+          await supabase.functions.invoke('invite-partner', { body: payload });
+        }
+      } catch (err) {
+        console.error('Error resending circle invite via edge function:', err);
+      }
+    }
+
     return { success: true, inviteLink: target.inviteLink };
   };
 
