@@ -15,9 +15,6 @@ test.describe('Landing Page & Navigation Flow', () => {
     const headline = page.locator('h1');
     await expect(headline).toBeVisible();
     await expect(headline).toContainText(/Plan what matters today/i);
-
-    // Capture screenshot of the landing page
-    await page.screenshot({ path: 'screenshots/landing-page.png' });
   });
 
   test('should launch interactive demo mode directly from landing page', async ({ page }) => {
@@ -29,26 +26,28 @@ test.describe('Landing Page & Navigation Flow', () => {
     await demoBtn.click();
 
     // Verify navigation to Focus Hub in demo mode
-    await page.waitForURL('**/focushub', { timeout: 10000 });
     await expect(page).toHaveURL(/focushub/);
     await expect(page).toHaveTitle(/Focus Hub/i);
-
-    // Capture screenshot of demo dashboard
-    await page.screenshot({ path: 'screenshots/demo-dashboard.png' });
   });
 
-  test('should open and close authentication modal', async ({ page }) => {
+  test('should navigate to Sign In portal and return to landing page', async ({ page }) => {
     await page.goto('/');
 
-    // Click Sign In button in navbar
-    const signInBtn = page.locator('header').getByRole('button', { name: /Sign In/i }).first();
-    if (await signInBtn.isVisible()) {
-      await signInBtn.click();
-      await page.waitForTimeout(500);
+    // Click Sign In button in header
+    const signInBtn = page.locator('header').getByRole('button', { name: /Sign In/i });
+    await expect(signInBtn).toBeVisible();
+    await signInBtn.click();
 
-      // Verify email input is displayed in auth view
-      const emailInput = page.locator('input[type="email"], input[placeholder*="email" i]').first();
-      await expect(emailInput).toBeVisible();
-    }
+    // Verify authentication portal renders
+    await expect(page).toHaveURL(/\/login/);
+    await expect(page.getByRole('heading', { name: /Login/i })).toBeVisible();
+    await expect(page.getByLabel(/Email Address/i)).toBeVisible();
+
+    // Verify returning back to landing page via Back to Home button
+    const backBtn = page.getByRole('button', { name: 'Back to Home' }).or(page.getByRole('button', { name: 'Home', exact: true })).first();
+    await expect(backBtn).toBeVisible();
+    await backBtn.click();
+    await expect(page).toHaveURL(/\/landing/);
+    await expect(page.getByRole('heading', { name: /Plan what matters today/i })).toBeVisible();
   });
 });
