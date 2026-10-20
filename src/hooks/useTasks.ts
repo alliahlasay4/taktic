@@ -72,14 +72,25 @@ export function useTasks() {
     }
   }, [user, storage]);
 
+  // Instantly load cached tasks when user/storage resolves to eliminate latency
+  useEffect(() => {
+    const cached = storage.get();
+    if (cached && Array.isArray(cached) && cached.length > 0) {
+      setTasks(cached);
+    }
+  }, [storage.key]);
+
+  // Fetch latest tasks from Supabase in the background
   useEffect(() => {
     fetchTasks();
   }, [fetchTasks]);
 
   // Always write-through cache with strict user isolation
   useEffect(() => {
-    storage.set(tasks);
-  }, [tasks, storage]);
+    if (tasks.length > 0 || !loading) {
+      storage.set(tasks);
+    }
+  }, [tasks, storage, loading]);
 
   // Helper to ensure clean date formatting for Postgres
   const formatDueDateForDb = (dateStr?: string) => {

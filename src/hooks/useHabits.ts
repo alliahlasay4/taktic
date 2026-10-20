@@ -114,14 +114,29 @@ export function useHabits() {
     }
   }, [user, storage]);
 
+  // Instantly load cached habits when storage key resolves to eliminate latency
+  useEffect(() => {
+    const loaded = storage.get();
+    if (loaded && Array.isArray(loaded) && loaded.length > 0) {
+      setHabits(
+        loaded.map((h) => ({
+          ...h,
+          streak: calculateConsecutiveStreak(h.completedDates, h.freezeShieldsRemaining),
+        }))
+      );
+    }
+  }, [storage.key]);
+
   useEffect(() => {
     fetchHabits();
   }, [fetchHabits]);
 
   // Save to Scoped Storage with user isolation
   useEffect(() => {
-    storage.set(habits);
-  }, [habits, storage]);
+    if (habits.length > 0 || !loading) {
+      storage.set(habits);
+    }
+  }, [habits, storage, loading]);
 
   // Toggle Habit Completion (Optimistic UI with Dynamic Streak Evaluation)
   const toggleHabit = async (id: string) => {

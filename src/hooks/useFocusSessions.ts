@@ -64,14 +64,24 @@ export function useFocusSessions() {
     }
   }, [user, storage]);
 
+  // Instantly load cached focus sessions when storage key resolves to eliminate latency
+  useEffect(() => {
+    const saved = storage.get();
+    if (saved && Array.isArray(saved) && saved.length > 0) {
+      setFocusSessions(saved);
+    }
+  }, [storage.key]);
+
   useEffect(() => {
     fetchFocusSessions();
   }, [fetchFocusSessions]);
 
   // Persist write-through cache with strict user isolation
   useEffect(() => {
-    storage.set(focusSessions);
-  }, [focusSessions, storage]);
+    if (focusSessions.length > 0 || !loading) {
+      storage.set(focusSessions);
+    }
+  }, [focusSessions, storage, loading]);
 
   // Log a new completed Focus Session (Optimistic UI)
   const addFocusSession = async (

@@ -11,13 +11,45 @@ export interface ScopedStorage<T> {
   remove: () => void;
 }
 
+/**
+ * Synchronously retrieves the logged-in Supabase user ID from localStorage
+ * before asynchronous supabase.auth.getSession() completes.
+ * Returns null if no authenticated session or if demo mode is active.
+ */
+export function getSynchronousAuthUserId(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    if (localStorage.getItem('taktic_demo_mode') === 'true') {
+      return null;
+    }
+    // Search localStorage for Supabase auth token
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) {
+        const item = localStorage.getItem(k);
+        if (item) {
+          const parsed = JSON.parse(item);
+          const userId = parsed?.user?.id;
+          if (userId && typeof userId === 'string') {
+            return userId;
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
+}
+
 export function createScopedStorage<T>(
   namespace: string,
   userId?: string | null,
   isDemo?: boolean
 ): ScopedStorage<T> {
-  const isDemoMode = Boolean(isDemo || !userId || userId === 'demo' || userId === 'demo-user-123');
-  const userKey = userId || (isDemo ? 'demo' : 'guest');
+  const effectiveUserId = userId || (!isDemo ? getSynchronousAuthUserId() : null);
+  const isDemoMode = Boolean(isDemo || !effectiveUserId || effectiveUserId === 'demo' || effectiveUserId === 'demo-user-123');
+  const userKey = effectiveUserId || (isDemo ? 'demo' : 'guest');
   const key = isDemoMode ? `taktic_demo_${namespace}` : `taktic_${namespace}_${userKey}`;
 
   const getStorage = (): Storage | null => {

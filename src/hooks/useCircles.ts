@@ -3,11 +3,13 @@ import { CircleFeedPost, CircleMember, CircleInvite, IncomingCircleInvite } from
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_CIRCLE_MEMBERS, INITIAL_CIRCLE_FEED } from '../lib/mockData';
+import { getSynchronousAuthUserId } from '../lib/storage';
 
 export function useCircles() {
   const { user, isDemo, profile } = useAuth();
   const isRealUser = !isDemo && isSupabaseConfigured && Boolean(user) && user?.id !== 'demo-user-123';
-  const userKey = user?.id || (isDemo ? 'demo' : 'guest');
+  const effectiveUserId = user?.id || (!isDemo ? getSynchronousAuthUserId() : null);
+  const userKey = effectiveUserId || (isDemo ? 'demo' : 'guest');
 
   const [feedPosts, setFeedPosts] = useState<CircleFeedPost[]>(() => {
     if (isDemo || userKey === 'demo') {
@@ -901,7 +903,40 @@ export function useCircles() {
     } finally {
       setLoading(false);
     }
-  }, [user, isDemo, userName]);
+  // Instantly hydrate cached circle data when userKey resolves to eliminate sidebar latency
+  useEffect(() => {
+    if (userKey && userKey !== 'guest') {
+      const isDemoStore = isDemo || userKey === 'demo';
+      const storageObj = isDemoStore ? sessionStorage : localStorage;
+      const memKey = isDemoStore ? 'taktic_demo_circle_members' : `taktic_circle_members_${userKey}`;
+      const feedKey = isDemoStore ? 'taktic_demo_circle_feed' : `taktic_circle_feed_${userKey}`;
+      const invKey = isDemoStore ? 'taktic_demo_circle_invites' : `taktic_circle_invites_${userKey}`;
+
+      const cachedMem = storageObj.getItem(memKey);
+      if (cachedMem) {
+        try {
+          const parsed = JSON.parse(cachedMem);
+          if (Array.isArray(parsed) && parsed.length > 0) setMembers(parsed);
+        } catch {}
+      }
+
+      const cachedFeed = storageObj.getItem(feedKey);
+      if (cachedFeed) {
+        try {
+          const parsed = JSON.parse(cachedFeed);
+          if (Array.isArray(parsed) && parsed.length > 0) setFeedPosts(parsed);
+        } catch {}
+      }
+
+      const cachedInv = storageObj.getItem(invKey);
+      if (cachedInv) {
+        try {
+          const parsed = JSON.parse(cachedInv);
+          if (Array.isArray(parsed) && parsed.length > 0) setInvites(parsed);
+        } catch {}
+      }
+    }
+  }, [userKey, isDemo]);
 
   useEffect(() => {
     fetchCirclesData();
