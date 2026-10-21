@@ -22,7 +22,7 @@ interface DashboardViewProps {
   onOpenSummary?: () => void;
 }
 
-export const DashboardView: React.FC<DashboardViewProps> = ({
+const DashboardViewComponent: React.FC<DashboardViewProps> = ({
   tasks,
   habits,
   focusMinutes,
@@ -248,3 +248,5 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
     </div>
   );
 };
+
+export const DashboardView = React.memo(DashboardViewComponent);

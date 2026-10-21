@@ -5,18 +5,17 @@ import { soundEngine } from '../lib/audio';
 export type TimerMode = 'pomodoro' | 'shortBreak' | 'longBreak' | 'stopwatch';
 export type PresetOption = 25 | 50 | 90 | 'custom';
 
-interface TimerContextType {
+export interface TimerStateContextType {
   mode: TimerMode;
   preset: PresetOption;
   customMinutesInput: number;
-  timeLeft: number;
   totalDuration: number;
   isRunning: boolean;
   selectedTask: Task | null;
   autoStartBreak: boolean;
   showRatingModal: boolean;
   pendingSessionData: { mins: number; title?: string } | null;
-  
+
   // Actions
   toggleTimer: () => void;
   resetTimer: () => void;
@@ -30,7 +29,13 @@ interface TimerContextType {
   submitSessionComplete: (quality?: 'high_flow' | 'moderate' | 'distracted') => void;
 }
 
-const TimerContext = createContext<TimerContextType | undefined>(undefined);
+export interface TimerContextType extends TimerStateContextType {
+  timeLeft: number;
+}
+
+// Split into low-frequency state/actions and high-frequency per-second tick contexts
+const TimerStateContext = createContext<TimerStateContextType | undefined>(undefined);
+const TimerTickContext = createContext<number | undefined>(undefined);
 
 interface TimerProviderProps {
   children: React.ReactNode;
@@ -211,12 +216,11 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusC
     [mode, preset, customMinutesInput]
   );
 
-  const contextValue = useMemo<TimerContextType>(
+  const stateContextValue = useMemo<TimerStateContextType>(
     () => ({
       mode,
       preset,
       customMinutesInput,
-      timeLeft,
       totalDuration,
       isRunning,
       selectedTask,
@@ -238,7 +242,6 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusC
       mode,
       preset,
       customMinutesInput,
-      timeLeft,
       totalDuration,
       isRunning,
       selectedTask,
@@ -259,16 +262,50 @@ export const TimerProvider: React.FC<TimerProviderProps> = ({ children, onFocusC
   );
 
   return (
-    <TimerContext.Provider value={contextValue}>
-      {children}
-    </TimerContext.Provider>
+    <TimerStateContext.Provider value={stateContextValue}>
+      <TimerTickContext.Provider value={timeLeft}>
+        {children}
+      </TimerTickContext.Provider>
+    </TimerStateContext.Provider>
   );
 };
 
-export const useTimer = (): TimerContextType => {
-  const context = useContext(TimerContext);
+/**
+ * Access stable timer state and actions (mode, isRunning, selectedTask, controls).
+ * Does NOT re-render every second when timeLeft changes.
+ */
+export const useTimerState = (): TimerStateContextType => {
+  const context = useContext(TimerStateContext);
   if (!context) {
-    throw new Error('useTimer must be used within a TimerProvider');
+    throw new Error('useTimerState must be used within a TimerProvider');
   }
   return context;
+};
+
+/**
+ * Access high-frequency countdown time (timeLeft in seconds).
+ * Only components displaying live seconds should call this.
+ */
+export const useTimerTick = (): number => {
+  const timeLeft = useContext(TimerTickContext);
+  if (timeLeft === undefined) {
+    throw new Error('useTimerTick must be used within a TimerProvider');
+  }
+  return timeLeft;
+};
+
+/**
+ * Backwards-compatible combined hook for components that need both state and live ticking.
+ */
+export const useTimer = (): TimerContextType => {
+  const stateContext = useTimerState();
+  const timeLeft = useTimerTick();
+
+  return useMemo(
+    () => ({
+      ...stateContext,
+      timeLeft,
+    }),
+    [stateContext, timeLeft]
+  );
 };

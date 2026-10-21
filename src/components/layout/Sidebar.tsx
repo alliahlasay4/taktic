@@ -29,7 +29,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { ActiveTab, CircleMember } from '../../types';
-import { useTimer } from '../../context/TimerContext';
+import { useTimerState, useTimerTick } from '../../context/TimerContext';
 import { useAuth } from '../../context/AuthContext';
 import { formatTime } from '../../lib/utils';
 import { soundEngine } from '../../lib/audio';
@@ -279,7 +279,18 @@ const SIDEBAR_SOUNDSCAPES = [
   { id: 'Coffee Shop Ambience', label: 'Cafe', icon: Coffee },
 ];
 
-export const Sidebar: React.FC<SidebarProps> = ({
+// Isolated leaf component that subscribes to per-second timer ticks.
+// This prevents the entire Sidebar (800+ lines, nav items, quick tasks) from re-rendering every second.
+const SidebarTimerCountdown: React.FC = () => {
+  const timeLeft = useTimerTick();
+  return (
+    <div className="text-2xl font-bold font-mono tracking-wider text-[var(--text-primary)]">
+      {formatTime(timeLeft)}
+    </div>
+  );
+};
+
+const SidebarComponent: React.FC<SidebarProps> = ({
   activeTab,
   setActiveTab,
   todayFocusCount,
@@ -290,8 +301,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeSoundscape,
   setActiveSoundscape,
 }) => {
-  // Global Timer Context & User Profile
-  const { timeLeft, isRunning, toggleTimer, resetTimer, selectedTask, mode } = useTimer();
+  // Global Timer State & User Profile (stable - does NOT re-render on per-second ticks)
+  const { isRunning, toggleTimer, resetTimer, selectedTask, mode } = useTimerState();
   const { profile } = useAuth();
 
   const [quickTaskTitle, setQuickTaskTitle] = useState('');
@@ -494,6 +505,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 <img
                   src={profile.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'}
                   alt={profile.fullName}
+                  width={40}
+                  height={40}
+                  decoding="async"
                   className="w-10 h-10 rounded-xl object-cover border border-[var(--border-subtle)] shadow-xs transition-transform group-hover:scale-105"
                   onError={(e) => {
                     (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
@@ -727,9 +741,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
 
             <div className="text-center py-1">
-              <div className="text-2xl font-bold font-mono tracking-wider text-[var(--text-primary)]">
-                {formatTime(timeLeft)}
-              </div>
+              <SidebarTimerCountdown />
               <p className="mt-1 text-[11px] text-[var(--text-secondary)] font-medium truncate px-1 flex items-center justify-center gap-1">
                 {mode === 'shortBreak' ? (
                   <>
@@ -807,6 +819,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     key={member.id}
                     src={member.avatar}
                     alt={member.name}
+                    width={28}
+                    height={28}
+                    loading="lazy"
+                    decoding="async"
                     title={`${member.name} is focusing (${member.microGoal || 'Deep Work'})`}
                     className="w-7 h-7 rounded-lg object-cover border border-[var(--accent-dusty-rose)]/40 shadow-xs"
                   />
@@ -819,4 +835,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
     </>
   );
 };
+
+export const Sidebar = React.memo(SidebarComponent);
 

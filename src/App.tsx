@@ -386,7 +386,7 @@ function MainLayout() {
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
 
   // Focus Complete Handler (Persists to Supabase & Broadcasts to Circle Feed)
-  const handleFocusComplete = (durationMinutes: number, taskTitle?: string, focusQuality?: 'high_flow' | 'moderate' | 'distracted') => {
+  const handleFocusComplete = React.useCallback((durationMinutes: number, taskTitle?: string, focusQuality?: 'high_flow' | 'moderate' | 'distracted') => {
     addFocusSession(durationMinutes, taskTitle, 'pomodoro', activeSoundscape || undefined, focusQuality);
 
     const qualityText = focusQuality === 'high_flow' ? ' (High Flow)' : focusQuality === 'distracted' ? ' (Low Energy)' : '';
@@ -418,9 +418,9 @@ function MainLayout() {
         taskTitle ? ` on "${taskTitle}"` : ''
       }${qualityText}.`,
     });
-  };
+  }, [activeSoundscape, addFocusSession, broadcastAchievement, notify, sendNotification]);
 
-  const handleToggleHabitWithNotification = (id: string) => {
+  const handleToggleHabitWithNotification = React.useCallback((id: string) => {
     const target = habits.find((h) => h.id === id);
     if (target) {
       const today = new Date().toISOString().split('T')[0];
@@ -430,9 +430,9 @@ function MainLayout() {
       }
     }
     toggleHabit(id);
-  };
+  }, [habits, notify, toggleHabit]);
 
-  const handleToggleSoundscapeGlobal = () => {
+  const handleToggleSoundscapeGlobal = React.useCallback(() => {
     if (activeSoundscape) {
       soundEngine.stopSoundscape();
       setActiveSoundscape(null);
@@ -441,7 +441,7 @@ function MainLayout() {
       soundEngine.playSoundscape(sound);
       setActiveSoundscape(sound);
     }
-  };
+  }, [activeSoundscape]);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const focusTasks = tasks.filter((t) => t.isTodayFocus);
@@ -461,6 +461,20 @@ function MainLayout() {
       }
     },
     [handleToggleTodayFocus, showToast]
+  );
+
+  const handleQuickAddTask = React.useCallback(
+    (taskData: any) =>
+      handleAddTask({
+        title: taskData.title,
+        priority: taskData.priority || 'medium',
+        tags: taskData.tags || ['Quick Capture'],
+        dueDate: taskData.dueDate,
+        isTodayFocus: taskData.isTodayFocus ?? false,
+        timeBlock: taskData.timeBlock || 'morning',
+        estimatedMinutes: taskData.estimatedMinutes || 25,
+      }),
+    [handleAddTask]
   );
 
   return (
@@ -530,17 +544,7 @@ function MainLayout() {
                 members={members}
                 activeSoundscape={activeSoundscape}
                 setActiveSoundscape={setActiveSoundscape}
-                onQuickAddTask={(taskData) =>
-                  handleAddTask({
-                    title: taskData.title,
-                    priority: taskData.priority || 'medium',
-                    tags: taskData.tags || ['Quick Capture'],
-                    dueDate: taskData.dueDate,
-                    isTodayFocus: taskData.isTodayFocus ?? false,
-                    timeBlock: taskData.timeBlock || 'morning',
-                    estimatedMinutes: taskData.estimatedMinutes || 25,
-                  })
-                }
+                onQuickAddTask={handleQuickAddTask}
                 onFocusComplete={handleFocusComplete}
               />
 

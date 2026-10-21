@@ -25,7 +25,7 @@ interface NavbarProps {
   onAcceptCircleInvite?: (token: string) => Promise<void>;
 }
 
-export const Navbar: React.FC<NavbarProps> = ({
+const NavbarComponent: React.FC<NavbarProps> = ({
   darkMode,
   setDarkMode,
   userStreak,
@@ -166,6 +166,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               <img
                 src={userAvatar}
                 alt={userName}
+                width={40}
+                height={40}
+                decoding="async"
                 className="h-full w-full object-cover"
                 onError={(e) => {
                   (e.target as HTMLImageElement).src = 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80';
@@ -188,3 +191,5 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+
+export const Navbar = React.memo(NavbarComponent);

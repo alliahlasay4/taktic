@@ -7,6 +7,7 @@ import {
   normalizePath,
 } from '../../lib/routes';
 import { TakticLogo } from '../common/TakticLogo';
+import { getSynchronousAuthUserId } from '../../lib/storage';
 
 const AuthPage = lazy(() => import('./AuthPage').then((m) => ({ default: m.AuthPage })));
 const LandingPage = lazy(() => import('../landing/LandingPage').then((m) => ({ default: m.LandingPage })));
@@ -124,7 +125,13 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     setIsAuthOpen(false);
   }
 
-  if (loading) {
+  // If user is on a public route (/landing, /login, /signup) and has NO stored auth token in localStorage,
+  // do not hold them on the full-screen "Loading Taktic Hub..." spinner.
+  // Instead, render the public landing or auth page immediately to eliminate LCP delay.
+  const hasLocalSessionToken = Boolean(getSynchronousAuthUserId());
+  const isPublicRoute = isLandingPath(currentPath) || isExplicitAuthPath;
+
+  if (loading && !(!user && isPublicRoute && !hasLocalSessionToken)) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-main)] text-[var(--text-primary)]">
         <div className="flex flex-col items-center gap-4">

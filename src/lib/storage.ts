@@ -11,6 +11,19 @@ export interface ScopedStorage<T> {
   remove: () => void;
 }
 
+// In-memory cache for resolved auth user ID to avoid scanning localStorage repeatedly
+let cachedAuthUserId: string | null = null;
+let lastCachedTokenKey: string | null = null;
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('storage', (e) => {
+    if (e.key && (e.key.startsWith('sb-') || e.key === 'taktic_demo_mode')) {
+      cachedAuthUserId = null;
+      lastCachedTokenKey = null;
+    }
+  });
+}
+
 /**
  * Synchronously retrieves the logged-in Supabase user ID from localStorage
  * before asynchronous supabase.auth.getSession() completes.
@@ -20,8 +33,27 @@ export function getSynchronousAuthUserId(): string | null {
   if (typeof window === 'undefined') return null;
   try {
     if (localStorage.getItem('taktic_demo_mode') === 'true') {
+      cachedAuthUserId = null;
       return null;
     }
+
+    if (cachedAuthUserId) {
+      return cachedAuthUserId;
+    }
+
+    // Fast check: verify previously known token key first
+    if (lastCachedTokenKey) {
+      const item = localStorage.getItem(lastCachedTokenKey);
+      if (item) {
+        const parsed = JSON.parse(item);
+        const userId = parsed?.user?.id;
+        if (userId && typeof userId === 'string') {
+          cachedAuthUserId = userId;
+          return userId;
+        }
+      }
+    }
+
     // Search localStorage for Supabase auth token
     for (let i = 0; i < localStorage.length; i++) {
       const k = localStorage.key(i);
@@ -31,6 +63,8 @@ export function getSynchronousAuthUserId(): string | null {
           const parsed = JSON.parse(item);
           const userId = parsed?.user?.id;
           if (userId && typeof userId === 'string') {
+            lastCachedTokenKey = k;
+            cachedAuthUserId = userId;
             return userId;
           }
         }
@@ -40,6 +74,12 @@ export function getSynchronousAuthUserId(): string | null {
     // Ignore parse errors
   }
   return null;
+}
+
+/** Reset in-memory cached user ID (useful on logout / testing) */
+export function clearSynchronousAuthUserIdCache(): void {
+  cachedAuthUserId = null;
+  lastCachedTokenKey = null;
 }
 
 export function createScopedStorage<T>(

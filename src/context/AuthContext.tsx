@@ -601,13 +601,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       setSession(session);
       setUser(session?.user ?? null);
+      setLoading(false);
 
       if (session?.user) {
-        await syncSupabaseProfile(session);
+        syncSupabaseProfile(session).catch((err) => {
+          console.warn('Background profile sync warning:', err);
+        });
       } else if (!isDemo) {
         setProfile(DEFAULT_PROFILE);
       }
-      setLoading(false);
     });
 
     return () => {

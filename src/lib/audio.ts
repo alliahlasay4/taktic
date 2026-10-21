@@ -8,6 +8,11 @@ interface ActiveSoundSession {
   cleanup: () => void;
 }
 
+// Module-level AudioBuffer cache to prevent allocating and calculating 192,000 noise samples synchronously on every click
+let cachedRainPinkNoiseBuffer: AudioBuffer | null = null;
+let cachedOceanNoiseBuffer: AudioBuffer | null = null;
+let cachedCafeMurmurBuffer: AudioBuffer | null = null;
+
 class SoundEngine {
   private ctx: AudioContext | null = null;
   private masterGain: GainNode | null = null;
@@ -300,26 +305,29 @@ class SoundEngine {
 
   // 1. Gentle Rain (Layered Pink Noise + Random Droplet Pings)
   private createRainSound(ctx: AudioContext, output: GainNode, sessionId: number): () => void {
-    const bufferSize = ctx.sampleRate * 4;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
+    if (!cachedRainPinkNoiseBuffer || cachedRainPinkNoiseBuffer.sampleRate !== ctx.sampleRate) {
+      const bufferSize = ctx.sampleRate * 4;
+      const buf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
 
-    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
-    for (let i = 0; i < bufferSize; i++) {
-      const white = Math.random() * 2 - 1;
-      b0 = 0.99886 * b0 + white * 0.0555179;
-      b1 = 0.99332 * b1 + white * 0.0750759;
-      b2 = 0.969 * b2 + white * 0.153852;
-      b3 = 0.8665 * b3 + white * 0.3104856;
-      b4 = 0.55 * b4 + white * 0.5329522;
-      b5 = -0.7616 * b5 - white * 0.016898;
-      data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
-      data[i] *= 0.09;
-      b6 = white * 0.115926;
+      let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0;
+      for (let i = 0; i < bufferSize; i++) {
+        const white = Math.random() * 2 - 1;
+        b0 = 0.99886 * b0 + white * 0.0555179;
+        b1 = 0.99332 * b1 + white * 0.0750759;
+        b2 = 0.969 * b2 + white * 0.153852;
+        b3 = 0.8665 * b3 + white * 0.3104856;
+        b4 = 0.55 * b4 + white * 0.5329522;
+        b5 = -0.7616 * b5 - white * 0.016898;
+        data[i] = b0 + b1 + b2 + b3 + b4 + b5 + b6 + white * 0.5362;
+        data[i] *= 0.09;
+        b6 = white * 0.115926;
+      }
+      cachedRainPinkNoiseBuffer = buf;
     }
 
     const rainBed = ctx.createBufferSource();
-    rainBed.buffer = buffer;
+    rainBed.buffer = cachedRainPinkNoiseBuffer;
     rainBed.loop = true;
 
     const filter = ctx.createBiquadFilter();
@@ -373,16 +381,19 @@ class SoundEngine {
 
   // 2. Ocean Waves (Dynamic Low-Frequency Swell + Surf Wash)
   private createOceanSound(ctx: AudioContext, output: GainNode, _sessionId: number): () => void {
-    const bufferSize = ctx.sampleRate * 4;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
+    if (!cachedOceanNoiseBuffer || cachedOceanNoiseBuffer.sampleRate !== ctx.sampleRate) {
+      const bufferSize = ctx.sampleRate * 4;
+      const buf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
 
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * 0.18;
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.18;
+      }
+      cachedOceanNoiseBuffer = buf;
     }
 
     const waveSource = ctx.createBufferSource();
-    waveSource.buffer = buffer;
+    waveSource.buffer = cachedOceanNoiseBuffer;
     waveSource.loop = true;
 
     const waveFilter = ctx.createBiquadFilter();
@@ -527,16 +538,19 @@ class SoundEngine {
 
   // 4. Coffee Shop Ambience (Room Tone Murmur + Soft Cup Clinks)
   private createCafeSound(ctx: AudioContext, output: GainNode, sessionId: number): () => void {
-    const bufferSize = ctx.sampleRate * 3;
-    const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
-    const data = buffer.getChannelData(0);
+    if (!cachedCafeMurmurBuffer || cachedCafeMurmurBuffer.sampleRate !== ctx.sampleRate) {
+      const bufferSize = ctx.sampleRate * 3;
+      const buf = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+      const data = buf.getChannelData(0);
 
-    for (let i = 0; i < bufferSize; i++) {
-      data[i] = (Math.random() * 2 - 1) * 0.12;
+      for (let i = 0; i < bufferSize; i++) {
+        data[i] = (Math.random() * 2 - 1) * 0.12;
+      }
+      cachedCafeMurmurBuffer = buf;
     }
 
     const murmur = ctx.createBufferSource();
-    murmur.buffer = buffer;
+    murmur.buffer = cachedCafeMurmurBuffer;
     murmur.loop = true;
 
     const murmurFilter = ctx.createBiquadFilter();

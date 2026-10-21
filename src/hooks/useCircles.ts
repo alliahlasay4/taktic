@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { CircleFeedPost, CircleMember, CircleInvite, IncomingCircleInvite } from '../types';
 import { useAuth } from '../context/AuthContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
@@ -81,6 +81,7 @@ export function useCircles() {
 
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const lastFetchTimeRef = useRef<number>(0);
 
   const userName = profile?.fullName || user?.user_metadata?.full_name || user?.email?.split('@')[0] || 'Member';
   const userAvatar =
@@ -409,7 +410,12 @@ export function useCircles() {
     let matchedProfile: any = null;
     if (isRealUser) {
       try {
-        const { data: profs } = await supabase.from('profiles').select('*');
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, username, full_name, avatar_url, streak, current_streak, privacy_settings, is_incognito')
+          .or(`username.ilike.%${cleanLower}%,full_name.ilike.%${cleanLower}%,email.ilike.%${cleanLower}%`)
+          .limit(10);
+
         if (profs && profs.length > 0) {
           matchedProfile = profs.find((p: any) => {
             const fn = (p.full_name || p.fullName || '').trim().toLowerCase();
@@ -422,7 +428,7 @@ export function useCircles() {
               em === cleanLower ||
               em.split('@')[0] === cleanLower
             );
-          });
+          }) || profs[0];
         }
       } catch (e) {
         console.warn('Error matching profile in addMemberByName:', e);
@@ -650,42 +656,25 @@ export function useCircles() {
             console.warn('Could not read local profile cache:', e);
           }
 
-          // 1. Try fetching partner privacy settings via SECURITY DEFINER RPC (bypasses RLS)
-          try {
-            const { data: partnersPrivacy, error: rpcErr } = await supabase.rpc('get_circle_partners_privacy');
-            if (!rpcErr && Array.isArray(partnersPrivacy) && partnersPrivacy.length > 0) {
-              addProfilesToMap(partnersPrivacy);
-            }
-          } catch (rpcErr) {
-            console.warn('RPC get_circle_partners_privacy not available, using table queries:', rpcErr);
-          }
+          // Parallelize partner privacy RPC and targeted profile queries for partner IDs
+          // Eliminates unbounded full-table profiles scan ('select *') and reduces network waterfall
+          const allRelevantUserIds = Array.from(new Set<string>(partnerUserIds.concat(user?.id ? [user.id] : [])));
 
-          // 2. Fetch all profiles from Supabase to guarantee fresh privacy settings and incognito status
-          const { data: allProfiles, error: allProfilesErr } = await supabase
-            .from('profiles')
-            .select('*');
+          const [partnersPrivacyRes, targetProfilesRes] = await Promise.all([
+            Promise.resolve(supabase.rpc('get_circle_partners_privacy')).catch((err: any) => ({ data: null, error: err })),
+            allRelevantUserIds.length > 0
+              ? supabase
+                  .from('profiles')
+                  .select('id, username, full_name, avatar_url, bio, streak, current_streak, privacy_settings, is_incognito, status_message')
+                  .in('id', allRelevantUserIds)
+              : Promise.resolve({ data: [], error: null }),
+          ]);
 
-          if (!allProfilesErr && allProfiles && allProfiles.length > 0) {
-            addProfilesToMap(allProfiles);
+          if (partnersPrivacyRes && !partnersPrivacyRes.error && Array.isArray(partnersPrivacyRes.data) && partnersPrivacyRes.data.length > 0) {
+            addProfilesToMap(partnersPrivacyRes.data);
           }
-
-          // 3. Always attempt targeted query for partner IDs in case wildcard select is filtered by RLS
-          const allRelevantUserIds = new Set<string>(partnerUserIds);
-          if (user?.id) {
-            allRelevantUserIds.add(user.id);
-          }
-          if (allRelevantUserIds.size > 0) {
-            try {
-              const { data: idProfiles } = await supabase
-                .from('profiles')
-                .select('*')
-                .in('id', Array.from(allRelevantUserIds));
-              if (idProfiles && idProfiles.length > 0) {
-                addProfilesToMap(idProfiles);
-              }
-            } catch (targetErr) {
-              console.warn('Targeted partner profile fetch warning:', targetErr);
-            }
+          if (targetProfilesRes && !targetProfilesRes.error && Array.isArray(targetProfilesRes.data) && targetProfilesRes.data.length > 0) {
+            addProfilesToMap(targetProfilesRes.data);
           }
         } catch (e) {
           console.warn('Could not fetch partner profiles for circle members:', e);
@@ -901,6 +890,7 @@ export function useCircles() {
     } catch (err: any) {
       console.error('Error fetching circles data from Supabase:', err);
     } finally {
+      lastFetchTimeRef.current = Date.now();
       setLoading(false);
     }
   }, [user, isDemo, userName]);
@@ -1081,11 +1071,12 @@ export function useCircles() {
         )
         .subscribe();
 
+      // Synchronize profile updates for the current user (partner privacy broadcasts handle cross-partner live status)
       const profilesChannel = supabase
-        .channel('public:profiles_realtime_sync')
+        .channel(`public:profiles_realtime_sync:${user.id}`)
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'profiles' },
+          { event: '*', schema: 'public', table: 'profiles', filter: `id=eq.${user.id}` },
           () => {
             fetchCirclesData();
           }
@@ -1094,12 +1085,19 @@ export function useCircles() {
 
       const handleVisibilityOrFocus = () => {
         if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
-          fetchCirclesData();
+          // Throttle refetches: only re-fetch if at least 30 seconds have elapsed since last fetch
+          const elapsed = Date.now() - lastFetchTimeRef.current;
+          if (elapsed >= 30_000) {
+            fetchCirclesData();
+          }
         }
       };
       const handleStorageChange = (e: StorageEvent) => {
         if (e.key && (e.key.includes('profile') || e.key.includes('circle'))) {
-          fetchCirclesData();
+          const elapsed = Date.now() - lastFetchTimeRef.current;
+          if (elapsed >= 5_000) {
+            fetchCirclesData();
+          }
         }
       };
       window.addEventListener('focus', handleVisibilityOrFocus);

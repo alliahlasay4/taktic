@@ -246,6 +246,10 @@ export const fetchProfileStatsFromSupabase = async (userId: string): Promise<Rea
   }
 
   try {
+    const oneYearAgo = new Date();
+    oneYearAgo.setFullYear(oneYearAgo.getFullYear() - 1);
+    const oneYearAgoIso = oneYearAgo.toISOString();
+
     // 1, 2, & 3. Fetch focus sessions, habit logs, and completed tasks in parallel
     const [
       { data: focusSessions },
@@ -255,7 +259,8 @@ export const fetchProfileStatsFromSupabase = async (userId: string): Promise<Rea
       supabase
         .from('focus_sessions')
         .select('duration_minutes, completed_at')
-        .eq('user_id', userId),
+        .eq('user_id', userId)
+        .gte('completed_at', oneYearAgoIso),
       supabase
         .from('habit_logs')
         .select('completed_date', { count: 'exact' })

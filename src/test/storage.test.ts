@@ -1,8 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { createScopedStorage } from '../lib/storage';
+import { createScopedStorage, clearSynchronousAuthUserIdCache } from '../lib/storage';
 
 describe('createScopedStorage (Multi-tenant & Demo Storage Isolation)', () => {
   beforeEach(() => {
+    clearSynchronousAuthUserIdCache();
     window.localStorage.clear();
     window.sessionStorage.clear();
   });
