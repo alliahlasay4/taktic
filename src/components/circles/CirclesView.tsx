@@ -34,6 +34,7 @@ import { InvitePartnerModal } from './InvitePartnerModal';
 import { RemovePartnerModal } from './RemovePartnerModal';
 import { CirclesOnboardingGuide } from './CirclesOnboardingGuide';
 import { useAuth } from '../../context/AuthContext';
+import { getSynchronousAuthUserId } from '../../lib/storage';
 
 interface CirclesViewProps {
   members: CircleMember[];
@@ -110,27 +111,46 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
     };
   }, [isActionsMenuOpen]);
 
-  const { isDemo } = useAuth();
+  const { isDemo, user } = useAuth();
+  const effectiveUserId = user?.id || (!isDemo ? getSynchronousAuthUserId() : null);
 
-  // First-time onboarding guide state (prompts demo accounts, or first-time regular users)
+  // First-time onboarding guide state: only show once on first login, never re-prompt next time they log in or click circles tab
   const [isOnboardingGuideOpen, setIsOnboardingGuideOpen] = useState<boolean>(() => {
-    if (isDemo) return true;
-    return localStorage.getItem('taktic_circles_onboarding_completed') !== 'true';
+    const userKey = effectiveUserId ? `taktic_circles_onboarding_completed_${effectiveUserId}` : null;
+    const isCompletedForUser = userKey ? localStorage.getItem(userKey) === 'true' : false;
+    const isCompletedGlobally = localStorage.getItem('taktic_circles_onboarding_completed') === 'true';
+
+    return !isCompletedForUser && !isCompletedGlobally;
   });
   const [showCelebrationToast, setShowCelebrationToast] = useState<boolean>(false);
   const [highlightInviteButton, setHighlightInviteButton] = useState<boolean>(false);
 
-  // When switching to demo account or visiting circles as demo user, ensure guide is prompted
+  // If user state becomes available and shows tour was already completed, ensure it does not stay open
   useEffect(() => {
-    if (isDemo) {
-      setIsOnboardingGuideOpen(true);
+    const userKey = effectiveUserId ? `taktic_circles_onboarding_completed_${effectiveUserId}` : null;
+    const isCompletedForUser = userKey ? localStorage.getItem(userKey) === 'true' : false;
+    const isCompletedGlobally = localStorage.getItem('taktic_circles_onboarding_completed') === 'true';
+
+    if (isCompletedForUser || isCompletedGlobally) {
+      setIsOnboardingGuideOpen(false);
     }
-  }, [isDemo]);
+  }, [effectiveUserId]);
+
+  const markTourDismissed = () => {
+    localStorage.setItem('taktic_circles_onboarding_completed', 'true');
+    const uid = effectiveUserId || user?.id;
+    if (uid) {
+      localStorage.setItem(`taktic_circles_onboarding_completed_${uid}`, 'true');
+    }
+  };
+
+  const handleCloseTour = () => {
+    markTourDismissed();
+    setIsOnboardingGuideOpen(false);
+  };
 
   const handleCompleteTour = () => {
-    if (!isDemo) {
-      localStorage.setItem('taktic_circles_onboarding_completed', 'true');
-    }
+    markTourDismissed();
     setIsOnboardingGuideOpen(false);
     setShowCelebrationToast(true);
     setHighlightInviteButton(true);
@@ -976,7 +996,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
       {/* Interactive Onboarding Guide & Feature Tour */}
       <CirclesOnboardingGuide
         isOpen={isOnboardingGuideOpen}
-        onClose={() => setIsOnboardingGuideOpen(false)}
+        onClose={handleCloseTour}
         onComplete={handleCompleteTour}
         setActiveTab={setActiveTab}
       />

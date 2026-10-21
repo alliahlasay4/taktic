@@ -71,6 +71,8 @@ describe('AuthContext Link & Token Helpers', () => {
     localStorage.setItem(`taktic_user_profile_${userId}`, JSON.stringify({ fullName: 'Alice' }));
     localStorage.setItem('taktic_dark_mode', 'true');
     localStorage.setItem('taktic_ambient_volume', '0.5');
+    localStorage.setItem('taktic_circles_onboarding_completed', 'true');
+    localStorage.setItem(`taktic_circles_onboarding_completed_${userId}`, 'true');
 
     clearUserScopedStorage(userId);
 
@@ -79,6 +81,8 @@ describe('AuthContext Link & Token Helpers', () => {
     expect(localStorage.getItem(`taktic_user_profile_${userId}`)).toBeNull();
     expect(localStorage.getItem('taktic_dark_mode')).toBe('true');
     expect(localStorage.getItem('taktic_ambient_volume')).toBe('0.5');
+    expect(localStorage.getItem('taktic_circles_onboarding_completed')).toBe('true');
+    expect(localStorage.getItem(`taktic_circles_onboarding_completed_${userId}`)).toBe('true');
   });
 
   it('recognizes reset-password and update-password paths as auth routes', async () => {

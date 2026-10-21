@@ -218,6 +218,7 @@ export const clearUserScopedStorage = (targetUserId?: string) => {
       'taktic_ambient_volume',
       'taktic_notifications_enabled',
       'taktic_onboarding_completed',
+      'taktic_circles_onboarding_completed',
       'taktic_stealth_status_map',
     ]);
 
@@ -226,7 +227,7 @@ export const clearUserScopedStorage = (targetUserId?: string) => {
       const key = localStorage.key(i);
       if (!key) continue;
 
-      if (preservedKeys.has(key)) {
+      if (preservedKeys.has(key) || key.startsWith('taktic_circles_onboarding_completed_') || key.startsWith('taktic_onboarding_completed_')) {
         continue;
       }
 
