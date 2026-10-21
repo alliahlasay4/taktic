@@ -112,9 +112,11 @@ export const isEmailConfirmationLink = (): boolean => {
     hash.includes('type=signup') ||
     hash.includes('type=email_change') ||
     hash.includes('type=invite') ||
+    hash.includes('type=magiclink') ||
     search.includes('type=signup') ||
     search.includes('type=email_change') ||
-    search.includes('type=invite')
+    search.includes('type=invite') ||
+    search.includes('type=magiclink')
   );
 };
 
@@ -463,16 +465,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             }
           }
 
+          const urlParams = new URLSearchParams(search);
+          const circleInvite = urlParams.get('circle_invite');
+          const inviterParam = urlParams.get('inviter');
+          const isInviteFlow = Boolean(circleInvite || hash.includes('type=invite'));
+
           const notice = {
             email: confirmedEmail,
-            message: 'Your email has been verified! Please sign in with your password to continue.',
+            message: isInviteFlow
+              ? 'Please sign in with your password to accept your Circle Partner invitation.'
+              : 'Your email has been verified! Please sign in with your password to continue.',
           };
 
           // Save confirmation notice into sessionStorage for AuthPage
           sessionStorage.setItem('taktic_auth_confirmation_notice', JSON.stringify(notice));
 
-          // Clean URL to /login and broadcast events to open AuthPage and pre-fill form
-          window.history.replaceState(null, '', '/login');
+          // Clean URL to /login (preserving circle_invite params) and broadcast events to open AuthPage
+          const loginUrl = new URL(window.location.origin + '/login');
+          if (circleInvite) loginUrl.searchParams.set('circle_invite', circleInvite);
+          if (inviterParam) loginUrl.searchParams.set('inviter', inviterParam);
+          if (confirmedEmail) loginUrl.searchParams.set('email', confirmedEmail);
+
+          window.history.replaceState(null, '', loginUrl.pathname + loginUrl.search);
           window.dispatchEvent(new CustomEvent('taktic_auth_notice', { detail: notice }));
           window.dispatchEvent(new Event('popstate'));
 
