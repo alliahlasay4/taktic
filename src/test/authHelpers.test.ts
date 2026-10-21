@@ -103,4 +103,24 @@ describe('AuthContext Link & Token Helpers', () => {
     expect(DEMO_PROFILE.username).toBe('@reviewer');
     expect(DEMO_PROFILE.id).toBe('demo-user-123');
   });
+
+  it('detects circle invite mismatch and incorporates into hasIncomingAuthLink', async () => {
+    const { isCircleInviteMismatchLink, hasIncomingAuthLink } = await import('../context/AuthContext');
+
+    // Scenario: user is logged in as inviter@example.com
+    localStorage.setItem(
+      'sb-test-auth-token',
+      JSON.stringify({ user: { email: 'inviter@example.com' } })
+    );
+
+    // Link arrives for invitee@example.com
+    window.history.replaceState(null, '', '/login?circle_invite=tok123&email=invitee%40example.com');
+    expect(isCircleInviteMismatchLink()).toBe(true);
+    expect(hasIncomingAuthLink()).toBe(true);
+
+    // Link arrives matching the logged-in email
+    window.history.replaceState(null, '', '/login?circle_invite=tok123&email=inviter%40example.com');
+    expect(isCircleInviteMismatchLink()).toBe(false);
+  });
 });
+

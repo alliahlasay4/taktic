@@ -127,6 +127,32 @@ export const isPasswordRecoveryLink = (): boolean => {
   return hash.includes('type=recovery') || search.includes('type=recovery');
 };
 
+export const isCircleInviteMismatchLink = (): boolean => {
+  if (typeof window === 'undefined') return false;
+  const searchParams = new URLSearchParams(window.location.search);
+  const circleInvite = searchParams.get('circle_invite');
+  const emailParam = searchParams.get('email');
+  if (!circleInvite || !emailParam) return false;
+
+  // Retrieve current logged-in user email synchronously from local storage if present
+  try {
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) {
+        const item = localStorage.getItem(k);
+        if (item) {
+          const parsed = JSON.parse(item);
+          const currentEmail = parsed?.user?.email;
+          if (currentEmail && typeof currentEmail === 'string') {
+            return emailParam.trim().toLowerCase() !== currentEmail.trim().toLowerCase();
+          }
+        }
+      }
+    }
+  } catch {}
+  return false;
+};
+
 export const hasIncomingAuthLink = (): boolean => {
   if (typeof window === 'undefined') return false;
   const hash = window.location.hash.toLowerCase();
@@ -138,7 +164,8 @@ export const hasIncomingAuthLink = (): boolean => {
     hash.includes('type=invite') ||
     hash.includes('type=magiclink') ||
     hash.includes('type=email_change') ||
-    search.includes('code=')
+    search.includes('code=') ||
+    isCircleInviteMismatchLink()
   );
 };
 
@@ -438,7 +465,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
         // Case A: Email Confirmation Link (User clicked verification link in signup email)
         if (isEmailConfirmationLink()) {
-          // Cleanly sign out previous session before confirming new verification
+          // Cleanly purge previous user data and sign out prior session so no account glimpse occurs
+          clearUserScopedStorage();
+          setUser(null);
+          setSession(null);
+          setProfile(DEFAULT_PROFILE);
+
           if (isSupabaseConfigured) {
             try {
               await supabase.auth.signOut({ scope: 'local' });
@@ -586,6 +618,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       // Get initial session
       supabase.auth.getSession().then(({ data: { session } }) => {
         if (isDemo || localStorage.getItem('taktic_demo_mode') === 'true') return;
+        if (isEmailConfirmationLink() || isCircleInviteMismatchLink()) return;
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
@@ -601,8 +634,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Listen for auth state changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      // If we are currently handling an email confirmation redirect, do not auto-login
-      if (isEmailConfirmationLink()) return;
+      // If we are currently handling an email confirmation redirect or mismatched circle invite, do not auto-login
+      if (isEmailConfirmationLink() || isCircleInviteMismatchLink()) return;
 
       // If user switched to demo mode, do not allow Supabase empty session to clear demo user
       if (isDemo || localStorage.getItem('taktic_demo_mode') === 'true') return;

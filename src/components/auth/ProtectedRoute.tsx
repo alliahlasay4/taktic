@@ -16,13 +16,35 @@ const LandingPage = lazy(() => import('../landing/LandingPage').then((m) => ({ d
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const { user, loading, isPasswordRecovery, signOut } = useAuth();
 
+  // Helper to synchronously detect invite account mismatch
+  const getInitialInviteMismatch = () => {
+    if (typeof window === 'undefined') return null;
+    const searchParams = new URLSearchParams(window.location.search);
+    const circleInvite = searchParams.get('circle_invite');
+    const emailParam = searchParams.get('email');
+    const inviterParam = searchParams.get('inviter');
+    const currentEmail = user?.email || getSynchronousAuthUserEmail();
+
+    if (circleInvite && emailParam && currentEmail) {
+      if (emailParam.trim().toLowerCase() !== currentEmail.trim().toLowerCase()) {
+        return {
+          currentUserEmail: currentEmail,
+          invitedEmail: emailParam.trim().toLowerCase(),
+          inviterName: inviterParam ? decodeURIComponent(inviterParam) : 'Circle Partner',
+          token: circleInvite,
+        };
+      }
+    }
+    return null;
+  };
+
   // State to hold invite mismatch details if logged-in user email doesn't match invite email
   const [inviteMismatch, setInviteMismatch] = useState<{
     currentUserEmail: string;
     invitedEmail: string;
     inviterName: string;
     token: string;
-  } | null>(null);
+  } | null>(getInitialInviteMismatch);
 
   const getAuthStateFromLocation = () => {
     if (typeof window === 'undefined') return { open: false, signUp: false };
@@ -43,8 +65,11 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
         (user?.id && inviterIdParam && inviterIdParam === user.id) ||
         (currentEmail && inviterParam && inviterParam.toLowerCase() === currentEmail.toLowerCase())
       );
+      const isMismatch = Boolean(
+        emailParam && currentEmail && emailParam.trim().toLowerCase() !== currentEmail.trim().toLowerCase()
+      );
 
-      if (!isSelf) {
+      if (!isSelf && !isMismatch) {
         const inviteData = JSON.stringify({
           token: circleInvite,
           inviter: inviterParam ? decodeURIComponent(inviterParam) : 'Circle Partner',
@@ -273,53 +298,58 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   }
 
+  // If there is an invite account mismatch, do NOT render the authenticated children (the inviter's dashboard)
+  // to avoid exposing any glimpse of the inviter's account data to the wrong user.
+  if (inviteMismatch) {
+    return (
+      <InviteAccountMismatchModal
+        currentUserEmail={inviteMismatch.currentUserEmail}
+        invitedEmail={inviteMismatch.invitedEmail}
+        inviterName={inviteMismatch.inviterName}
+        onSwitchAccount={async () => {
+          const preservedInvite = {
+            token: inviteMismatch.token,
+            inviter: inviteMismatch.inviterName,
+            email: inviteMismatch.invitedEmail,
+            createdAt: new Date().toISOString(),
+          };
+          localStorage.setItem('taktic_pending_circle_invite', JSON.stringify(preservedInvite));
+          sessionStorage.setItem('taktic_pending_circle_invite', JSON.stringify(preservedInvite));
+          
+          // Sign out the current user session
+          await signOut();
+          setInviteMismatch(null);
+          setDefaultSignUp(true);
+          setIsAuthOpen(true);
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.origin + '/signup');
+            url.searchParams.set('circle_invite', preservedInvite.token);
+            url.searchParams.set('inviter', preservedInvite.inviter);
+            url.searchParams.set('email', preservedInvite.email);
+            window.history.pushState(null, '', url.pathname + url.search);
+          }
+        }}
+        onContinueCurrentAccount={() => {
+          setInviteMismatch(null);
+          localStorage.removeItem('taktic_pending_circle_invite');
+          sessionStorage.removeItem('taktic_pending_circle_invite');
+          if (typeof window !== 'undefined') {
+            const url = new URL(window.location.href);
+            url.searchParams.delete('circle_invite');
+            url.searchParams.delete('inviter');
+            url.searchParams.delete('inviter_id');
+            url.searchParams.delete('email');
+            url.searchParams.delete('name');
+            window.history.replaceState(null, '', '/focushub');
+          }
+        }}
+      />
+    );
+  }
+
   return (
     <>
       {children}
-      {inviteMismatch && (
-        <InviteAccountMismatchModal
-          currentUserEmail={inviteMismatch.currentUserEmail}
-          invitedEmail={inviteMismatch.invitedEmail}
-          inviterName={inviteMismatch.inviterName}
-          onSwitchAccount={async () => {
-            const preservedInvite = {
-              token: inviteMismatch.token,
-              inviter: inviteMismatch.inviterName,
-              email: inviteMismatch.invitedEmail,
-              createdAt: new Date().toISOString(),
-            };
-            localStorage.setItem('taktic_pending_circle_invite', JSON.stringify(preservedInvite));
-            sessionStorage.setItem('taktic_pending_circle_invite', JSON.stringify(preservedInvite));
-            
-            // Sign out the current user session
-            await signOut();
-            setInviteMismatch(null);
-            setDefaultSignUp(true);
-            setIsAuthOpen(true);
-            if (typeof window !== 'undefined') {
-              const url = new URL(window.location.origin + '/signup');
-              url.searchParams.set('circle_invite', preservedInvite.token);
-              url.searchParams.set('inviter', preservedInvite.inviter);
-              url.searchParams.set('email', preservedInvite.email);
-              window.history.pushState(null, '', url.pathname + url.search);
-            }
-          }}
-          onContinueCurrentAccount={() => {
-            setInviteMismatch(null);
-            localStorage.removeItem('taktic_pending_circle_invite');
-            sessionStorage.removeItem('taktic_pending_circle_invite');
-            if (typeof window !== 'undefined') {
-              const url = new URL(window.location.href);
-              url.searchParams.delete('circle_invite');
-              url.searchParams.delete('inviter');
-              url.searchParams.delete('inviter_id');
-              url.searchParams.delete('email');
-              url.searchParams.delete('name');
-              window.history.replaceState(null, '', '/focushub');
-            }
-          }}
-        />
-      )}
     </>
   );
 };

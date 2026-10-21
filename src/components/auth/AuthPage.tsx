@@ -296,8 +296,17 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
     const formatAuthError = (err: any): string => {
       const msg = err?.message || err || '';
-      if (typeof msg === 'string' && msg.toLowerCase().includes('error sending confirmation email')) {
-        return 'Supabase email rate limit reached (free tier limit: 3-4 emails/hour). In your Supabase Dashboard, go to Authentication → Providers → Email and turn OFF "Confirm email" (or set up custom SMTP).';
+      if (typeof msg === 'string') {
+        const lower = msg.toLowerCase();
+        if (lower.includes('error sending confirmation email')) {
+          return 'Supabase email rate limit reached (free tier limit: 3-4 emails/hour). In your Supabase Dashboard, go to Authentication → Providers → Email and turn OFF "Confirm email" (or set up custom SMTP).';
+        }
+        if (lower.includes('database error saving new user')) {
+          return 'This account may already exist or there is a database profile conflict. Try switching to "Sign In" with your password, or run the profiles table trigger fix in Supabase.';
+        }
+        if (lower.includes('already registered') || lower.includes('user already exists')) {
+          return 'An account with this email already exists. Please switch to "Sign In" above to log into your account.';
+        }
       }
       return msg || 'An unexpected authentication error occurred.';
     };
@@ -308,6 +317,10 @@ export const AuthPage: React.FC<AuthPageProps> = ({
         const { error } = await signUpWithEmail(email.trim(), password, fullName.trim());
         if (error) {
           setErrorMsg(formatAuthError(error));
+          // If error suggests user exists, prompt them to switch to sign-in
+          if (error.message?.toLowerCase().includes('database error saving new user') || error.message?.toLowerCase().includes('already')) {
+            setIsSignUp(false);
+          }
         } else {
           const { error: loginErr } = await signInWithEmail(email.trim(), password);
           if (loginErr) {
