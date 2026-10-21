@@ -48,7 +48,20 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [isSignUp, setIsSignUp] = useState(defaultSignUp);
   const [isResetPassword, setIsResetPassword] = useState(false);
 
-  const [email, setEmail] = useState<string>('');
+  const [email, setEmail] = useState<string>(() => {
+    if (typeof window === 'undefined') return '';
+    const urlParams = new URLSearchParams(window.location.search);
+    const urlEmail = urlParams.get('email');
+    if (urlEmail) return decodeURIComponent(urlEmail);
+    const saved = sessionStorage.getItem('taktic_pending_circle_invite') || localStorage.getItem('taktic_pending_circle_invite');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (parsed?.email) return parsed.email;
+      } catch {}
+    }
+    return '';
+  });
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [fullName, setFullName] = useState('');
@@ -58,7 +71,19 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
 
   const resetFormFields = () => {
-    setEmail('');
+    // Keep invited email if available
+    let initialEmail = '';
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      initialEmail = urlParams.get('email') || '';
+      if (!initialEmail) {
+        const saved = sessionStorage.getItem('taktic_pending_circle_invite') || localStorage.getItem('taktic_pending_circle_invite');
+        if (saved) {
+          try { initialEmail = JSON.parse(saved)?.email || ''; } catch {}
+        }
+      }
+    }
+    setEmail(initialEmail);
     setPassword('');
     setConfirmPassword('');
     setFullName('');

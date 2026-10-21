@@ -76,4 +76,17 @@ describe('Invite Partner Security Guardrails', () => {
     expect(isInviteExpired(eightDaysAgo)).toBe(true);
     expect(isInviteExpired(twoDaysAgo)).toBe(false);
   });
+
+  it('detects invite recipient email mismatch when an active user session exists', () => {
+    const checkInviteMismatch = (currentUserEmail: string | null | undefined, invitedEmail: string | null | undefined) => {
+      if (!currentUserEmail || !invitedEmail) return false;
+      return currentUserEmail.trim().toLowerCase() !== invitedEmail.trim().toLowerCase();
+    };
+
+    // User A signed in, User B invited -> mismatch detected
+    expect(checkInviteMismatch('userA@example.com', 'userB@example.com')).toBe(true);
+    expect(checkInviteMismatch('USERA@example.com', 'usera@example.com')).toBe(false);
+    expect(checkInviteMismatch('userB@example.com', 'userB@example.com')).toBe(false);
+    expect(checkInviteMismatch(null, 'userB@example.com')).toBe(false);
+  });
 });

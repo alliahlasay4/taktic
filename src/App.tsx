@@ -226,17 +226,28 @@ function MainLayout() {
       } catch {}
     }
 
-    // Check if this invite is from oneself
+    // Check if this invite is from oneself or addressed to someone else
     const urlInviterId = urlParams.get('inviter_id');
     const urlEmail = urlParams.get('email');
+    const savedEmail = (() => {
+      if (!savedRaw) return null;
+      try { return JSON.parse(savedRaw)?.email; } catch { return null; }
+    })();
+    const targetEmail = urlEmail || savedEmail;
+
+    // Self-invite check: current logged in user created this invite
     const isSelfInvite = Boolean(
       (candidate && invites.some((inv) => inv.inviteToken === candidate?.token)) ||
       (user?.id && urlInviterId && urlInviterId === user.id) ||
-      (user?.email && urlEmail && urlEmail.toLowerCase() === user.email.toLowerCase()) ||
       (user?.id && candidate && currentUserName && candidate.inviter.toLowerCase() === currentUserName.toLowerCase())
     );
 
-    if (isSelfInvite) {
+    // Recipient mismatch check: invite is specifically for another email
+    const isRecipientMismatch = Boolean(
+      user?.email && targetEmail && targetEmail.trim().toLowerCase() !== user.email.trim().toLowerCase()
+    );
+
+    if (isSelfInvite || isRecipientMismatch) {
       localStorage.removeItem('taktic_pending_circle_invite');
       sessionStorage.removeItem('taktic_pending_circle_invite');
       if (typeof window !== 'undefined') {

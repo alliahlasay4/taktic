@@ -76,6 +76,44 @@ export function getSynchronousAuthUserId(): string | null {
   return null;
 }
 
+/**
+ * Synchronously retrieves the logged-in Supabase user email from localStorage
+ * before asynchronous auth resolution completes.
+ */
+export function getSynchronousAuthUserEmail(): string | null {
+  if (typeof window === 'undefined') return null;
+  try {
+    if (localStorage.getItem('taktic_demo_mode') === 'true') {
+      return null;
+    }
+    if (lastCachedTokenKey) {
+      const item = localStorage.getItem(lastCachedTokenKey);
+      if (item) {
+        const parsed = JSON.parse(item);
+        const email = parsed?.user?.email;
+        if (email && typeof email === 'string') return email;
+      }
+    }
+    for (let i = 0; i < localStorage.length; i++) {
+      const k = localStorage.key(i);
+      if (k && k.startsWith('sb-') && k.endsWith('-auth-token')) {
+        const item = localStorage.getItem(k);
+        if (item) {
+          const parsed = JSON.parse(item);
+          const email = parsed?.user?.email;
+          if (email && typeof email === 'string') {
+            lastCachedTokenKey = k;
+            return email;
+          }
+        }
+      }
+    }
+  } catch {
+    // Ignore parse errors
+  }
+  return null;
+}
+
 /** Reset in-memory cached user ID (useful on logout / testing) */
 export function clearSynchronousAuthUserIdCache(): void {
   cachedAuthUserId = null;

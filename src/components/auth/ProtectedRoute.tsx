@@ -7,13 +7,22 @@ import {
   normalizePath,
 } from '../../lib/routes';
 import { TakticLogo } from '../common/TakticLogo';
-import { getSynchronousAuthUserId } from '../../lib/storage';
+import { getSynchronousAuthUserId, getSynchronousAuthUserEmail } from '../../lib/storage';
+import { InviteAccountMismatchModal } from './InviteAccountMismatchModal';
 
 const AuthPage = lazy(() => import('./AuthPage').then((m) => ({ default: m.AuthPage })));
 const LandingPage = lazy(() => import('../landing/LandingPage').then((m) => ({ default: m.LandingPage })));
 
 export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, loading, isPasswordRecovery } = useAuth();
+  const { user, loading, isPasswordRecovery, signOut } = useAuth();
+
+  // State to hold invite mismatch details if logged-in user email doesn't match invite email
+  const [inviteMismatch, setInviteMismatch] = useState<{
+    currentUserEmail: string;
+    invitedEmail: string;
+    inviterName: string;
+    token: string;
+  } | null>(null);
 
   const getAuthStateFromLocation = () => {
     if (typeof window === 'undefined') return { open: false, signUp: false };
@@ -29,8 +38,11 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     if (circleInvite) {
       const inviterIdParam = searchParams.get('inviter_id');
       const emailParam = searchParams.get('email');
-      const isSelf = (user?.id && inviterIdParam && inviterIdParam === user.id) ||
-                     (user?.email && emailParam && emailParam.toLowerCase() === user.email.toLowerCase());
+      const currentEmail = user?.email || getSynchronousAuthUserEmail();
+      const isSelf = Boolean(
+        (user?.id && inviterIdParam && inviterIdParam === user.id) ||
+        (currentEmail && inviterParam && inviterParam.toLowerCase() === currentEmail.toLowerCase())
+      );
 
       if (!isSelf) {
         const inviteData = JSON.stringify({
@@ -99,10 +111,34 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     };
   }, [user]);
 
-  // When user is authenticated:
-  // Clean up any public/auth URLs (e.g. /login, /signup, /landing, #login) to the canonical app path
+  // Check for email mismatch on invite links when a user is already signed in
   useEffect(() => {
-    if (user && !isPasswordRecovery) {
+    if (typeof window === 'undefined') return;
+    const searchParams = new URLSearchParams(window.location.search);
+    const circleInvite = searchParams.get('circle_invite');
+    const emailParam = searchParams.get('email');
+    const inviterParam = searchParams.get('inviter');
+    const currentEmail = user?.email || getSynchronousAuthUserEmail();
+
+    if (user && circleInvite && emailParam && currentEmail) {
+      if (emailParam.trim().toLowerCase() !== currentEmail.trim().toLowerCase()) {
+        setInviteMismatch({
+          currentUserEmail: currentEmail,
+          invitedEmail: emailParam.trim().toLowerCase(),
+          inviterName: inviterParam ? decodeURIComponent(inviterParam) : 'Circle Partner',
+          token: circleInvite,
+        });
+        return;
+      }
+    }
+    setInviteMismatch(null);
+  }, [user]);
+
+  // When user is authenticated:
+  // Clean up any public/auth URLs (e.g. /login, /signup, /landing, #login) to the canonical app path,
+  // UNLESS there is an invite account mismatch requiring their attention!
+  useEffect(() => {
+    if (user && !isPasswordRecovery && !inviteMismatch) {
       setIsAuthOpen(false);
       prevUserRef.current = user;
       if (typeof window !== 'undefined') {
@@ -114,7 +150,7 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     } else if (!user) {
       prevUserRef.current = null;
     }
-  }, [user, isPasswordRecovery]);
+  }, [user, isPasswordRecovery, inviteMismatch]);
 
   // When user is NOT authenticated:
   // If they are on a protected tab (e.g. after signout or navigating directly to /focushub),
@@ -237,6 +273,54 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
     );
   }
 
-  return <>{children}</>;
+  return (
+    <>
+      {children}
+      {inviteMismatch && (
+        <InviteAccountMismatchModal
+          currentUserEmail={inviteMismatch.currentUserEmail}
+          invitedEmail={inviteMismatch.invitedEmail}
+          inviterName={inviteMismatch.inviterName}
+          onSwitchAccount={async () => {
+            const preservedInvite = {
+              token: inviteMismatch.token,
+              inviter: inviteMismatch.inviterName,
+              email: inviteMismatch.invitedEmail,
+              createdAt: new Date().toISOString(),
+            };
+            localStorage.setItem('taktic_pending_circle_invite', JSON.stringify(preservedInvite));
+            sessionStorage.setItem('taktic_pending_circle_invite', JSON.stringify(preservedInvite));
+            
+            // Sign out the current user session
+            await signOut();
+            setInviteMismatch(null);
+            setDefaultSignUp(true);
+            setIsAuthOpen(true);
+            if (typeof window !== 'undefined') {
+              const url = new URL(window.location.origin + '/signup');
+              url.searchParams.set('circle_invite', preservedInvite.token);
+              url.searchParams.set('inviter', preservedInvite.inviter);
+              url.searchParams.set('email', preservedInvite.email);
+              window.history.pushState(null, '', url.pathname + url.search);
+            }
+          }}
+          onContinueCurrentAccount={() => {
+            setInviteMismatch(null);
+            localStorage.removeItem('taktic_pending_circle_invite');
+            sessionStorage.removeItem('taktic_pending_circle_invite');
+            if (typeof window !== 'undefined') {
+              const url = new URL(window.location.href);
+              url.searchParams.delete('circle_invite');
+              url.searchParams.delete('inviter');
+              url.searchParams.delete('inviter_id');
+              url.searchParams.delete('email');
+              url.searchParams.delete('name');
+              window.history.replaceState(null, '', '/focushub');
+            }
+          }}
+        />
+      )}
+    </>
+  );
 };
 
