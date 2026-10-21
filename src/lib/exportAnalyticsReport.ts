@@ -43,7 +43,6 @@ export function generateAnalyticsReportHtml(params: AnalyticsReportParams): stri
     weeklyFocusData,
     timeOfDayData,
     qualityBreakdown,
-    categoryDistribution,
     smartInsights,
     recentSessions,
   } = params;
@@ -54,7 +53,7 @@ export function generateAnalyticsReportHtml(params: AnalyticsReportParams): stri
     <!DOCTYPE html>
     <html>
       <head>
-        <title>Taktic Executive Productivity Recap - ${horizonLabel}</title>
+        <title>Taktic Productivity Report - ${horizonLabel}</title>
         <meta charset="utf-8" />
         <style>
           * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -200,30 +199,30 @@ export function generateAnalyticsReportHtml(params: AnalyticsReportParams): stri
             <img src="${typeof window !== 'undefined' ? window.location.origin : ''}/logo.png" style="width: 32px; height: 32px; border-radius: 8px; object-fit: contain;" alt="Taktic Logo" />
             <div>
               <div class="logo-title">Taktic</div>
-              <p style="font-size: 11px; color: #8A7B73;">Productivity, Trends & Energy Telemetry Recap</p>
+              <p style="font-size: 11px; color: #8A7B73;">Activity & Trends Summary</p>
             </div>
           </div>
           <div class="badge">${horizonLabel} • ${new Date().toLocaleDateString(undefined, { dateStyle: 'medium' })}</div>
         </div>
 
-        <!-- Hero Score Card -->
+        <!-- Hero Consistency Card -->
         <div class="score-hero no-break">
           <div>
-            <div class="hero-tag">Productivity Rhythm Score</div>
+            <div class="hero-tag">Consistency Score</div>
             <div class="score-val">${rhythmScore} <span style="font-size: 16px; font-weight: 400; color: #8A7B73;">/ 100</span></div>
             <p style="font-size: 11.5px; color: #5A4E47;">
-              Rank: <strong>${rhythmRankTitle}</strong> • Active Streak: <strong>${userStreak} Days Unbroken</strong>
+              Status: <strong>${rhythmRankTitle}</strong> • Current Streak: <strong>${userStreak} ${userStreak === 1 ? 'Day' : 'Days'}</strong>
             </p>
           </div>
           <div style="text-align: right;">
             <div style="font-size: 12px; font-weight: 700; color: #2E5A35; margin-bottom: 2px;">
-              High Flow Ratio: ${qualityBreakdown[0]?.pct || 0}%
+              Steady / High Flow: ${qualityBreakdown[0]?.pct || 0}%
             </div>
             <div style="font-size: 11px; color: #6E5D53;">
-              Avg Sprint Length: <strong>${avgSessionDuration} mins</strong>
+              Avg Session: <strong>${avgSessionDuration} mins</strong>
             </div>
             <div style="font-size: 11px; color: #6E5D53; margin-top: 2px;">
-              Peak Day: <strong>${peakDay}</strong>
+              Most Active Day: <strong>${peakDay}</strong>
             </div>
           </div>
         </div>
@@ -232,43 +231,43 @@ export function generateAnalyticsReportHtml(params: AnalyticsReportParams): stri
         <div class="grid-kpis no-break">
           <div class="kpi-card">
             <div class="kpi-title">Total Focus Time</div>
-            <div class="kpi-val">${activeFocusMinutes}m</div>
-            <div class="kpi-sub">${(activeFocusMinutes / 60).toFixed(1)} hrs total</div>
+            <div class="kpi-val">${(activeFocusMinutes / 60).toFixed(1)}h</div>
+            <div class="kpi-sub">${activeFocusMinutes} mins total</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-title">Active Focus Days</div>
+            <div class="kpi-title">Active Days</div>
             <div class="kpi-val">${activeDaysCount}</div>
             <div class="kpi-sub">in ${horizonLabel}</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-title">Task Velocity</div>
+            <div class="kpi-title">Tasks Completed</div>
             <div class="kpi-val">${completionPct}%</div>
             <div class="kpi-sub">${tasksCompleted} of ${totalTasks} tasks</div>
           </div>
           <div class="kpi-card">
-            <div class="kpi-title">Streak Momentum</div>
+            <div class="kpi-title">Current Streak</div>
             <div class="kpi-val">${userStreak}d</div>
-            <div class="kpi-sub">Unbroken momentum</div>
+            <div class="kpi-sub">consecutive active days</div>
           </div>
         </div>
 
-        <!-- SECTION: FOCUS TRENDS & VELOCITY -->
+        <!-- SECTION: FOCUS OVERVIEW -->
         <div class="section-bar no-break">
-          <span>📈 Focus Trends & Velocity</span>
-          <span style="font-size: 10px; font-weight: 600; text-transform: none; color: #8A7B73;">Daily Duration & Peak Energy Windows</span>
+          <span>Focus Activity & Daily Rhythm</span>
+          <span style="font-size: 10px; font-weight: 600; text-transform: none; color: #8A7B73;">Daily Distribution & Time of Day</span>
         </div>
 
         <div class="two-col no-break">
-          <!-- Daily Focus Velocity Table -->
+          <!-- Daily Focus Table -->
           <div class="panel">
             <div class="panel-heading">
-              <span>Daily Focus Duration Breakdown</span>
+              <span>Daily Focus Time</span>
               <span style="font-size: 10px; color: #CFA052; font-weight: 700;">Peak: ${peakDay}</span>
             </div>
             <table>
               <thead>
                 <tr>
-                  <th>Day of Week</th>
+                  <th>Day</th>
                   <th>Minutes</th>
                   <th>Hours</th>
                   <th>Share</th>
@@ -291,10 +290,10 @@ export function generateAnalyticsReportHtml(params: AnalyticsReportParams): stri
             </table>
           </div>
 
-          <!-- Peak Focus Window (Chronobiological) -->
+          <!-- Time of Day -->
           <div class="panel">
             <div class="panel-heading">
-              <span>Peak Chronobiological Energy Windows</span>
+              <span>When You Work</span>
               <span style="font-size: 10px; color: #8A7B73;">${totalTimeOfDayMinutes}m total</span>
             </div>
             ${timeOfDayData
@@ -321,67 +320,12 @@ export function generateAnalyticsReportHtml(params: AnalyticsReportParams): stri
           </div>
         </div>
 
-        <!-- SECTION: HABIT CONSISTENCY & ENERGY QUALITY -->
+        ${
+          smartInsights.length > 0
+            ? `
+        <!-- SECTION: OBSERVATIONS -->
         <div class="section-bar no-break">
-          <span>⚡ Habit Consistency & Energy Quality</span>
-          <span style="font-size: 10px; font-weight: 600; text-transform: none; color: #8A7B73;">Flow Reflections & Category Allocation</span>
-        </div>
-
-        <div class="two-col no-break">
-          <!-- Flow Quality Breakdown -->
-          <div class="panel">
-            <div class="panel-heading">
-              <span>Session Flow & Energy Quality</span>
-              <span style="font-size: 10px; color: #8A7B73;">${qualityBreakdown.reduce((acc, q) => acc + q.count, 0)} sessions</span>
-            </div>
-            ${qualityBreakdown
-              .map((q) => {
-                const color = q.label === 'High Flow' ? '#6B8E6E' : q.label === 'Distracted' ? '#C87D87' : '#CFA052';
-                return `
-                  <div style="margin-bottom: 10px;">
-                    <div class="bar-row">
-                      <strong>${q.label}</strong>
-                      <span>${q.count} sessions (${q.pct}%)</span>
-                    </div>
-                    <div class="bar-bg">
-                      <div class="bar-fill" style="width: ${q.pct}%; background: ${color};"></div>
-                    </div>
-                  </div>
-                `;
-              })
-              .join('')}
-            <div class="health-banner">
-              ✓ Healthy focus-to-recovery ratio maintained.
-            </div>
-          </div>
-
-          <!-- Category / Habit Allocation -->
-          <div class="panel">
-            <div class="panel-heading">
-              <span>Time & Habit Category Allocation</span>
-            </div>
-            ${categoryDistribution
-              .map((c) => {
-                const color = c.name === 'Deep Work' ? '#C06C4C' : c.name === 'Habits & Routines' ? '#8F7A99' : '#CFA052';
-                return `
-                  <div style="margin-bottom: 10px;">
-                    <div class="bar-row">
-                      <strong>${c.name}</strong>
-                      <span>${c.value}% (${Math.round((activeFocusMinutes * c.value) / 100)}m)</span>
-                    </div>
-                    <div class="bar-bg">
-                      <div class="bar-fill" style="width: ${c.value}%; background: ${color};"></div>
-                    </div>
-                  </div>
-                `;
-              })
-              .join('')}
-          </div>
-        </div>
-
-        <!-- SECTION: SMART PRODUCTIVITY INSIGHTS -->
-        <div class="section-bar no-break">
-          <span>💡 Smart Behavioral Insights</span>
+          <span>Observations & Patterns</span>
         </div>
         <div class="insights-grid no-break">
           ${smartInsights
@@ -396,11 +340,14 @@ export function generateAnalyticsReportHtml(params: AnalyticsReportParams): stri
             )
             .join('')}
         </div>
+        `
+            : ''
+        }
 
-        <!-- SECTION: FOCUS SESSIONS JOURNAL -->
+        <!-- SECTION: FOCUS SESSIONS LOG -->
         <div class="section-bar no-break">
-          <span>📝 Detailed Focus Sessions Journal</span>
-          <span style="font-size: 10px; font-weight: 600; text-transform: none; color: #8A7B73;">${recentSessions.length} Logged Entries</span>
+          <span>Recent Focus Sessions</span>
+          <span style="font-size: 10px; font-weight: 600; text-transform: none; color: #8A7B73;">${recentSessions.length} Entries</span>
         </div>
 
         <div class="panel no-break">
@@ -408,10 +355,10 @@ export function generateAnalyticsReportHtml(params: AnalyticsReportParams): stri
             <thead>
               <tr>
                 <th>Date / Time</th>
-                <th>Task Title</th>
+                <th>Task / Session</th>
                 <th>Duration</th>
-                <th>Session Mode</th>
-                <th>Flow Quality</th>
+                <th>Mode</th>
+                <th>Quality</th>
               </tr>
             </thead>
             <tbody>
@@ -422,7 +369,7 @@ export function generateAnalyticsReportHtml(params: AnalyticsReportParams): stri
                         (s) => `
                     <tr>
                       <td>${s.completedAt}</td>
-                      <td><strong>${s.taskTitle || 'Deep Focus Sprint'}</strong></td>
+                      <td><strong>${s.taskTitle || 'Focus Session'}</strong></td>
                       <td>${s.durationMinutes} mins</td>
                       <td>${s.mode}</td>
                       <td>
@@ -448,8 +395,8 @@ export function generateAnalyticsReportHtml(params: AnalyticsReportParams): stri
 
         <!-- Footer -->
         <div class="footer">
-          <span>Taktic Productivity Platform • Private & Sovereign Work Telemetry</span>
-          <span>Generated from Verified Activity Logs</span>
+          <span>Taktic Productivity Platform • Summary Report</span>
+          <span>Generated from Activity Logs</span>
         </div>
 
         <script>

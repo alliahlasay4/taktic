@@ -12,6 +12,7 @@ import {
   CheckSquare,
   Square,
   Sparkles,
+  Calendar,
 } from 'lucide-react';
 import { QuickNote, NoteColor, Task } from '../../types';
 
@@ -24,6 +25,7 @@ interface QuickNotesDrawerProps {
   onDeleteNote: (id: string) => void;
   onTogglePin: (id: string) => void;
   onConvertToTask: (taskData: Omit<Task, 'id' | 'completed'>) => void;
+  onSwitchToCalendar?: () => void;
 }
 
 const COLOR_THEMES: Record<
@@ -81,6 +83,7 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
   onDeleteNote,
   onTogglePin,
   onConvertToTask,
+  onSwitchToCalendar,
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [isCreating, setIsCreating] = useState(false);
@@ -380,13 +383,32 @@ export const QuickNotesDrawer: React.FC<QuickNotesDrawerProps> = ({
             )}
           </div>
 
-          {/* Drawer Footer Info */}
-          <div className="p-3.5 border-t border-[var(--border-subtle)] bg-[var(--card-surface)] flex items-center justify-between text-[11px] text-[var(--text-muted)]">
-            <span className="flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[var(--accent-warm-ochre)]" />
-              <span>Notes sync live across all modules</span>
-            </span>
-            <span>Esc to close</span>
+          {/* Drawer Footer Info with View Switcher */}
+          <div className="p-3 border-t border-[var(--border-subtle)] bg-[var(--card-surface)] flex items-center justify-between text-[11px] text-[var(--text-muted)] gap-2 shrink-0">
+            {/* Quick Switcher Pill Toggle */}
+            {onSwitchToCalendar ? (
+              <div className="flex items-center gap-1 bg-[var(--bg-main)] p-1 rounded-xl border border-[var(--border-subtle)] shadow-2xs">
+                <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[var(--accent-warm-ochre)] text-black shadow-2xs">
+                  <StickyNote className="w-3 h-3" />
+                  <span>Notepad</span>
+                </span>
+                <button
+                  type="button"
+                  onClick={onSwitchToCalendar}
+                  className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition-all"
+                  title="Switch to Calendar Drawer"
+                >
+                  <Calendar className="w-3 h-3 text-[var(--accent-botanical-sage)]" />
+                  <span>Calendar</span>
+                </button>
+              </div>
+            ) : (
+              <span className="flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-[var(--accent-warm-ochre)]" />
+                <span>Notes sync live across all modules</span>
+              </span>
+            )}
+            <span className="shrink-0 text-[10px] opacity-75">Esc to close</span>
           </div>
         </div>
       </div>

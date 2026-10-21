@@ -251,21 +251,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             {/* Eyebrow Pill */}
             <div className="inline-flex items-center gap-2 rounded-full border border-[var(--accent-terracotta)]/30 bg-[var(--accent-terracotta)]/10 px-4 py-1.5 text-xs font-bold text-[var(--accent-terracotta)] shadow-2xs">
               <Sparkles className="h-3.5 w-3.5" />
-              <span>A calmer, distraction-free daily workspace</span>
+              <span>A calm, distraction-free daily workspace</span>
             </div>
 
             {/* Main Headline */}
             <h1 className="font-heading text-3xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-[var(--text-primary)] leading-[1.22] sm:leading-[1.12]">
-              Plan what matters today.{' '}
+              Focus on what matters today.{' '}
               <span className="bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] bg-clip-text text-transparent">
                 Build steady habits.
               </span>{' '}
-              Work in deep flow.
+              Work without distractions.
             </h1>
 
             {/* Subheading */}
             <p className="text-sm sm:text-base md:text-lg text-[var(--text-secondary)] leading-relaxed max-w-2xl mx-auto px-1 sm:px-0">
-              Endless to-do lists create overwhelm. Taktic brings your <strong>top 3–5 daily focus priorities</strong>, <strong>habit routines</strong>, and <strong>ambient focus sessions</strong> into one calm, unified dashboard.
+              Endless to-do lists make it hard to focus. Taktic keeps your day simple: <strong>your top 3–5 daily priorities</strong>, <strong>daily habits</strong>, and <strong>focused work sessions</strong> in one clear view.
             </p>
 
             {/* Primary Action Buttons */}
@@ -476,7 +476,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <div className="flex items-center gap-2 min-w-0">
                         <span className="h-2.5 w-2.5 rounded-full bg-[#6B8E6E] animate-pulse shrink-0" />
                         <span className="text-xs sm:text-sm font-bold font-heading text-[var(--text-primary)]">
-                          Shared Focus Pod: Deep Work Sprint
+                          Shared Focus Room: Timed Sprint
                         </span>
                       </div>
                       <span className="shrink-0 whitespace-nowrap font-mono text-[10px] sm:text-xs font-bold text-[var(--accent-terracotta)] px-2.5 py-0.5 rounded-full bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30">
@@ -497,7 +497,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         </span>
                       </div>
                       <span className="text-[11px] sm:text-xs font-medium leading-relaxed">
-                        3 peers in a silent 25-minute Pomodoro sprint with break room unlocks
+                        3 people working quietly in a 25-minute Pomodoro sprint with break chat
                       </span>
                     </div>
                   </div>
@@ -510,7 +510,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         <span>Daily Sweep</span>
                       </div>
                       <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">
-                        Archive completed tasks in 1 click so every morning starts completely uncluttered.
+                        Archive finished tasks in one click to keep your workspace clean each morning.
                       </p>
                     </div>
 
@@ -520,7 +520,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         <span>Quick Capture</span>
                       </div>
                       <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">
-                        Press <kbd className="px-1.5 py-0.5 rounded bg-[var(--card-surface)] border border-[var(--border-subtle)] font-mono text-[10px]">Ctrl+J</kbd> anytime to record notes and convert them to tasks.
+                        Press <kbd className="px-1.5 py-0.5 rounded bg-[var(--card-surface)] border border-[var(--border-subtle)] font-mono text-[10px]">Ctrl+J</kbd> anytime to record quick thoughts and turn them into tasks.
                       </p>
                     </div>
                   </div>
@@ -554,23 +554,23 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 <Target className="h-5 w-5" />
               </div>
               <h3 className="font-heading text-lg sm:text-xl font-bold text-[var(--text-primary)]">
-                1. Prioritize What Actually Matters
+                1. Focus on What Matters
               </h3>
               <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-                Long to-do lists cause decision fatigue. Taktic prompts you to select 3–5 high priority commitments each morning (with a 5-task capacity cap to prevent burnout), organize them across the day, and mark them off with clarity.
+                Long to-do lists make it easy to feel busy without getting much done. Taktic limits your active list to 3–5 daily priorities so you can focus on real progress without burning out.
               </p>
               <ul className="space-y-2 text-xs sm:text-sm font-medium text-[var(--text-secondary)] pt-3 border-t border-[var(--border-subtle)]">
                 <li className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 text-[#6B8E6E] shrink-0" />
-                  <span>3–5 daily focus commitments (capped at 5)</span>
+                  <span>3–5 main priorities per day</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 text-[#6B8E6E] shrink-0" />
-                  <span>Morning, afternoon & evening scheduling</span>
+                  <span>Organize by morning, afternoon & evening</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 text-[#6B8E6E] shrink-0" />
-                  <span>1-click sweep to archive completed work</span>
+                  <span>1-click sweep to archive finished items</span>
                 </li>
               </ul>
             </div>
@@ -584,20 +584,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 2. Build Consistent Daily Habits
               </h3>
               <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-                Consistency beats intensity. Keep track of daily routines—like reading, movement, or deep study—alongside your tasks, with streak milestones that celebrate steady progress.
+                Small actions done daily add up. Track routines like reading, exercise, or study alongside your daily tasks, and watch your progress ring close as you check them off.
               </p>
               <ul className="space-y-2 text-xs sm:text-sm font-medium text-[var(--text-secondary)] pt-3 border-t border-[var(--border-subtle)]">
                 <li className="flex items-center gap-2.5">
                   <Flame className="h-4 w-4 text-[#C87D87] shrink-0" />
-                  <span>Consecutive active day streak tracking</span>
+                  <span>Track streaks and daily consistency</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Trophy className="h-4 w-4 text-[#C87D87] shrink-0" />
-                  <span>Milestone badges that reward consistency</span>
+                  <span>Milestone badges as you stay on track</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <CheckCircle2 className="h-4 w-4 text-[#C87D87] shrink-0" />
-                  <span>Visual habit ring that closes as you complete</span>
+                  <span>Visual rings that fill as you complete routines</span>
                 </li>
               </ul>
             </div>
@@ -611,12 +611,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 3. Focus Timer & Ambient Audio
               </h3>
               <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-                Get into deep flow without external distractions. Start timed Pomodoro sprints paired with soothing background audio, and switch into immersive full-screen mode whenever you need locked-in focus.
+                Stay in your flow without leaving the tab. Run timed Pomodoro sessions with calming background sounds, or switch to full-screen mode to remove all on-screen distractions.
               </p>
               <ul className="space-y-2 text-xs sm:text-sm font-medium text-[var(--text-secondary)] pt-3 border-t border-[var(--border-subtle)]">
                 <li className="flex items-center gap-2.5">
                   <Headphones className="h-4 w-4 text-[#CFA052] shrink-0" />
-                  <span>Rain, ocean waves, warm chords & cafe ambience</span>
+                  <span>Rain, ocean waves, warm chords & cafe sounds</span>
                 </li>
                 <li className="flex items-center gap-2.5">
                   <Lock className="h-4 w-4 text-[#CFA052] shrink-0" />
@@ -654,14 +654,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <Users className="h-4 w-4" />
                   </span>
                   <span className="text-xs font-bold uppercase tracking-wider text-[#C06C4C] font-heading">
-                    Gentle Accountability
+                    Shared Focus
                   </span>
                 </div>
                 <h3 className="font-heading text-lg sm:text-xl font-bold text-[var(--text-primary)]">
                   Quiet Focus Rooms & Study Circles
                 </h3>
                 <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed max-w-2xl">
-                  Staying disciplined is easier when working alongside others. Join shared 25-minute sprints with friends or coworkers, send silent cheers, and catch up in the break room when the timer ends—no cameras or microphones needed.
+                  Staying on track is easier alongside others. Join 25-minute quiet focus sprints with friends or teammates, share silent cheers, and chat during breaks—with no cameras or audio required.
                 </p>
               </div>
 
@@ -671,7 +671,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <Zap className="h-4 w-4 text-[#CFA052] shrink-0" />
                     <span>Silent Cheers</span>
                   </div>
-                  <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">Send encouraging reactions without interrupting someone's concentration.</p>
+                  <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">Send a quick thumbs up or cheer without interrupting someone's focus.</p>
                 </div>
 
                 <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1.5">
@@ -679,15 +679,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <Coffee className="h-4 w-4 text-amber-500 shrink-0" />
                     <span>Break Room</span>
                   </div>
-                  <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">Chat unlocks between sprints and automatically mutes during focus sessions.</p>
+                  <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">Chat opens between sessions and automatically mutes once a focus sprint begins.</p>
                 </div>
 
                 <div className="p-3.5 sm:p-4 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] space-y-1.5">
                   <div className="flex items-center gap-1.5 font-bold text-xs sm:text-sm text-[var(--text-primary)]">
                     <ShieldCheck className="h-4 w-4 text-[#6B8E6E] shrink-0" />
-                    <span>Private Pods</span>
+                    <span>Private Circles</span>
                   </div>
-                  <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">Create invite-only circles with unique access codes for your study group or team.</p>
+                  <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] leading-relaxed">Create private rooms with invite codes for your study group or team.</p>
                 </div>
               </div>
             </div>
@@ -700,14 +700,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <StickyNote className="h-4 w-4" />
                   </span>
                   <span className="text-xs font-bold uppercase tracking-wider text-[#CFA052] font-heading">
-                    Instant Capture
+                    Quick Capture
                   </span>
                 </div>
                 <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
                   Global Scratchpad
                 </h3>
                 <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-                  Press <kbd className="px-1.5 py-0.5 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] font-mono text-[10px]">Ctrl+J</kbd> from anywhere in the app to jot down a quick thought. Convert any note to an actionable task with one click.
+                  Press <kbd className="px-1.5 py-0.5 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] font-mono text-[10px]">Ctrl+J</kbd> from anywhere to jot down ideas. Turn any note into a task with one click.
                 </p>
               </div>
 
@@ -715,25 +715,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <div className="space-y-2.5 pt-2">
                 <div className="p-3 sm:p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-1.5">
                   <div className="flex items-center justify-between gap-2 text-xs font-bold text-[var(--text-primary)]">
-                    <span className="truncate">💡 Prepare deck for Thursday</span>
+                    <span className="truncate">💡 Prepare slides for Thursday</span>
                     <span className="shrink-0 whitespace-nowrap text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] border border-[var(--accent-warm-ochre)]/30">
                       Pinned
                     </span>
                   </div>
                   <p className="text-[11px] text-[var(--text-secondary)] line-clamp-1">
-                    Review morning feedback and finalize summary slide.
+                    Review comments and clean up summary notes.
                   </p>
                 </div>
 
                 <div className="p-3 sm:p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-xs text-[var(--text-secondary)] space-y-1.5">
                   <div className="flex items-center justify-between gap-2 text-xs font-bold text-[var(--text-primary)]">
-                    <span className="truncate">🎯 Send team sprint recap</span>
+                    <span className="truncate">🎯 Send team update</span>
                     <span className="shrink-0 whitespace-nowrap text-[9px] font-mono font-bold px-2 py-0.5 rounded-full bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/30">
                       + To Task
                     </span>
                   </div>
                   <p className="text-[11px] text-[var(--text-secondary)] line-clamp-1">
-                    Convert directly to top daily focus commitment.
+                    Add as one of today&apos;s main focus priorities.
                   </p>
                 </div>
               </div>
@@ -747,21 +747,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     <Archive className="h-4 w-4" />
                   </span>
                   <span className="text-xs font-bold uppercase tracking-wider text-[#6B8E6E] font-heading">
-                    Searchable History
+                    History
                   </span>
                 </div>
                 <h3 className="font-heading text-lg font-bold text-[var(--text-primary)]">
                   Task Archive & History
                 </h3>
                 <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-                  Review past accomplishments, search completed tasks, batch restore items, or export your history to CSV whenever needed.
+                  Look back on what you accomplished, search completed tasks, restore previous items, or export your log to CSV.
                 </p>
               </div>
 
               <div className="p-3 sm:p-3.5 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] flex items-center justify-between gap-2 text-xs">
                 <div className="flex items-center gap-2 min-w-0">
                   <CheckCircle2 className="h-4 w-4 text-[var(--accent-botanical-sage)] shrink-0" />
-                  <span className="text-xs font-semibold text-[var(--text-primary)] truncate">14 tasks swept to archive</span>
+                  <span className="text-xs font-semibold text-[var(--text-primary)] truncate">14 tasks archived</span>
                 </div>
                 <span className="text-[10px] font-mono font-bold text-[var(--text-muted)] shrink-0">1-click restore</span>
               </div>
@@ -779,10 +779,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                   </span>
                 </div>
                 <h3 className="font-heading text-lg sm:text-xl font-bold text-[var(--text-primary)]">
-                  A Calmer Personal Workspace with Zero Distractions
+                  A Quiet Workspace with Zero Distractions
                 </h3>
                 <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
-                  Taktic is built without advertisements, algorithmic feeds, or data selling. Your routines, notes, and daily commitments remain completely private to your account—giving you a quiet sanctuary to think and do your best work.
+                  Taktic has no ads, algorithmic feeds, or data selling. Your routines, notes, and tasks stay private to your account—giving you an uncluttered space to get things done.
                 </p>
               </div>
 
@@ -793,7 +793,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                 </div>
                 <div className="p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] flex items-center gap-2.5">
                   <Check className="h-4 w-4 text-[#B08B9E] shrink-0" />
-                  <span className="text-xs font-semibold text-[var(--text-primary)]">No Social Algorithms</span>
+                  <span className="text-xs font-semibold text-[var(--text-primary)]">No Social Feeds</span>
                 </div>
                 <div className="p-3 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] flex items-center gap-2.5">
                   <Check className="h-4 w-4 text-[#B08B9E] shrink-0" />
@@ -819,10 +819,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
               <span>Simplicity by Design</span>
             </div>
             <h2 className="font-heading text-2xl sm:text-3xl lg:text-4xl font-extrabold text-[var(--text-primary)] tracking-tight leading-tight">
-              Less Time Managing. More Time in Flow.
+              Less Time Managing. More Time Doing.
             </h2>
             <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed max-w-xl mx-auto">
-              Most productivity apps turn into second jobs. Taktic keeps your planning lightweight so your energy stays focused on deep, meaningful execution.
+              Most productivity apps become another chore to maintain. Taktic keeps planning minimal so your energy goes toward actual work.
             </p>
           </div>
 
@@ -845,12 +845,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                         The Traditional Way
                       </h3>
                       <p className="text-[10px] sm:text-xs text-[var(--text-secondary)] dark:text-[var(--text-secondary)] leading-snug">
-                        Overcomplicated & fragmented tools
+                        Scattered and complicated apps
                       </p>
                     </div>
                   </div>
                   <span className="shrink-0 whitespace-nowrap rounded-full bg-[var(--accent-dusty-rose)]/15 dark:bg-[var(--accent-dusty-rose)]/25 border border-[var(--accent-dusty-rose)]/35 px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-[var(--accent-dusty-rose)] shadow-sm">
-                    Friction Heavy
+                    High Friction
                   </span>
                 </div>
 
@@ -860,8 +860,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <Layers className="h-3 w-3" />
                     </div>
                     <div className="space-y-0.5">
-                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">Endless Backlogs</strong>
-                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Overwhelming lists with 50+ lingering tasks and guilt fatigue.</span>
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">Overwhelming Lists</strong>
+                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Dozens of lingering tasks that pile up and make it hard to choose where to start.</span>
                     </div>
                   </div>
 
@@ -870,8 +870,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <Repeat className="h-3 w-3" />
                     </div>
                     <div className="space-y-0.5">
-                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">Context Switching</strong>
-                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Juggling separate timer apps, habit trackers, and ambient audio players.</span>
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">App Switching</strong>
+                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Constantly jumping between timers, habit logs, and ambient music apps.</span>
                     </div>
                   </div>
 
@@ -880,8 +880,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <Clock className="h-3 w-3" />
                     </div>
                     <div className="space-y-0.5">
-                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">Configuration Overhead</strong>
-                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Spending 30 minutes tweaking complex tags instead of doing real work.</span>
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">Too Much Setup</strong>
+                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Spending time tweaking tags and filters instead of making progress.</span>
                     </div>
                   </div>
                 </div>
@@ -889,7 +889,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
               <div className="p-3 rounded-2xl bg-[var(--accent-dusty-rose)]/10 dark:bg-[var(--accent-dusty-rose)]/15 border border-[var(--accent-dusty-rose)]/25 dark:border-[var(--accent-dusty-rose)]/30 text-xs font-semibold text-[var(--accent-dusty-rose)] flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-dusty-rose)] animate-pulse" />
-                <span>Result: Procrastination disguised as productivity.</span>
+                <span>Result: Time spent organizing instead of finishing work.</span>
               </div>
             </div>
 
@@ -906,15 +906,15 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                     </div>
                     <div className="min-w-0">
                       <h3 className="font-heading font-bold text-sm sm:text-base text-[var(--text-primary)] flex items-center gap-1.5 leading-snug">
-                        The Taktic Rhythm
+                        The Taktic Approach
                       </h3>
                       <p className="text-[10px] sm:text-xs text-[var(--accent-botanical-sage)] font-semibold leading-snug">
-                        Calm, intentional constraint
+                        Clear, intentional daily focus
                       </p>
                     </div>
                   </div>
                   <span className="shrink-0 whitespace-nowrap rounded-full bg-[var(--accent-botanical-sage)]/15 dark:bg-[var(--accent-botanical-sage)]/25 border border-[var(--accent-botanical-sage)]/35 px-2.5 py-0.5 text-[9px] sm:text-[10px] font-bold text-[var(--accent-botanical-sage)] shadow-sm">
-                    Flow Centered
+                    Focus First
                   </span>
                 </div>
 
@@ -924,8 +924,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <Target className="h-3 w-3" />
                     </div>
                     <div className="space-y-0.5">
-                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">Daily 3–5 Priority Constraint</strong>
-                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Commit only to what moves the needle today. Zero backlog stress.</span>
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">Top 3–5 Daily Priorities</strong>
+                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Focus on the few tasks that matter most each day. No endless task debt.</span>
                     </div>
                   </div>
 
@@ -934,8 +934,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <Zap className="h-3 w-3" />
                     </div>
                     <div className="space-y-0.5">
-                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">Unified Sanctuary</strong>
-                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Tasks, Pomodoro timers, habit rings, and ambient audio in one calm tab.</span>
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">All in One Place</strong>
+                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Tasks, focus timers, habit rings, and ambient sounds unified in one tab.</span>
                     </div>
                   </div>
 
@@ -944,8 +944,8 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
                       <Sparkles className="h-3 w-3" />
                     </div>
                     <div className="space-y-0.5">
-                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">Calm Daily Clean Slate</strong>
-                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Sweep completed tasks to archive and start fresh each morning with clear momentum.</span>
+                      <strong className="font-semibold text-[var(--text-primary)] dark:text-stone-100 block text-xs sm:text-sm">A Fresh Start Each Morning</strong>
+                      <span className="text-[11px] sm:text-xs text-[var(--text-secondary)] dark:text-stone-300 leading-relaxed block">Archive finished items and start every morning with a clear mind and a clean board.</span>
                     </div>
                   </div>
                 </div>
@@ -953,7 +953,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
 
               <div className="p-3 rounded-2xl bg-[var(--accent-botanical-sage)]/10 dark:bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/25 dark:border-[var(--accent-botanical-sage)]/30 text-xs font-semibold text-[var(--accent-botanical-sage)] flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-botanical-sage)] animate-pulse" />
-                <span>Result: Continuous daily flow and tangible progress.</span>
+                <span>Result: Steady momentum and real progress each day.</span>
               </div>
             </div>
 

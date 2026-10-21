@@ -6,8 +6,6 @@ import {
   YAxis,
   Tooltip,
   ResponsiveContainer,
-  PieChart,
-  Pie,
   Cell,
 } from 'recharts';
 import {
@@ -15,8 +13,6 @@ import {
   CheckCircle2,
   Flame,
   Award,
-  Activity,
-  Zap,
   TrendingUp,
   Sparkles,
   Copy,
@@ -25,11 +21,10 @@ import {
   Sun,
   Moon,
   Layers,
-  ShieldCheck,
   BarChart2,
   Table as TableIcon,
 } from 'lucide-react';
-import { useAnalytics, TimeHorizon, FocusQualityStat, CategoryDistributionStat } from '../../hooks/useAnalytics';
+import { useAnalytics, TimeHorizon } from '../../hooks/useAnalytics';
 import { exportAnalyticsPdf } from '../../lib/exportAnalyticsReport';
 import { downloadCsvFile } from '../../lib/csvSecurity';
 
@@ -46,7 +41,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
   focusMinutes,
   userStreak,
 }) => {
-  const [activeSubTab, setActiveSubTab] = useState<'recap' | 'trends' | 'consistency'>('recap');
   const [journalViewMode, setJournalViewMode] = useState<'chart' | 'table'>('chart');
   const [copiedRecap, setCopiedRecap] = useState(false);
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
@@ -84,54 +78,48 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({
     mode: s.mode,
   }));
 
-  // 1. Copy Markdown Summary (All Data + Trends + Habits & Energy Included)
+  // 1. Copy Plain Text Summary
   const handleCopyRecapSummary = () => {
     const totalTimeOfDayMinutes = timeOfDayData.reduce((acc, curr) => acc + curr.minutes, 0);
 
-    const recapText = `📊 TAKTIC PRODUCTIVITY & FLOW TELEMETRY (${horizonLabel})
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+    const recapText = `TAKTIC ACTIVITY SUMMARY (${horizonLabel.toUpperCase()})
+─────────────────────────────────────────
 
-🏆 EXECUTIVE RECAP & RHYTHM SCORE
-• Productivity Rhythm: ${rhythmScore}/100 (Rank: ${rhythmRankTitle})
-• Total Focus Time: ${activeFocusMinutes} mins (${(activeFocusMinutes / 60).toFixed(1)} hrs) across ${activeDaysCount} active days
-• Task Completion Velocity: ${completionPct}% (${tasksCompleted}/${totalTasks} tasks completed)
-• Streak Momentum: ${userStreak} Days Unbroken
+OVERVIEW
+• Consistency Score: ${rhythmScore}/100 (${rhythmRankTitle})
+• Focus Time: ${(activeFocusMinutes / 60).toFixed(1)} hrs (${activeFocusMinutes} mins) across ${activeDaysCount} active days
+• Tasks Completed: ${tasksCompleted} of ${totalTasks} (${completionPct}%)
+• Current Streak: ${userStreak} ${userStreak === 1 ? 'day' : 'days'}
 
-📈 FOCUS TRENDS & VELOCITY
-• Peak Output Day: ${peakDay}
-• Average Session Velocity: ${avgSessionDuration} mins / sprint
-• Daily Focus Output:
-${weeklyFocusData.map((d) => `  - ${d.day}: ${d.minutes} mins (${(d.minutes / 60).toFixed(1)} hrs)`).join('\n')}
-• Chronobiological Energy Windows:
+DAILY FOCUS
+• Most Active Day: ${peakDay}
+• Average Session: ${avgSessionDuration} mins
+${weeklyFocusData.map((d) => `• ${d.day}: ${d.minutes} mins (${(d.minutes / 60).toFixed(1)} hrs)`).join('\n')}
+
+TIME OF DAY BREAKDOWN
 ${timeOfDayData
   .map(
     (t) =>
-      `  - ${t.slot}: ${t.minutes} mins (${totalTimeOfDayMinutes > 0 ? Math.round((t.minutes / totalTimeOfDayMinutes) * 100) : 0}%)`
+      `• ${t.slot}: ${t.minutes} mins (${totalTimeOfDayMinutes > 0 ? Math.round((t.minutes / totalTimeOfDayMinutes) * 100) : 0}%)`
   )
   .join('\n')}
 
-⚡ HABIT & ENERGY QUALITY
-• Session Flow & Reflection Ratings:
-${qualityBreakdown.map((q) => `  - ${q.label}: ${q.count} sessions (${q.pct}%)`).join('\n')}
-• Time & Habit Category Allocation:
-${categoryDistribution.map((c) => `  - ${c.name}: ${c.value}%`).join('\n')}
-• Focus-to-Recovery Balance: Healthy focus-to-recovery ratio maintained
-
-💡 SMART PRODUCTIVITY INSIGHTS
-${smartInsights.map((i) => `• ${i.title} [${i.metric}]: ${i.description}`).join('\n')}
-
-📝 FOCUS SESSIONS JOURNAL (${recentSessions.length} total logged sprints)
+${
+  smartInsights.length > 0
+    ? `OBSERVATIONS\n${smartInsights.map((i) => `• ${i.title}: ${i.description}`).join('\n')}\n\n`
+    : ''
+}RECENT SESSIONS (${recentSessions.length} total)
 ${
   recentSessions.length > 0
     ? recentSessions
         .map(
           (s) =>
-            `• ${s.completedAt} | ${s.taskTitle || 'Deep Work Sprint'} | ${s.durationMinutes}m | Mode: ${s.mode} | Quality: ${
+            `• ${s.completedAt} — ${s.taskTitle || 'Focus Session'} (${s.durationMinutes}m, ${
               s.quality === 'high_flow' ? 'High Flow' : s.quality === 'distracted' ? 'Distracted' : 'Steady Flow'
-            }`
+            })`
         )
         .join('\n')
-    : '• No focus sessions logged in this timeframe'
+    : '• No sessions recorded in this timeframe'
 }`;
 
     navigator.clipboard.writeText(recapText);
@@ -140,30 +128,25 @@ ${
     setTimeout(() => setCopiedRecap(false), 2500);
   };
 
-  // 2. Export CSV / Excel Spreadsheet (All Data + Trends + Habits & Energy Included)
+  // 2. Export CSV Spreadsheet
   const handleExportCSV = () => {
     const totalTimeOfDayMinutes = timeOfDayData.reduce((acc, curr) => acc + curr.minutes, 0);
 
     const rows: (string | number)[][] = [
-      ['TAKTIC PRODUCTIVITY & FLOW TELEMETRY EXPORT'],
-      ['Time Horizon', horizonLabel],
-      ['Generated On', new Date().toLocaleString()],
+      ['TAKTIC ACTIVITY REPORT'],
+      ['Time Range', horizonLabel],
+      ['Generated On', new Date().toLocaleDateString(undefined, { dateStyle: 'medium', timeStyle: 'short' })],
       [],
-      ['=== 1. EXECUTIVE OVERVIEW & RHYTHM SCORE ==='],
+      ['OVERVIEW'],
       ['Metric', 'Value', 'Details'],
-      ['Productivity Rhythm Score', `${rhythmScore}/100`, rhythmRankTitle],
+      ['Consistency Score', `${rhythmScore}/100`, rhythmRankTitle],
       ['Total Focus Time', `${activeFocusMinutes} mins`, `${(activeFocusMinutes / 60).toFixed(1)} hours`],
-      ['Active Focus Days', activeDaysCount, `days active in ${horizonLabel}`],
-      ['Task Completion Velocity', `${completionPct}%`, `${tasksCompleted} of ${totalTasks} tasks finished`],
-      ['Unbroken Streak', `${userStreak} Days`, 'consecutive active days'],
+      ['Active Days', activeDaysCount, `days active in ${horizonLabel}`],
+      ['Tasks Completed', `${tasksCompleted} of ${totalTasks}`, `${completionPct}% completed`],
+      ['Current Streak', `${userStreak} days`, 'consecutive days active'],
       [],
-      ['=== 2. FOCUS TRENDS & VELOCITY TELEMETRY ==='],
-      ['Velocity Metric', 'Value', 'Context'],
-      ['Peak Productivity Day', peakDay, 'highest output volume day'],
-      ['Average Session Duration', `${avgSessionDuration} mins`, 'mean focus sprint length'],
-      [],
-      ['--- Daily Focus Velocity Breakdown ---'],
-      ['Day of Week', 'Focus Minutes', 'Focus Hours', 'Share of Total'],
+      ['DAILY FOCUS'],
+      ['Day', 'Minutes', 'Hours', 'Share of Total'],
       ...weeklyFocusData.map((d) => [
         d.day,
         d.minutes,
@@ -171,48 +154,28 @@ ${
         activeFocusMinutes > 0 ? `${Math.round((d.minutes / activeFocusMinutes) * 100)}%` : '0%',
       ]),
       [],
-      ['--- Chronobiological Peak Energy Windows ---'],
-      ['Time Slot', 'Focus Minutes', 'Distribution %'],
+      ['WHEN YOU WORK (TIME OF DAY)'],
+      ['Time Slot', 'Minutes', 'Share'],
       ...timeOfDayData.map((t) => [
         t.slot,
         t.minutes,
         totalTimeOfDayMinutes > 0 ? `${Math.round((t.minutes / totalTimeOfDayMinutes) * 100)}%` : '0%',
       ]),
       [],
-      ['=== 3. HABIT & ENERGY QUALITY TELEMETRY ==='],
-      ['--- Session Flow & Energy Quality Ratings ---'],
-      ['Quality State', 'Sessions Count', 'Flow Share %'],
-      ...qualityBreakdown.map((q) => [q.label, q.count, `${q.pct}%`]),
-      [],
-      ['--- Habit & Category Time Allocation ---'],
-      ['Category / Habit Stream', 'Allocation %', 'Estimated Minutes'],
-      ...categoryDistribution.map((c) => [
-        c.name,
-        `${c.value}%`,
-        `${Math.round((activeFocusMinutes * c.value) / 100)} mins`,
-      ]),
-      [],
-      ['--- Focus-to-Recovery Health Index ---'],
-      ['Health Status', 'Healthy focus-to-recovery ratio maintained', 'Active'],
-      [],
-      ['=== 4. SMART PRODUCTIVITY & BEHAVIORAL INSIGHTS ==='],
-      ['Insight Title', 'Metric Key', 'Observation Details'],
-      ...smartInsights.map((i) => [i.title, i.metric, i.description]),
-      [],
-      ['=== 5. DETAILED FOCUS SESSIONS JOURNAL ==='],
-      ['Date & Time', 'Task Title', 'Duration (Mins)', 'Session Mode', 'Flow Quality'],
+      ['FOCUS SESSIONS LOG'],
+      ['Date & Time', 'Task / Session', 'Duration (Mins)', 'Mode', 'Quality'],
       ...(recentSessions.length > 0
         ? recentSessions.map((s) => [
             s.completedAt,
-            s.taskTitle || 'Deep Work Sprint',
+            s.taskTitle || 'Focus Session',
             s.durationMinutes,
             s.mode,
             s.quality === 'high_flow' ? 'High Flow' : s.quality === 'distracted' ? 'Distracted' : 'Steady Flow',
           ])
-        : [['No focus sessions logged in this timeframe', '-', '-', '-', '-']]),
+        : [['No sessions logged in this timeframe', '-', '-', '-', '-']]),
     ];
 
-    downloadCsvFile(`taktic-productivity-telemetry-${timeHorizon}-${new Date().toISOString().split('T')[0]}.csv`, rows);
+    downloadCsvFile(`taktic-activity-${timeHorizon}-${new Date().toISOString().split('T')[0]}.csv`, rows);
     setIsExportMenuOpen(false);
   };
 
@@ -241,25 +204,20 @@ ${
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300">
-      {/* Module Header with Time Horizon & Quick Export Dropdown */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
+    <div className="space-y-6 animate-in fade-in duration-300 max-w-5xl mx-auto">
+      {/* 1. Header: Clean title, Time Horizon Pills & Export */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
         <div>
-          <div className="flex items-center gap-2">
-            <h1 className="font-heading font-bold text-lg sm:text-xl text-[var(--text-primary)]">
-              Insights & Productivity Recap
-            </h1>
-            <span className="rounded-full bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-terracotta)]">
-              Live Metrics
-            </span>
-          </div>
-          <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-            Focus telemetry, session velocity, and daily productivity reflections.
+          <h1 className="font-heading font-bold text-xl sm:text-2xl text-[var(--text-primary)] tracking-tight">
+            Activity & Trends
+          </h1>
+          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
+            A clear summary of your focus time, habit consistency, and daily work.
           </p>
         </div>
 
         <div className="flex items-center gap-2 flex-wrap">
-          {/* Time Horizon Selector */}
+          {/* Time Horizon Pills */}
           <div className="flex items-center rounded-xl bg-[var(--surface-sunken)] p-1 border border-[var(--border-subtle)] text-xs">
             {(['week', 'month', 'all'] as TimeHorizon[]).map((horizon) => (
               <button
@@ -277,7 +235,7 @@ ${
             ))}
           </div>
 
-          {/* Export Recap Dropdown Menu */}
+          {/* Export Dropdown */}
           <div className="relative">
             <button
               type="button"
@@ -292,35 +250,25 @@ ${
               ) : (
                 <>
                   <Copy className="h-3.5 w-3.5 text-[var(--accent-terracotta)]" />
-                  <span>Export Recap</span>
+                  <span>Export</span>
                 </>
               )}
             </button>
 
-            {/* Dropdown Popover */}
             {isExportMenuOpen && (
               <>
                 <div
                   className="fixed inset-0 z-40"
                   onClick={() => setIsExportMenuOpen(false)}
                 />
-                <div className="absolute right-0 mt-2 z-50 w-56 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-1.5 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
-                  <div className="px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)] border-b border-[var(--border-subtle)] mb-1">
-                    Export Format
-                  </div>
-
+                <div className="absolute right-0 mt-2 z-50 w-52 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-1.5 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
                   <button
                     type="button"
                     onClick={handleExportPDF}
                     className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition text-left cursor-pointer"
                   >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)]">
-                      <Layers className="h-3.5 w-3.5" />
-                    </div>
-                    <div>
-                      <p className="font-bold">PDF Report</p>
-                      <p className="text-[10px] text-[var(--text-muted)]">Printable executive summary</p>
-                    </div>
+                    <Layers className="h-4 w-4 text-[var(--accent-terracotta)]" />
+                    <span>Download PDF</span>
                   </button>
 
                   <button
@@ -328,13 +276,8 @@ ${
                     onClick={handleExportCSV}
                     className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition text-left cursor-pointer"
                   >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)]">
-                      <TrendingUp className="h-3.5 w-3.5" />
-                    </div>
-                    <div>
-                      <p className="font-bold">CSV / Spreadsheet</p>
-                      <p className="text-[10px] text-[var(--text-muted)]">Excel & Google Sheets (.csv)</p>
-                    </div>
+                    <TrendingUp className="h-4 w-4 text-[var(--accent-botanical-sage)]" />
+                    <span>Download CSV (.csv)</span>
                   </button>
 
                   <button
@@ -342,13 +285,8 @@ ${
                     onClick={handleCopyRecapSummary}
                     className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition text-left cursor-pointer"
                   >
-                    <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)]">
-                      <Copy className="h-3.5 w-3.5" />
-                    </div>
-                    <div>
-                      <p className="font-bold">Copy Text Summary</p>
-                      <p className="text-[10px] text-[var(--text-muted)]">Markdown format for notes</p>
-                    </div>
+                    <Copy className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
+                    <span>Copy Text Summary</span>
                   </button>
                 </div>
               </>
@@ -357,405 +295,291 @@ ${
         </div>
       </div>
 
-      {/* Composite Rhythm Score Hero Banner with Visual Circular Radial Ring Gauge */}
-      <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs relative overflow-hidden">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6 relative z-10">
-          <div className="space-y-2">
-            <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[var(--accent-warm-ochre)]">
-              <Award className="h-4 w-4" />
-              <span>Productivity Rhythm Score</span>
-            </div>
-            <div className="flex items-baseline gap-3">
-              <h2 className="font-heading font-black text-3xl sm:text-4xl text-[var(--text-primary)]">
-                {rhythmScore} <span className="text-lg sm:text-xl text-[var(--text-muted)] font-normal">/ 100</span>
-              </h2>
-              <span className="rounded-full bg-[var(--accent-warm-ochre)]/15 border border-[var(--accent-warm-ochre)]/30 px-3 py-1 text-xs font-bold text-[var(--accent-warm-ochre)]">
-                Rank: {rhythmRankTitle}
-              </span>
-            </div>
-            <p className="text-xs text-[var(--text-secondary)] max-w-xl">
-              Derived from deep focus session telemetry, uninterrupted flow quality ratings, and routine streak adherence.
-            </p>
+      {/* 2. Primary Metrics Row: 4 Clean, Direct Cards */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
+        {/* Total Focus Time */}
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+            <span className="font-medium">Total Focus Time</span>
+            <Clock className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
           </div>
-
-          {/* Visual Circular Gauge + Rhythm Rings */}
-          <div className="flex items-center gap-5 p-4 rounded-2xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)] shrink-0">
-            <div className="relative flex items-center justify-center w-20 h-20">
-              <svg className="w-full h-full transform -rotate-90" viewBox="0 0 36 36">
-                <path
-                  className="stroke-[var(--border-subtle)]/40"
-                  strokeWidth="3.5"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-                <path
-                  className="stroke-[var(--accent-warm-ochre)] transition-all duration-1000"
-                  strokeWidth="3.5"
-                  strokeDasharray={`${rhythmScore}, 100`}
-                  strokeLinecap="round"
-                  fill="none"
-                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
-                />
-              </svg>
-              <div className="absolute flex flex-col items-center justify-center text-center">
-                <span className="font-heading font-black text-sm text-[var(--text-primary)]">{rhythmScore}%</span>
-                <span className="text-[8px] font-bold uppercase text-[var(--accent-botanical-sage)]">FLOW</span>
-              </div>
-            </div>
-
-            <div className="space-y-1.5 text-xs">
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-[var(--text-secondary)] flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[var(--accent-warm-ochre)]" />
-                  Momentum
-                </span>
-                <span className="font-bold font-mono text-[var(--text-primary)]">{rhythmScore}/100</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-[var(--text-secondary)] flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[var(--accent-botanical-sage)]" />
-                  Flow Quality
-                </span>
-                <span className="font-bold font-mono text-[var(--accent-botanical-sage)]">{qualityBreakdown[0]?.pct || 60}%</span>
-              </div>
-              <div className="flex items-center justify-between gap-4">
-                <span className="text-[var(--text-secondary)] flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-[var(--accent-terracotta)]" />
-                  Streak Tier
-                </span>
-                <span className="font-bold font-mono text-[var(--accent-terracotta)]">{userStreak}d</span>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Primary Visual KPI Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4 text-xs">
-        {/* Total Focus Time Card with Mini Visual Meter */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-5 shadow-xs space-y-3">
-          <div className="flex items-center justify-between text-[var(--accent-warm-ochre)]">
-            <div className="flex items-center gap-2 font-semibold">
-              <Clock className="h-4 w-4" />
-              <span>Total Focus Time</span>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-[var(--accent-warm-ochre)]/15 px-2 py-0.5 rounded-full">
-              {timeHorizon === 'week' ? '7 Days' : timeHorizon === 'month' ? '30 Days' : 'All-Time'}
-            </span>
-          </div>
-          <div className="flex items-baseline justify-between">
+          <div>
             <p className="font-heading font-bold text-2xl sm:text-3xl text-[var(--text-primary)]">
-              {activeFocusMinutes} <span className="text-sm font-normal text-[var(--text-muted)]">mins</span>
+              {activeFocusMinutes >= 60 ? `${(activeFocusMinutes / 60).toFixed(1)}` : activeFocusMinutes}
+              <span className="text-xs sm:text-sm font-normal text-[var(--text-muted)] ml-1">
+                {activeFocusMinutes >= 60 ? 'hrs' : 'mins'}
+              </span>
             </p>
-            <span className="text-xs font-mono font-bold text-[var(--accent-warm-ochre)]">{activeDaysCount}/7 Days Active</span>
-          </div>
-          <div className="h-1.5 w-full bg-[var(--border-subtle)]/40 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[var(--accent-warm-ochre)] rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, Math.round((activeFocusMinutes / 400) * 100))}%` }}
-            />
+            <p className="text-[11px] text-[var(--text-muted)] mt-1">
+              {activeDaysCount} active {activeDaysCount === 1 ? 'day' : 'days'}
+            </p>
           </div>
         </div>
 
-        {/* Task Completion Card with Mini Visual Meter */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-5 shadow-xs space-y-3">
-          <div className="flex items-center justify-between text-[var(--accent-botanical-sage)]">
-            <div className="flex items-center gap-2 font-semibold">
-              <CheckCircle2 className="h-4 w-4" />
-              <span>Task Velocity</span>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-[var(--accent-botanical-sage)]/15 px-2 py-0.5 rounded-full">
-              Daily Pace
-            </span>
+        {/* Task Completion */}
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+            <span className="font-medium">Tasks Completed</span>
+            <CheckCircle2 className="h-4 w-4 text-[var(--accent-botanical-sage)]" />
           </div>
-          <div className="flex items-baseline justify-between">
+          <div>
             <p className="font-heading font-bold text-2xl sm:text-3xl text-[var(--text-primary)]">
               {completionPct}%
             </p>
-            <span className="text-xs font-mono font-bold text-[var(--accent-botanical-sage)]">{tasksCompleted}/{totalTasks} Finished</span>
-          </div>
-          <div className="h-1.5 w-full bg-[var(--border-subtle)]/40 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[var(--accent-botanical-sage)] rounded-full transition-all duration-500"
-              style={{ width: `${completionPct}%` }}
-            />
-          </div>
-        </div>
-
-        {/* Streak Consistency Card with Mini Visual Meter */}
-        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-5 shadow-xs space-y-3">
-          <div className="flex items-center justify-between text-[var(--accent-terracotta)]">
-            <div className="flex items-center gap-2 font-semibold">
-              <Flame className="h-4 w-4" />
-              <span>Streak Momentum</span>
-            </div>
-            <span className="text-[10px] font-bold uppercase tracking-wider bg-[var(--accent-terracotta)]/15 px-2 py-0.5 rounded-full">
-              Active
-            </span>
-          </div>
-          <div className="flex items-baseline justify-between">
-            <p className="font-heading font-bold text-2xl sm:text-3xl text-[var(--text-primary)]">
-              {userStreak} <span className="text-sm font-normal text-[var(--text-muted)]">Days</span>
+            <p className="text-[11px] text-[var(--text-muted)] mt-1">
+              {tasksCompleted} of {totalTasks} finished
             </p>
-            <span className="text-xs font-mono font-bold text-[var(--accent-terracotta)]">Unbroken</span>
           </div>
-          <div className="h-1.5 w-full bg-[var(--border-subtle)]/40 rounded-full overflow-hidden">
-            <div
-              className="h-full bg-[var(--accent-terracotta)] rounded-full transition-all duration-500"
-              style={{ width: `${Math.min(100, (userStreak / 14) * 100)}%` }}
-            />
+        </div>
+
+        {/* Current Streak */}
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+            <span className="font-medium">Daily Streak</span>
+            <Flame className="h-4 w-4 text-[var(--accent-terracotta)]" />
+          </div>
+          <div>
+            <p className="font-heading font-bold text-2xl sm:text-3xl text-[var(--text-primary)]">
+              {userStreak}
+              <span className="text-xs sm:text-sm font-normal text-[var(--text-muted)] ml-1">
+                {userStreak === 1 ? 'day' : 'days'}
+              </span>
+            </p>
+            <p className="text-[11px] text-[var(--text-muted)] mt-1">
+              Consistent activity
+            </p>
+          </div>
+        </div>
+
+        {/* Rhythm Score & Status Badge */}
+        <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-5 shadow-xs flex flex-col justify-between space-y-2">
+          <div className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+            <span className="font-medium">Rhythm Score</span>
+            <Award className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
+          </div>
+          <div>
+            <div className="flex items-baseline gap-2">
+              <p className="font-heading font-bold text-2xl sm:text-3xl text-[var(--text-primary)]">
+                {rhythmScore}
+                <span className="text-xs sm:text-sm font-normal text-[var(--text-muted)] ml-1">/ 100</span>
+              </p>
+            </div>
+            <div className="mt-1">
+              <span className="inline-block rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-botanical-sage)]">
+                {rhythmRankTitle}
+              </span>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Segmented Navigation Sub-Tabs */}
-      <div className="flex items-center gap-1.5 p-1 rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] shadow-xs overflow-x-auto">
-        {[
-          { id: 'recap' as const, label: 'Daily & Weekly Recap', icon: Sparkles },
-          { id: 'trends' as const, label: 'Focus Trends & Velocity', icon: TrendingUp },
-          { id: 'consistency' as const, label: 'Habit & Energy Quality', icon: Activity },
-        ].map((tab) => {
-          const TabIcon = tab.icon;
-          const isSelected = activeSubTab === tab.id;
-          return (
-            <button
-              key={tab.id}
-              type="button"
-              onClick={() => setActiveSubTab(tab.id)}
-              className={`flex-1 flex items-center justify-center gap-2 py-2.5 px-3 sm:px-4 rounded-xl text-xs font-semibold transition whitespace-nowrap min-h-[40px] cursor-pointer ${
-                isSelected
-                  ? 'bg-[var(--accent-terracotta)] text-white shadow-xs font-bold'
-                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
-              }`}
-            >
-              <TabIcon className="h-4 w-4 shrink-0" />
-              <span>{tab.label}</span>
-            </button>
-          );
-        })}
-      </div>
-
-      {/* SUB-TAB 1: Daily & Weekly Recap */}
-      {activeSubTab === 'recap' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
-          {/* Smart Productivity Insights Cards */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="font-heading font-bold text-sm text-[var(--text-primary)] flex items-center gap-2">
-                <Sparkles className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
-                <span>Smart Productivity Insights</span>
-              </h3>
-              <span className="text-[11px] text-[var(--text-muted)]">Telemetry analysis</span>
+      {/* 3. Daily Focus Chart & Time-of-Day Distribution */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+        {/* Left: Clean Bar Chart of Daily Focus Time */}
+        <div className="lg:col-span-8 rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
+                Focus Time by Day
+              </h2>
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                Minutes focused each day in {horizonLabel.toLowerCase()}
+              </p>
             </div>
+            {peakDay && peakDay !== 'None' && (
+              <span className="text-xs font-medium text-[var(--text-muted)] bg-[var(--surface-sunken)] px-2.5 py-1 rounded-lg border border-[var(--border-subtle)]">
+                Most active: <strong className="text-[var(--text-primary)]">{peakDay}</strong>
+              </span>
+            )}
+          </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
-              {smartInsights.map((insight) => (
-                <div
-                  key={insight.id}
-                  className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 space-y-2 shadow-xs transition-colors hover:border-[var(--accent-warm-ochre)]/40"
-                >
-                  <div className="flex items-center justify-between">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-[var(--text-muted)]">
-                      {insight.title}
-                    </span>
-                    <span className="rounded-full bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] font-bold text-[10px] px-2 py-0.5">
-                      {insight.metric}
+          <div className="h-56 w-full pt-2">
+            <ResponsiveContainer width="100%" height="100%">
+              <BarChart data={weeklyFocusData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <XAxis dataKey="day" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
+                <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} unit="m" />
+                <Tooltip
+                  contentStyle={{
+                    backgroundColor: 'var(--card-surface)',
+                    borderColor: 'var(--border-subtle)',
+                    borderRadius: '12px',
+                    fontSize: '12px',
+                    color: 'var(--text-primary)',
+                  }}
+                  formatter={(val: number) => [`${val} mins`, 'Focus Time']}
+                />
+                <Bar dataKey="minutes" fill="var(--accent-warm-ochre)" radius={[6, 6, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </div>
+        </div>
+
+        {/* Right: When You Focus (Morning, Afternoon, Evening) */}
+        <div className="lg:col-span-4 rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs flex flex-col justify-between space-y-4">
+          <div>
+            <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
+              When You Work
+            </h2>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+              Focus time across the day
+            </p>
+          </div>
+
+          <div className="space-y-3 my-auto">
+            {timeOfDayData.map((item) => {
+              const Icon = item.slot === 'Morning' ? Sunrise : item.slot === 'Afternoon' ? Sun : Moon;
+              const totalMins = timeOfDayData.reduce((acc, curr) => acc + curr.minutes, 0) || 1;
+              const pct = Math.round((item.minutes / totalMins) * 100);
+
+              return (
+                <div key={item.slot} className="space-y-1.5 p-3 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)]">
+                  <div className="flex items-center justify-between text-xs">
+                    <div className="flex items-center gap-2 font-semibold text-[var(--text-primary)]">
+                      <Icon className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
+                      <span>{item.slot}</span>
+                    </div>
+                    <span className="font-medium text-[var(--text-secondary)]">
+                      {item.minutes}m ({pct}%)
                     </span>
                   </div>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    {insight.description}
-                  </p>
+                  <div className="h-1.5 w-full bg-[var(--card-surface)] rounded-full overflow-hidden border border-[var(--border-subtle)]">
+                    <div
+                      className="h-full bg-[var(--accent-terracotta)] rounded-full transition-all duration-500"
+                      style={{ width: `${pct}%` }}
+                    />
+                  </div>
                 </div>
-              ))}
-            </div>
+              );
+            })}
           </div>
 
-          {/* Visual Focus Journal & Session Velocity Chart */}
-          <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-5">
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-subtle)]">
-              <div>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-heading font-bold text-base text-[var(--text-primary)]">
-                    Recent Focus Journal & Velocity
-                  </h3>
-                  <span className="rounded-full bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] text-[10px] font-bold px-2.5 py-0.5 border border-[var(--accent-botanical-sage)]/30">
-                    {recentSessions.length} Logged Sprints
+          <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between text-xs text-[var(--text-muted)]">
+            <span>Average session:</span>
+            <strong className="text-[var(--text-primary)] font-semibold">{avgSessionDuration} mins</strong>
+          </div>
+        </div>
+      </div>
+
+      {/* 4. Practical Takeaways & Highlights */}
+      {smartInsights.length > 0 && (
+        <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-4">
+          <h2 className="font-heading font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
+            <span>Productivity Observations</span>
+          </h2>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3.5">
+            {smartInsights.map((insight) => (
+              <div
+                key={insight.id}
+                className="p-3.5 sm:p-4 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)] space-y-1.5"
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-[var(--text-primary)]">
+                    {insight.title}
+                  </span>
+                  <span className="rounded-md bg-[var(--card-surface)] px-2 py-0.5 text-[10px] font-semibold text-[var(--accent-warm-ochre)] border border-[var(--border-subtle)]">
+                    {insight.metric}
                   </span>
                 </div>
-                <p className="text-xs text-[var(--text-secondary)] mt-0.5">
-                  Visual velocity breakdown of recent focus sprints and real-time flow quality.
+                <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
+                  {insight.description}
                 </p>
               </div>
-
-              {/* View Toggle: Visual Chart vs Table List */}
-              <div className="flex items-center rounded-xl bg-[var(--surface-sunken)] p-1 border border-[var(--border-subtle)] text-xs self-start sm:self-auto">
-                <button
-                  type="button"
-                  onClick={() => setJournalViewMode('chart')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    journalViewMode === 'chart'
-                      ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs font-bold'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <BarChart2 className="w-3.5 h-3.5" />
-                  <span>Velocity Chart</span>
-                </button>
-
-                <button
-                  type="button"
-                  onClick={() => setJournalViewMode('table')}
-                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                    journalViewMode === 'table'
-                      ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs font-bold'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  <TableIcon className="w-3.5 h-3.5" />
-                  <span>Log List</span>
-                </button>
-              </div>
-            </div>
-
-            {journalViewMode === 'chart' ? (
-              <div className="space-y-4">
-                {/* Visual Bar Chart of Recent Sprint Durations & Quality Colors */}
-                <div className="h-56 w-full pt-2">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={sessionChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                      <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
-                      <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} unit="m" />
-                      <Tooltip
-                        contentStyle={{
-                          backgroundColor: 'var(--card-surface)',
-                          borderColor: 'var(--border-subtle)',
-                          borderRadius: '12px',
-                          fontSize: '12px',
-                          color: 'var(--text-primary)',
-                        }}
-                        formatter={(val: number, _name: string, props: any) => [
-                          `${val} mins (${props.payload.quality})`,
-                          props.payload.fullTitle,
-                        ]}
-                        labelFormatter={(_label: string, payload: any[]) => payload[0]?.payload.completedAt || ''}
-                      />
-                      <Bar dataKey="duration" radius={[6, 6, 0, 0]}>
-                        {sessionChartData.map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Bar>
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* Quality Legend & Interactive Ribbon */}
-                <div className="flex items-center justify-between flex-wrap gap-2 pt-3 border-t border-[var(--border-subtle)] text-xs">
-                  <div className="flex items-center gap-3">
-                    <span className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-botanical-sage)]" />
-                      High Flow
-                    </span>
-                    <span className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-warm-ochre)]" />
-                      Steady Flow
-                    </span>
-                    <span className="flex items-center gap-1.5 text-[var(--text-secondary)]">
-                      <span className="w-2.5 h-2.5 rounded-full bg-[var(--accent-dusty-rose)]" />
-                      Distracted
-                    </span>
-                  </div>
-                  <span className="text-[11px] text-[var(--text-muted)] font-mono">Bar height = Sprint Length (mins)</span>
-                </div>
-
-                {/* Visual Sprint Timeline Cards */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2">
-                  {recentSessions.map((session) => (
-                    <div
-                      key={session.id}
-                      className="p-3 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)] hover:border-[var(--accent-warm-ochre)]/40 transition flex flex-col justify-between space-y-2"
-                    >
-                      <div className="flex items-start justify-between gap-2">
-                        <p className="font-bold text-xs text-[var(--text-primary)] truncate">
-                          {session.taskTitle || 'Deep Focus Sprint'}
-                        </p>
-                        <span className="text-[10px] font-mono font-bold text-[var(--accent-terracotta)] shrink-0">
-                          {session.durationMinutes}m
-                        </span>
-                      </div>
-                      <div className="flex items-center justify-between text-[10px] text-[var(--text-muted)]">
-                        <span>{session.completedAt}</span>
-                        <span className={`px-1.5 py-0.5 rounded font-semibold ${
-                          session.quality === 'high_flow'
-                            ? 'bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)]'
-                            : session.quality === 'distracted'
-                            ? 'bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)]'
-                            : 'bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)]'
-                        }`}>
-                          {session.quality === 'high_flow' ? 'High Flow' : session.quality === 'distracted' ? 'Distracted' : 'Steady'}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              /* Detailed Table Log List */
-              <div className="space-y-2">
-                {recentSessions.map((session) => (
-                  <div
-                    key={session.id}
-                    className="flex items-center justify-between gap-3 p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-xs"
-                  >
-                    <div className="flex items-center gap-3 min-w-0">
-                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] shrink-0 font-bold">
-                        <Clock className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0">
-                        <p className="font-bold text-xs text-[var(--text-primary)] truncate">
-                          {session.taskTitle || 'Deep Focus Sprint'}
-                        </p>
-                        <p className="text-[10px] text-[var(--text-muted)]">{session.completedAt}</p>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-2 shrink-0">
-                      <span className="font-bold text-xs font-mono text-[var(--text-primary)]">
-                        {session.durationMinutes} mins
-                      </span>
-                      <span className="rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 text-[var(--accent-botanical-sage)] font-bold text-[9px] px-2 py-0.5">
-                        {session.quality === 'high_flow' ? 'High Flow' : session.quality === 'distracted' ? 'Distracted' : 'Steady'}
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
+            ))}
           </div>
         </div>
       )}
 
-      {/* SUB-TAB 2: Focus Trends & Velocity */}
-      {activeSubTab === 'trends' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-200">
-          {/* Daily Focus Duration Area & Bar Chart */}
-          <div className="lg:col-span-7 rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
-                  Daily Focus Duration ({timeHorizon === 'week' ? 'Past 7 Days' : timeHorizon === 'month' ? 'Past 30 Days' : 'All-Time'})
-                </h3>
-                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Total focus minutes invested per day</p>
-              </div>
-              <span className="rounded-full bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] px-2.5 py-1 text-[10px] font-bold font-mono">
-                Peak: {peakDay}
-              </span>
-            </div>
+      {/* 5. Recent Sessions Log (Straightforward List with Optional Duration Chart) */}
+      <div className="rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-subtle)]">
+          <div>
+            <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
+              Recent Focus Sessions
+            </h2>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+              Your latest focus sprints and logged times
+            </p>
+          </div>
 
-            <div className="h-64 w-full pt-2">
+          <div className="flex items-center rounded-xl bg-[var(--surface-sunken)] p-1 border border-[var(--border-subtle)] text-xs self-start sm:self-auto">
+            <button
+              type="button"
+              onClick={() => setJournalViewMode('table')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                journalViewMode === 'table'
+                  ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <TableIcon className="w-3.5 h-3.5" />
+              <span>List</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setJournalViewMode('chart')}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                journalViewMode === 'chart'
+                  ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <BarChart2 className="w-3.5 h-3.5" />
+              <span>Chart</span>
+            </button>
+          </div>
+        </div>
+
+        {recentSessions.length === 0 ? (
+          <div className="p-8 text-center text-xs text-[var(--text-muted)] space-y-1">
+            <p className="font-medium text-[var(--text-secondary)]">No focus sessions recorded yet</p>
+            <p>Start a timer from the Focus Mode tab to see your activity logged here.</p>
+          </div>
+        ) : journalViewMode === 'table' ? (
+          <div className="space-y-2">
+            {recentSessions.slice(0, 10).map((session) => (
+              <div
+                key={session.id}
+                className="flex items-center justify-between gap-3 p-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-xs"
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] shrink-0 font-bold">
+                    <Clock className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="font-bold text-xs text-[var(--text-primary)] truncate">
+                      {session.taskTitle || 'Focus Session'}
+                    </p>
+                    <p className="text-[10px] text-[var(--text-muted)]">{session.completedAt}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2.5 shrink-0">
+                  <span className="font-bold text-xs font-mono text-[var(--text-primary)]">
+                    {session.durationMinutes} mins
+                  </span>
+                  <span className={`rounded-full px-2 py-0.5 text-[10px] font-semibold border ${
+                    session.quality === 'high_flow'
+                      ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-700 dark:text-emerald-400'
+                      : session.quality === 'distracted'
+                      ? 'bg-rose-500/10 border-rose-500/30 text-rose-700 dark:text-rose-400'
+                      : 'bg-amber-500/10 border-amber-500/30 text-amber-700 dark:text-amber-400'
+                  }`}>
+                    {session.quality === 'high_flow' ? 'High Flow' : session.quality === 'distracted' ? 'Distracted' : 'Steady'}
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        ) : (
+          <div className="space-y-3">
+            <div className="h-48 w-full pt-2">
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weeklyFocusData}>
-                  <XAxis dataKey="day" stroke="var(--text-muted)" fontSize={12} tickLine={false} />
-                  <YAxis stroke="var(--text-muted)" fontSize={12} tickLine={false} unit="m" />
+                <BarChart data={sessionChartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <XAxis dataKey="name" stroke="var(--text-muted)" fontSize={11} tickLine={false} />
+                  <YAxis stroke="var(--text-muted)" fontSize={11} tickLine={false} unit="m" />
                   <Tooltip
                     contentStyle={{
                       backgroundColor: 'var(--card-surface)',
@@ -764,191 +588,33 @@ ${
                       fontSize: '12px',
                       color: 'var(--text-primary)',
                     }}
-                    formatter={(val: number) => [`${val} mins`, 'Focus Duration']}
+                    formatter={(val: number, _name: string, props: any) => [
+                      `${val} mins (${props.payload.quality})`,
+                      props.payload.fullTitle,
+                    ]}
                   />
-                  <Bar dataKey="minutes" fill="var(--accent-warm-ochre)" radius={[6, 6, 0, 0]} />
+                  <Bar dataKey="duration" radius={[6, 6, 0, 0]}>
+                    {sessionChartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Bar>
                 </BarChart>
               </ResponsiveContainer>
             </div>
-          </div>
-
-          {/* Time-of-Day Focus Distribution with Visual Progress */}
-          <div className="lg:col-span-5 rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs flex flex-col justify-between space-y-4">
-            <div>
-              <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
-                Peak Focus Window
-              </h3>
-              <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Chronobiological focus distribution</p>
-            </div>
-
-            <div className="space-y-3 my-2">
-              {timeOfDayData.map((item) => {
-                const Icon = item.slot === 'Morning' ? Sunrise : item.slot === 'Afternoon' ? Sun : Moon;
-                const totalMins = timeOfDayData.reduce((acc, curr) => acc + curr.minutes, 0) || 1;
-                const pct = Math.round((item.minutes / totalMins) * 100);
-
-                return (
-                  <div key={item.slot} className="space-y-1.5 p-3 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)]">
-                    <div className="flex items-center justify-between text-xs">
-                      <div className="flex items-center gap-2 font-bold text-[var(--text-primary)]">
-                        <Icon className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
-                        <span>{item.slot}</span>
-                      </div>
-                      <span className="font-bold text-[var(--text-secondary)]">
-                        {item.minutes} mins ({pct}%)
-                      </span>
-                    </div>
-                    <div className="h-2 w-full bg-[var(--card-surface)] rounded-full overflow-hidden border border-[var(--border-subtle)]">
-                      <div
-                        className="h-full bg-[var(--accent-terracotta)] rounded-full transition-all duration-500"
-                        style={{ width: `${pct}%` }}
-                      />
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Velocity Metrics Snippet */}
-            <div className="pt-3 border-t border-[var(--border-subtle)] grid grid-cols-2 gap-2 text-xs">
-              <div className="p-2.5 rounded-xl bg-[var(--surface-sunken)]">
-                <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Avg Session</p>
-                <p className="font-bold text-sm text-[var(--text-primary)] mt-0.5">{avgSessionDuration} mins</p>
-              </div>
-              <div className="p-2.5 rounded-xl bg-[var(--surface-sunken)]">
-                <p className="text-[10px] text-[var(--text-muted)] font-bold uppercase">Peak Day</p>
-                <p className="font-bold text-sm text-[var(--accent-warm-ochre)] mt-0.5">{peakDay}</p>
-              </div>
+            <div className="flex items-center gap-3 text-xs text-[var(--text-muted)] pt-2 border-t border-[var(--border-subtle)]">
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--accent-botanical-sage)]" /> High Flow
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--accent-warm-ochre)]" /> Steady
+              </span>
+              <span className="flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-[var(--accent-dusty-rose)]" /> Distracted
+              </span>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* SUB-TAB 3: Habit Consistency & Quality */}
-      {activeSubTab === 'consistency' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 animate-in fade-in duration-200">
-          {/* Energy & Quality Ratings with Donut Chart */}
-          <div className="lg:col-span-6 rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
-                  Session Flow & Energy Quality
-                </h3>
-                <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Post-focus reflection quality breakdown</p>
-              </div>
-              <Zap className="h-4 w-4 text-[var(--accent-botanical-sage)]" />
-            </div>
-
-            {/* Visual Donut Chart */}
-            <div className="h-48 w-full flex items-center justify-center pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={qualityBreakdown}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={45}
-                    outerRadius={70}
-                    paddingAngle={4}
-                    dataKey="count"
-                  >
-                    {qualityBreakdown.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--card-surface)',
-                      borderColor: 'var(--border-subtle)',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      color: 'var(--text-primary)',
-                    }}
-                    formatter={(val: number, name: string) => [`${val} sessions`, name]}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="space-y-2 pt-1">
-              {qualityBreakdown.map((q: FocusQualityStat) => (
-                <div key={q.label} className="space-y-1 p-2.5 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)]">
-                  <div className="flex justify-between text-xs">
-                    <span className="font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                      <span className="w-2 h-2 rounded-full" style={{ backgroundColor: q.color }} />
-                      {q.label}
-                    </span>
-                    <span className="font-bold text-[var(--text-secondary)] font-mono">
-                      {q.count} sessions ({q.pct}%)
-                    </span>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Time Allocation Category Distribution with Donut Chart */}
-          <div className="lg:col-span-6 rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs space-y-4 flex flex-col justify-between">
-            <div>
-              <div className="flex items-center justify-between">
-                <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
-                  Time Allocation Distribution
-                </h3>
-                <Layers className="h-4 w-4 text-[var(--accent-terracotta)]" />
-              </div>
-              <p className="text-[11px] text-[var(--text-secondary)] mt-0.5">Deep sprints, routine habits, and recovery balance</p>
-            </div>
-
-            {/* Visual Donut Chart */}
-            <div className="h-48 w-full flex items-center justify-center pt-2">
-              <ResponsiveContainer width="100%" height="100%">
-                <PieChart>
-                  <Pie
-                    data={categoryDistribution}
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={45}
-                    outerRadius={70}
-                    paddingAngle={4}
-                    dataKey="value"
-                  >
-                    {categoryDistribution.map((entry: CategoryDistributionStat, index: number) => (
-                      <Cell key={`cell-${index}`} fill={entry.color} />
-                    ))}
-                  </Pie>
-                  <Tooltip
-                    contentStyle={{
-                      backgroundColor: 'var(--card-surface)',
-                      borderColor: 'var(--border-subtle)',
-                      borderRadius: '12px',
-                      fontSize: '12px',
-                      color: 'var(--text-primary)',
-                    }}
-                    formatter={(val: number) => [`${val}%`, 'Allocation']}
-                  />
-                </PieChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="space-y-2">
-              {categoryDistribution.map((cat: CategoryDistributionStat) => (
-                <div key={cat.name} className="p-2.5 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)] flex items-center justify-between text-xs">
-                  <span className="font-bold text-[var(--text-primary)] flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: cat.color }} />
-                    {cat.name}
-                  </span>
-                  <span className="font-bold font-mono text-[var(--text-secondary)]">{cat.value}%</span>
-                </div>
-              ))}
-            </div>
-
-            <div className="rounded-xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--accent-botanical-sage)]/10 p-3 flex items-center gap-2 text-xs text-[var(--text-primary)]">
-              <ShieldCheck className="h-4 w-4 text-[var(--accent-botanical-sage)] shrink-0" />
-              <span>Healthy focus-to-recovery ratio maintained.</span>
-            </div>
-          </div>
-        </div>
-      )}
+        )}
+      </div>
     </div>
   );
 };

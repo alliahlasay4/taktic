@@ -34,6 +34,8 @@ import { useInAppNotifications } from './hooks/useInAppNotifications';
 import { NotificationToastOverlay } from './components/layout/NotificationToastOverlay';
 import { QuickNotesDrawer } from './components/notes/QuickNotesDrawer';
 import { QuickNotesFloatingTrigger } from './components/notes/QuickNotesFloatingTrigger';
+import { CalendarDrawer } from './components/inbox/CalendarDrawer';
+import { CalendarFloatingTrigger } from './components/inbox/CalendarFloatingTrigger';
 import { TimerProvider } from './context/TimerContext';
 
 function MainLayout() {
@@ -134,6 +136,18 @@ function MainLayout() {
 
   // Quick Notes Scratchpad Hook & Drawer State
   const [isQuickNotesOpen, setIsQuickNotesOpen] = useState<boolean>(false);
+  const [isCalendarOpen, setIsCalendarOpen] = useState<boolean>(false);
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
+
+  const overdueCalendarTasksCount = useMemo(() => {
+    const today = new Date().toISOString().split('T')[0];
+    return tasks.filter((t) => {
+      if (t.completed || !t.dueDate) return false;
+      if (t.dueDate.toLowerCase() === 'today' || t.dueDate.toLowerCase() === 'tomorrow' || t.dueDate === 'This Weekend') return false;
+      return t.dueDate < today;
+    }).length;
+  }, [tasks]);
+
   const {
     notes: quickNotes,
     addNote: handleAddQuickNote,
@@ -532,6 +546,9 @@ function MainLayout() {
             onOpenProfile={() => setActiveTab('profile')}
             onToggleQuickNotes={() => setIsQuickNotesOpen((prev) => !prev)}
             notesCount={quickNotes.filter((n) => !n.archived).length}
+            onToggleCalendar={() => setIsCalendarOpen((prev) => !prev)}
+            calendarActiveDate={selectedCalendarDate}
+            overdueTasksCount={overdueCalendarTasksCount}
             notifications={notifications}
             unreadCount={unreadCount}
             onMarkAsRead={markAsRead}
@@ -629,6 +646,8 @@ function MainLayout() {
                       onArchiveTask={handleArchiveTask}
                       onSweepCompleted={handleSweepCompletedTasks}
                       onRolloverOverdueTasks={handleRolloverOverdueTasks}
+                      selectedCalendarDate={selectedCalendarDate}
+                      onSelectCalendarDate={setSelectedCalendarDate}
                     />
                   )}
 
@@ -775,6 +794,14 @@ function MainLayout() {
           isOpen={isQuickNotesOpen}
         />
 
+        {/* Global Calendar Floating Trigger (stacked vertically above QuickNotes at bottom-21) */}
+        <CalendarFloatingTrigger
+          onClick={() => setIsCalendarOpen(true)}
+          isOpen={isCalendarOpen}
+          selectedDate={selectedCalendarDate}
+          overdueCount={overdueCalendarTasksCount}
+        />
+
         {/* Global Quick Notes Slide-over Drawer */}
         <QuickNotesDrawer
           isOpen={isQuickNotesOpen}
@@ -790,6 +817,25 @@ function MainLayout() {
           onConvertToTask={(taskData) => {
             handleAddTask(taskData);
             notify('Task Created from Note', `Added "${taskData.title}" to your active master tasks.`, 'system', 'inbox');
+          }}
+          onSwitchToCalendar={() => {
+            setIsQuickNotesOpen(false);
+            setIsCalendarOpen(true);
+          }}
+        />
+
+        {/* Global Calendar Slide-over Drawer */}
+        <CalendarDrawer
+          isOpen={isCalendarOpen}
+          onClose={() => setIsCalendarOpen(false)}
+          tasks={tasks}
+          selectedDate={selectedCalendarDate}
+          onSelectDate={(date) => {
+            setSelectedCalendarDate(date);
+          }}
+          onSwitchToNotes={() => {
+            setIsCalendarOpen(false);
+            setIsQuickNotesOpen(true);
           }}
         />
 

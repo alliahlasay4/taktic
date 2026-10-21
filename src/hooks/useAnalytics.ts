@@ -213,7 +213,7 @@ export function useAnalytics() {
         avgSessionDuration: 25,
         peakDay: 'Thursday',
         rhythmScore: 88,
-        rhythmRankTitle: 'Flow Architect',
+        rhythmRankTitle: 'On Track',
       };
     }
 
@@ -229,7 +229,7 @@ export function useAnalytics() {
           avgSessionDuration: initialCache.avgSessionDuration || 0,
           peakDay: initialCache.peakDay || 'None',
           rhythmScore: initialCache.rhythmScore || 0,
-          rhythmRankTitle: initialCache.rhythmRankTitle || 'Momentum Initiate',
+          rhythmRankTitle: initialCache.rhythmRankTitle || 'Getting Started',
         };
       }
       return {
@@ -242,7 +242,7 @@ export function useAnalytics() {
         avgSessionDuration: 0,
         peakDay: 'None',
         rhythmScore: 0,
-        rhythmRankTitle: 'Momentum Initiate',
+        rhythmRankTitle: 'Getting Started',
       };
     }
 
@@ -390,9 +390,10 @@ export function useAnalytics() {
       const qualityScore = Math.round(flowRatio * 30);
 
       calculatedScore = Math.min(100, Math.max(20, focusScore + habitScore + qualityScore));
-      if (calculatedScore >= 90) calculatedRank = 'Flow Master';
-      else if (calculatedScore >= 75) calculatedRank = 'Flow Architect';
-      else if (calculatedScore >= 50) calculatedRank = 'Focus Builder';
+      if (calculatedScore >= 80) calculatedRank = 'On Track';
+      else if (calculatedScore >= 60) calculatedRank = 'Stable';
+      else if (calculatedScore >= 40) calculatedRank = 'Building';
+      else calculatedRank = 'Needs Attention';
     }
 
     return {

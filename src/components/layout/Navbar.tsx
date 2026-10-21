@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Flame, Volume2, Bell, Sun, Moon, StickyNote } from 'lucide-react';
+import { Flame, Volume2, Bell, Sun, Moon, StickyNote, Calendar as CalendarIcon } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import { InAppNotification, ActiveTab } from '../../types';
 import { NotificationCenterDropdown } from './NotificationCenterDropdown';
@@ -16,6 +16,9 @@ interface NavbarProps {
   onOpenProfile?: () => void;
   onToggleQuickNotes?: () => void;
   notesCount?: number;
+  onToggleCalendar?: () => void;
+  calendarActiveDate?: string | null;
+  overdueTasksCount?: number;
   notifications?: InAppNotification[];
   unreadCount?: number;
   onMarkAsRead?: (id: string) => void;
@@ -35,6 +38,9 @@ const NavbarComponent: React.FC<NavbarProps> = ({
   onOpenProfile,
   onToggleQuickNotes,
   notesCount = 0,
+  onToggleCalendar,
+  calendarActiveDate,
+  overdueTasksCount = 0,
   notifications = [],
   unreadCount = 0,
   onMarkAsRead = () => { },
@@ -84,6 +90,30 @@ const NavbarComponent: React.FC<NavbarProps> = ({
             <Flame className="h-3.5 w-3.5 fill-[#C06C4C]" strokeWidth={1.5} aria-hidden="true" />
             <span>{userStreak}<span className="hidden sm:inline"> Day Streak</span><span className="sm:hidden">d</span></span>
           </div>
+
+          {/* Calendar & Schedule Overview Trigger (Desktop & Tablet only; mobile uses bottom-right floating trigger) */}
+          {onToggleCalendar && (
+            <button
+              type="button"
+              onClick={onToggleCalendar}
+              className={`hidden sm:flex relative h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-xl border transition-all cursor-pointer shadow-2xs ${
+                calendarActiveDate
+                  ? 'border-[var(--accent-botanical-sage)] bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)]'
+                  : 'border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)] hover:border-[var(--accent-botanical-sage)]/50'
+              }`}
+              title={calendarActiveDate ? `Active Filter: ${calendarActiveDate}` : 'Calendar & Schedule Overview'}
+              aria-label="Calendar & Schedule Overview"
+            >
+              <CalendarIcon className="h-4 w-4 text-[var(--accent-botanical-sage)]" strokeWidth={1.5} aria-hidden="true" />
+              {calendarActiveDate ? (
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 rounded-full bg-[var(--accent-botanical-sage)] ring-2 ring-[var(--card-surface)]" />
+              ) : overdueTasksCount > 0 ? (
+                <span className="absolute -top-1 -right-1 flex h-4 w-4 items-center justify-center rounded-full bg-[#9E7328] dark:bg-[#E0AF5E] text-[10px] font-bold text-white dark:text-black ring-2 ring-[var(--card-surface)]">
+                  {overdueTasksCount > 9 ? '9+' : overdueTasksCount}
+                </span>
+              ) : null}
+            </button>
+          )}
 
           {/* Quick Notes Scratchpad Trigger (Desktop & Tablet only; mobile uses bottom-right floating trigger) */}
           {onToggleQuickNotes && (

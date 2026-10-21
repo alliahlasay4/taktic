@@ -1,18 +1,22 @@
 import React, { useState } from 'react';
-import { ChevronLeft, ChevronRight, Calendar, AlertCircle, Clock, CheckCircle2 } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Calendar, AlertCircle, Clock, CheckCircle2, X, StickyNote } from 'lucide-react';
 import { Task } from '../../types';
 import { getLocalDateString, getDateWithOffset } from '../../lib/streak';
 
-interface InboxCalendarCardProps {
+export interface InboxCalendarCardProps {
   tasks: Task[];
   selectedDate: string | null;
   onSelectDate: (dateStr: string | null) => void;
+  onClose?: () => void;
+  onSwitchToNotes?: () => void;
 }
 
 export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
   tasks,
   selectedDate,
   onSelectDate,
+  onClose,
+  onSwitchToNotes,
 }) => {
   const [currentDate, setCurrentDate] = useState(new Date());
 
@@ -89,48 +93,66 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
   }
 
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-6 shadow-xs flex flex-col justify-between space-y-5 transition-colors duration-300">
-      {/* Card Header & Controls */}
-      <div className="space-y-4">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/30">
-              <Calendar className="h-4.5 w-4.5" />
-            </div>
-            <div>
-              <h3 className="font-heading font-bold text-base text-[var(--text-primary)]">
-                {monthNames[month]} {year}
-              </h3>
-              <p className="text-[11px] text-[var(--text-secondary)]"> Schedule Overview</p>
-            </div>
+    <div className="flex flex-col h-full justify-between bg-[var(--bg-main)] text-[var(--text-primary)]">
+      {/* Drawer Header matching QuickNotes style */}
+      <div className="px-4 sm:px-5 py-3.5 sm:py-4 border-b border-[var(--border-subtle)] bg-[var(--card-surface)] flex items-center justify-between shrink-0">
+        <div className="flex items-center gap-2.5">
+          <div className="p-2 rounded-xl bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)]">
+            <Calendar className="w-4 h-4" />
           </div>
-
-          {/* Prev/Next Navigation */}
-          <div className="flex items-center gap-1">
-            <button
-              onClick={goToToday}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] px-2.5 py-1 text-[11px] font-bold text-[var(--accent-botanical-sage)] hover:border-[var(--accent-botanical-sage)]/50 transition"
-              title="Jump to Today"
-            >
-              Today
-            </button>
-            <button
-              onClick={prevMonth}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
-              title="Previous Month"
-            >
-              <ChevronLeft className="h-4 w-4" />
-            </button>
-            <button
-              onClick={nextMonth}
-              className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
-              title="Next Month"
-            >
-              <ChevronRight className="h-4 w-4" />
-            </button>
+          <div>
+            <div className="flex items-center gap-2">
+              <h2 className="text-sm font-bold text-[var(--text-primary)]">
+                {monthNames[month]} {year}
+              </h2>
+              {selectedDate && (
+                <span className="px-2 py-0.5 text-[10px] font-semibold rounded-md bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/30">
+                  Filtered
+                </span>
+              )}
+            </div>
+            <p className="text-[11px] text-[var(--text-muted)]">
+              Interactive schedule & date overview
+            </p>
           </div>
         </div>
 
+        <div className="flex items-center gap-1.5">
+          <button
+            onClick={goToToday}
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] px-2.5 py-1 text-[11px] font-bold text-[var(--accent-botanical-sage)] hover:border-[var(--accent-botanical-sage)]/50 transition"
+            title="Jump to Today"
+          >
+            Today
+          </button>
+          <button
+            onClick={prevMonth}
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
+            title="Previous Month"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <button
+            onClick={nextMonth}
+            className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] p-1.5 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
+            title="Next Month"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="p-1.5 rounded-xl text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition-colors ml-1"
+              aria-label="Close calendar drawer"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Scrollable Body */}
+      <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5">
         {/* Day of Week Labels */}
         <div className="grid grid-cols-7 gap-1 text-center text-[11px] font-bold text-[var(--text-muted)] mb-1 uppercase tracking-wider font-heading">
           {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map((day) => (
@@ -163,24 +185,26 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
                     onSelectDate(dateKey);
                   }
                 }}
-                className={`relative flex flex-col items-center justify-center h-10 rounded-xl text-xs font-semibold transition group ${isSelected
-                  ? 'bg-[var(--accent-botanical-sage)] text-white shadow-xs font-bold z-10 scale-105'
-                  : isToday
-                    ? 'border-2 border-[var(--accent-botanical-sage)]/60 bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] font-bold'
-                    : 'bg-[var(--bg-main)]/60 text-[var(--text-primary)] hover:border-[var(--border-subtle)] hover:bg-[var(--card-hover)]'
-                  }`}
+                className={`relative flex flex-col items-center justify-center h-10 rounded-xl text-xs font-semibold transition group ${
+                  isSelected
+                    ? 'bg-[var(--accent-botanical-sage)] text-white shadow-xs font-bold z-10 scale-105'
+                    : isToday
+                      ? 'border-2 border-[var(--accent-botanical-sage)]/60 bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] font-bold'
+                      : 'bg-[var(--card-surface)] text-[var(--text-primary)] border border-[var(--border-subtle)] hover:border-[var(--accent-botanical-sage)]/40 hover:bg-[var(--card-hover)]'
+                }`}
               >
                 <span className="leading-none">{dayNum}</span>
 
                 {/* Subtle Dot Indicator */}
                 {taskCount > 0 && (
                   <span
-                    className={`mt-1 h-1.5 w-1.5 rounded-full transition-all ${isSelected
+                    className={`mt-1 h-1.5 w-1.5 rounded-full transition-all ${
+                      isSelected
                         ? 'bg-white'
                         : isToday
                           ? 'bg-[var(--accent-botanical-sage)]'
                           : 'bg-[var(--accent-botanical-sage)]'
-                      }`}
+                    }`}
                     title={`${taskCount} task(s) scheduled`}
                   />
                 )}
@@ -188,65 +212,95 @@ export const InboxCalendarCard: React.FC<InboxCalendarCardProps> = ({
             );
           })}
         </div>
-      </div>
 
-      {/* Selected Date Tasks Preview */}
-      {selectedDate && (
-        <div className="pt-3 border-t border-[var(--border-subtle)] space-y-2">
-          <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-primary)]">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)]" />
-              Tasks for {selectedDate === todayStr ? 'Today' : selectedDate}
-            </span>
-            <span className="text-[11px] font-mono text-[var(--accent-botanical-sage)] bg-[var(--accent-botanical-sage)]/15 px-2 py-0.5 rounded-md">
-              {getTasksForDate(selectedDate).length} scheduled
-            </span>
+        {/* Selected Date Tasks Preview */}
+        {selectedDate && (
+          <div className="pt-4 border-t border-[var(--border-subtle)] space-y-2.5">
+            <div className="flex items-center justify-between text-xs font-semibold text-[var(--text-primary)]">
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)]" />
+                Tasks for {selectedDate === todayStr ? 'Today' : selectedDate}
+              </span>
+              <button
+                onClick={() => onSelectDate(null)}
+                className="text-[11px] text-[var(--accent-botanical-sage)] hover:underline"
+              >
+                Clear filter
+              </button>
+            </div>
+
+            {getTasksForDate(selectedDate).length === 0 ? (
+              <p className="text-[11px] text-[var(--text-muted)] italic py-2">No tasks scheduled for this date.</p>
+            ) : (
+              <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                {getTasksForDate(selectedDate).map((t) => (
+                  <div
+                    key={t.id}
+                    className="flex items-center justify-between p-2.5 rounded-xl bg-[var(--card-surface)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)] shadow-2xs"
+                  >
+                    <span className="truncate font-medium">{t.title}</span>
+                    <span className="text-[10px] font-mono text-[var(--accent-terracotta)] shrink-0 ml-2">
+                      {t.estimatedMinutes ? `${t.estimatedMinutes}m` : ''}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Quick Schedule Statistics */}
+        <div className="pt-3 border-t border-[var(--border-subtle)] grid grid-cols-3 gap-2 text-center">
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-2.5 shadow-2xs">
+            <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1 font-semibold">
+              <Clock className="h-3 w-3 text-[var(--accent-botanical-sage)]" /> Due Today
+            </p>
+            <p className="font-heading font-bold text-sm text-[var(--accent-botanical-sage)] mt-0.5">{todayTasksCount}</p>
           </div>
 
-          {getTasksForDate(selectedDate).length === 0 ? (
-            <p className="text-[11px] text-[var(--text-muted)] italic">No tasks scheduled for this date.</p>
-          ) : (
-            <div className="space-y-1.5 max-h-36 overflow-y-auto pr-1">
-              {getTasksForDate(selectedDate).map((t) => (
-                <div
-                  key={t.id}
-                  className="flex items-center justify-between p-2 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] text-xs text-[var(--text-primary)]"
-                >
-                  <span className="truncate font-medium">{t.title}</span>
-                  <span className="text-[10px] font-mono text-[var(--accent-terracotta)] shrink-0 ml-2">
-                    {t.estimatedMinutes ? `${t.estimatedMinutes}m` : ''}
-                  </span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      )}
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-2.5 shadow-2xs">
+            <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1 font-semibold">
+              <AlertCircle className="h-3 w-3 text-[#9E7328] dark:text-[#E0AF5E]" /> Overdue
+            </p>
+            <p className={`font-heading font-bold text-sm mt-0.5 ${overdueCount > 0 ? 'text-[#9E7328] dark:text-[#E0AF5E]' : 'text-[var(--text-muted)]'}`}>
+              {overdueCount}
+            </p>
+          </div>
 
-      {/* Quick Schedule Statistics */}
-      <div className="pt-3 border-t border-[var(--border-subtle)] grid grid-cols-3 gap-2 text-center">
-        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2.5">
-          <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1 font-semibold">
-            <Clock className="h-3 w-3 text-[var(--accent-botanical-sage)]" /> Due Today
-          </p>
-          <p className="font-heading font-bold text-sm text-[var(--accent-botanical-sage)] mt-0.5">{todayTasksCount}</p>
+          <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-2.5 shadow-2xs">
+            <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1 font-semibold">
+              <CheckCircle2 className="h-3 w-3 text-[var(--accent-terracotta)]" /> Scheduled
+            </p>
+            <p className="font-heading font-bold text-sm text-[var(--accent-terracotta)] mt-0.5">{totalScheduled}</p>
+          </div>
         </div>
+      </div>
 
-        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2.5">
-          <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1 font-semibold">
-            <AlertCircle className="h-3 w-3 text-[#9E7328] dark:text-[#E0AF5E]" /> Overdue
-          </p>
-          <p className={`font-heading font-bold text-sm mt-0.5 ${overdueCount > 0 ? 'text-[#9E7328] dark:text-[#E0AF5E]' : 'text-[var(--text-muted)]'}`}>
-            {overdueCount}
-          </p>
-        </div>
-
-        <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-2.5">
-          <p className="text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-1 font-semibold">
-            <CheckCircle2 className="h-3 w-3 text-[var(--accent-terracotta)]" /> Scheduled
-          </p>
-          <p className="font-heading font-bold text-sm text-[var(--accent-terracotta)] mt-0.5">{totalScheduled}</p>
-        </div>
+      {/* Drawer Footer Info with View Switcher */}
+      <div className="p-3 border-t border-[var(--border-subtle)] bg-[var(--card-surface)] flex items-center justify-between text-[11px] text-[var(--text-muted)] gap-2 shrink-0">
+        {onSwitchToNotes ? (
+          <div className="flex items-center gap-1 bg-[var(--bg-main)] p-1 rounded-xl border border-[var(--border-subtle)] shadow-2xs">
+            <button
+              type="button"
+              onClick={onSwitchToNotes}
+              className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-medium rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition-all"
+              title="Switch to Tactical Notepad"
+            >
+              <StickyNote className="w-3 h-3 text-[var(--accent-warm-ochre)]" />
+              <span>Notepad</span>
+            </button>
+            <span className="flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-[var(--accent-botanical-sage)] text-white shadow-2xs">
+              <Calendar className="w-3 h-3" />
+              <span>Calendar</span>
+            </span>
+          </div>
+        ) : (
+          <span className="flex items-center gap-1.5">
+            <Calendar className="w-3.5 h-3.5 text-[var(--accent-botanical-sage)]" />
+            <span>Click any date to filter your master inbox</span>
+          </span>
+        )}
+        <span className="shrink-0 text-[10px] opacity-75">Esc to close</span>
       </div>
     </div>
   );
