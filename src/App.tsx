@@ -226,6 +226,32 @@ function MainLayout() {
       } catch {}
     }
 
+    // Check if this invite is from oneself
+    const urlInviterId = urlParams.get('inviter_id');
+    const urlEmail = urlParams.get('email');
+    const isSelfInvite = Boolean(
+      (candidate && invites.some((inv) => inv.inviteToken === candidate?.token)) ||
+      (user?.id && urlInviterId && urlInviterId === user.id) ||
+      (user?.email && urlEmail && urlEmail.toLowerCase() === user.email.toLowerCase()) ||
+      (user?.id && candidate && currentUserName && candidate.inviter.toLowerCase() === currentUserName.toLowerCase())
+    );
+
+    if (isSelfInvite) {
+      localStorage.removeItem('taktic_pending_circle_invite');
+      sessionStorage.removeItem('taktic_pending_circle_invite');
+      if (typeof window !== 'undefined') {
+        const url = new URL(window.location.href);
+        url.searchParams.delete('circle_invite');
+        url.searchParams.delete('inviter');
+        url.searchParams.delete('inviter_id');
+        url.searchParams.delete('email');
+        url.searchParams.delete('name');
+        window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
+      }
+      setPendingCircleInvite(null);
+      return;
+    }
+
     // If candidate exists but is already an active partner, clear and discard
     if (candidate && existingMemberNames.has(candidate.inviter.toLowerCase())) {
       localStorage.removeItem('taktic_pending_circle_invite');
@@ -234,6 +260,9 @@ function MainLayout() {
         const url = new URL(window.location.href);
         url.searchParams.delete('circle_invite');
         url.searchParams.delete('inviter');
+        url.searchParams.delete('inviter_id');
+        url.searchParams.delete('email');
+        url.searchParams.delete('name');
         window.history.replaceState(null, '', url.pathname + (url.search ? url.search : ''));
       }
       setPendingCircleInvite(null);
@@ -623,6 +652,7 @@ function MainLayout() {
                       userStreak={userStreak}
                       currentUserId={user?.id}
                       currentUserName={currentUserName}
+                      currentUserEmail={user?.email}
                       onToggleLike={toggleLikePost}
                       onBroadcastAchievement={broadcastAchievement}
                       onDeletePost={deletePost}

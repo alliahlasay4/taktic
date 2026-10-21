@@ -27,12 +27,25 @@ export const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ childr
 
     // Automatically capture & preserve invite token across all tabs using localStorage & sessionStorage
     if (circleInvite) {
-      const inviteData = JSON.stringify({
-        token: circleInvite,
-        inviter: inviterParam ? decodeURIComponent(inviterParam) : 'Circle Partner',
-      });
-      localStorage.setItem('taktic_pending_circle_invite', inviteData);
-      sessionStorage.setItem('taktic_pending_circle_invite', inviteData);
+      const inviterIdParam = searchParams.get('inviter_id');
+      const emailParam = searchParams.get('email');
+      const isSelf = (user?.id && inviterIdParam && inviterIdParam === user.id) ||
+                     (user?.email && emailParam && emailParam.toLowerCase() === user.email.toLowerCase());
+
+      if (!isSelf) {
+        const inviteData = JSON.stringify({
+          token: circleInvite,
+          inviter: inviterParam ? decodeURIComponent(inviterParam) : 'Circle Partner',
+          inviterId: inviterIdParam || undefined,
+          email: emailParam || undefined,
+          createdAt: new Date().toISOString(),
+        });
+        localStorage.setItem('taktic_pending_circle_invite', inviteData);
+        sessionStorage.setItem('taktic_pending_circle_invite', inviteData);
+      } else {
+        localStorage.removeItem('taktic_pending_circle_invite');
+        sessionStorage.removeItem('taktic_pending_circle_invite');
+      }
     }
 
     const isSignUp =

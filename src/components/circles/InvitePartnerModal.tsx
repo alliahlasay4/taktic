@@ -6,6 +6,7 @@ interface InvitePartnerModalProps {
   onClose: () => void;
   onSendInvite: (email: string, name?: string) => Promise<{ success: boolean; inviteLink: string; message: string }>;
   onGenerateMagicLink: () => { token: string; link: string };
+  currentUserEmail?: string;
 }
 
 export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
@@ -13,12 +14,14 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
   onClose,
   onSendInvite,
   onGenerateMagicLink,
+  currentUserEmail,
 }) => {
   const [activeTab, setActiveTab] = useState<'email' | 'link'>('email');
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [successInfo, setSuccessInfo] = useState<{ link: string; email: string } | null>(null);
 
   if (!isOpen) return null;
@@ -27,16 +30,28 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
 
   const handleEmailSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim()) return;
+    setErrorMessage(null);
+    const targetEmail = email.trim().toLowerCase();
+    if (!targetEmail) return;
+
+    if (currentUserEmail && targetEmail === currentUserEmail.trim().toLowerCase()) {
+      setErrorMessage("You cannot invite yourself! Please enter a colleague or friend's email.");
+      return;
+    }
 
     setIsLoading(true);
     try {
-      const result = await onSendInvite(email.trim(), name.trim() || undefined);
+      const result = await onSendInvite(targetEmail, name.trim() || undefined);
       if (result.success) {
-        setSuccessInfo({ link: result.inviteLink, email: email.trim() });
+        setSuccessInfo({ link: result.inviteLink, email: targetEmail });
         setEmail('');
         setName('');
+        setErrorMessage(null);
+      } else {
+        setErrorMessage(result.message || 'Failed to send invitation. Please try again.');
       }
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Something went wrong while sending the invitation.');
     } finally {
       setIsLoading(false);
     }
@@ -159,6 +174,11 @@ export const InvitePartnerModal: React.FC<InvitePartnerModalProps> = ({
               </div>
             ) : (
               <form onSubmit={handleEmailSubmit} className="space-y-4">
+                {errorMessage && (
+                  <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-3 text-xs text-red-500 dark:text-red-400">
+                    {errorMessage}
+                  </div>
+                )}
                 <div>
                   <label htmlFor="partner-email" className="block text-xs font-semibold text-[var(--text-secondary)] mb-1">
                     Partner Email Address <span className="text-[var(--accent-terracotta)]">*</span>

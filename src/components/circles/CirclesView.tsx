@@ -44,6 +44,7 @@ interface CirclesViewProps {
   userStreak: number;
   currentUserId?: string;
   currentUserName?: string;
+  currentUserEmail?: string;
   onToggleLike: (postId: string, reaction?: string) => void;
   onBroadcastAchievement?: (type: CircleFeedPost['type'], title: string, detail: string, isPrivate?: boolean) => void;
   onDeletePost?: (postId: string) => void;
@@ -67,6 +68,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
   userStreak,
   currentUserId,
   currentUserName,
+  currentUserEmail,
   onToggleLike,
   onBroadcastAchievement,
   onDeletePost,
@@ -990,6 +992,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
           onClose={() => setIsInviteModalOpen(false)}
           onSendInvite={onSendInvite}
           onGenerateMagicLink={onGenerateMagicLink}
+          currentUserEmail={currentUserEmail}
         />
       )}
 
