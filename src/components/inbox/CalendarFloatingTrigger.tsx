@@ -20,7 +20,7 @@ export const CalendarFloatingTrigger: React.FC<CalendarFloatingTriggerProps> = (
     <button
       type="button"
       onClick={onClick}
-      className="group fixed bottom-21 right-6 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--card-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] shadow-lg hover:shadow-xl hover:border-[var(--accent-botanical-sage)]/60 hover:scale-105 active:scale-95 transition-all duration-200"
+      className="sm:hidden group fixed bottom-20 right-5 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--card-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] shadow-lg hover:shadow-xl hover:border-[var(--accent-botanical-sage)]/60 hover:scale-105 active:scale-95 transition-all duration-200"
       aria-expanded={isOpen}
       aria-label="Calendar & Schedule Overview"
       title={selectedDate ? `Filtered: ${selectedDate}` : 'Calendar & Schedule Overview'}

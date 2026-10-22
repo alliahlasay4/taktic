@@ -447,7 +447,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
   return (
     <>
       {/* Mobile Drawer Trigger Bar (Visible only on < 1024px viewports) */}
-      <div className="flex items-center justify-between lg:hidden w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3 shadow-xs mb-4">
+      <div className="flex items-center justify-between lg:hidden w-full rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3 shadow-xs">
         <div className="flex items-center gap-2">
           <span className="text-xs font-heading font-bold text-[var(--text-primary)]">
             Menu Navigation

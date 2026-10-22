@@ -204,7 +204,7 @@ ${
   };
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-300 max-w-5xl mx-auto">
+    <div className="space-y-3 sm:space-y-6 animate-in fade-in duration-300 max-w-5xl mx-auto">
       {/* 1. Header: Clean title, Time Horizon Pills & Export */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
         <div>

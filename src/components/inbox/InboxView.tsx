@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
-import { Plus, Search, Inbox, Tag as TagIcon, X, Calendar as CalendarIcon, Zap, RefreshCw, Sparkles, FolderArchive, SlidersHorizontal, RotateCcw, ChevronDown, Archive } from 'lucide-react';
+import { Plus, Search, Inbox, Tag as TagIcon, X, Calendar as CalendarIcon, Zap, RefreshCw, Sparkles, FolderArchive, SlidersHorizontal, RotateCcw, ChevronDown, Archive, Star } from 'lucide-react';
 import { Task, PriorityLevel } from '../../types';
 import { TaskItem } from './TaskItem';
-import { FocusQueue } from './FocusQueue';
 import { TaskFormModal } from './TaskFormModal';
 import { Pagination } from '../common/Pagination';
 
@@ -50,6 +49,11 @@ export const InboxView: React.FC<InboxViewProps> = ({
   const [showCompleted, setShowCompleted] = useState(true);
   const [isSortDropdownOpen, setIsSortDropdownOpen] = useState(false);
   const [isPriorityDropdownOpen, setIsPriorityDropdownOpen] = useState(false);
+  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
+
+  // Mobile dedicated UI state
+  const [isMobileSearchVisible, setIsMobileSearchVisible] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
 
   // Modal State
   const [isTaskModalOpen, setIsTaskModalOpen] = useState(false);
@@ -57,8 +61,8 @@ export const InboxView: React.FC<InboxViewProps> = ({
   const [taskToEdit, setTaskToEdit] = useState<Task | null>(null);
   const [defaultIsTodayFocus, setDefaultIsTodayFocus] = useState(false);
 
-  // Ideal UX Feature States
-  const [activeInboxTab, setActiveInboxTab] = useState<'active' | 'someday'>('active');
+  // Ideal UX Feature States (Tabbed View: Focus Queue, Backlog Inbox, Someday Incubator)
+  const [activeInboxTab, setActiveInboxTab] = useState<'focus' | 'backlog' | 'someday'>('focus');
   const [sortMode, setSortMode] = useState<'recent' | 'quick_wins' | 'priority' | 'due_date'>('recent');
   const [quickAddTitle, setQuickAddTitle] = useState('');
 
@@ -87,11 +91,20 @@ export const InboxView: React.FC<InboxViewProps> = ({
   });
 
   // Calculate tab counts
-  const activeCount = activeInboxTasks.filter((t) => !t.completed && !t.isSomeday).length;
+  const focusCount = activeInboxTasks.filter((t) => !t.completed && !t.isSomeday && t.isTodayFocus).length;
+  const backlogCount = activeInboxTasks.filter((t) => !t.completed && !t.isSomeday && !t.isTodayFocus).length;
   const somedayCount = activeInboxTasks.filter((t) => !t.completed && t.isSomeday).length;
 
   const filteredTasks = activeInboxTasks.filter((t) => {
-    const matchesBucket = activeInboxTab === 'someday' ? Boolean(t.isSomeday) : !t.isSomeday;
+    // Filter by active tab bucket
+    if (activeInboxTab === 'focus') {
+      if (!t.isTodayFocus || t.isSomeday) return false;
+    } else if (activeInboxTab === 'backlog') {
+      if (t.isTodayFocus || t.isSomeday) return false;
+    } else if (activeInboxTab === 'someday') {
+      if (!t.isSomeday) return false;
+    }
+
     const matchesSearch =
       t.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
       t.description?.toLowerCase().includes(searchQuery.toLowerCase());
@@ -115,7 +128,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
       }
     }
 
-    return matchesBucket && matchesSearch && matchesTag && matchesPriority && matchesCompleted && matchesCalendarDate;
+    return matchesSearch && matchesTag && matchesPriority && matchesCompleted && matchesCalendarDate;
   });
 
   // Smart Sorting logic
@@ -158,7 +171,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
       dueDate: parsed.dueDate || selectedCalendarDate || todayStr,
       timeBlock: parsed.timeBlock || 'morning',
       estimatedMinutes: parsed.estimatedMinutes || 25,
-      isTodayFocus: parsed.isTodayFocus || false,
+      isTodayFocus: parsed.isTodayFocus || activeInboxTab === 'focus',
       isSomeday: activeInboxTab === 'someday',
       recurring: null,
     });
@@ -169,7 +182,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
   const handleOpenCreateModal = (focusMode: boolean = false) => {
     setTaskToEdit(null);
     setTaskModalMode('create');
-    setDefaultIsTodayFocus(focusMode);
+    setDefaultIsTodayFocus(focusMode || activeInboxTab === 'focus');
     setIsTaskModalOpen(true);
   };
 
@@ -180,119 +193,270 @@ export const InboxView: React.FC<InboxViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Today's Focus Queue Section */}
-      <FocusQueue
-        tasks={tasks}
-        onToggleComplete={onToggleComplete}
-        onToggleTodayFocus={onToggleTodayFocus}
-        onDeleteTask={onDeleteTask}
-        onEditTask={handleStartEditTask}
-        onOpenNewTaskModal={() => handleOpenCreateModal(true)}
-      />
-
-      {/* Master Backlog Inbox Card */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-6 shadow-xs space-y-4 transition-colors duration-300">
-        {/* Top Header: Title, Segmented Tabs, and Primary Action */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[var(--border-subtle)]">
-          {/* Left: Section Title & Tab Switcher */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="flex items-center gap-2.5">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] border border-[var(--accent-terracotta)]/30">
-                <Inbox className="h-4.5 w-4.5" strokeWidth={1.5} aria-hidden="true" />
-              </div>
-              <div>
-                <h2 className="font-heading font-bold text-base text-[var(--text-primary)] flex items-center gap-2">
-                  <span>Backlog Inbox</span>
-                  <span className="rounded-full bg-[var(--accent-terracotta)]/15 px-2.5 py-0.5 text-xs font-bold text-[var(--accent-terracotta)]">
-                    {sortedTasks.length}
+    <div className="space-y-3 sm:space-y-4">
+      {/* Unified Master Task Hub Container */}
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3 sm:p-6 shadow-xs space-y-2.5 sm:space-y-4 transition-colors duration-300">
+        {/* Top Header: Segmented Tabs & Action Controls */}
+        <div className="space-y-2 sm:space-y-3 pb-2 sm:pb-3 border-b border-[var(--border-subtle)]">
+          {/* Top Row on Mobile: Segmented Tab Bar (Full Width, 3 Equal Columns - Zero Horizontal Scroll) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+            {/* Sleek Segmented Switcher (Focus, Backlog, Someday) */}
+            <div className="w-full sm:w-auto">
+              <div className="grid grid-cols-3 sm:flex items-center gap-1 p-1 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] shadow-inner">
+                {/* 1. Today's Focus */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveInboxTab('focus');
+                    setCurrentPage(1);
+                  }}
+                  className={`flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold rounded-xl transition-all min-h-[34px] sm:min-h-[36px] cursor-pointer whitespace-nowrap ${
+                    activeInboxTab === 'focus'
+                      ? 'bg-[var(--card-surface)] text-[var(--accent-warm-ochre)] shadow-xs border border-[var(--border-subtle)] font-bold'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <Star className={`h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0 ${activeInboxTab === 'focus' ? 'fill-[var(--accent-warm-ochre)]' : ''}`} />
+                  <span className="leading-none">Focus</span>
+                  <span className={`text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full shrink-0 ${
+                    activeInboxTab === 'focus'
+                      ? 'bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)]'
+                      : 'bg-[var(--card-hover)] text-[var(--text-muted)]'
+                  }`}>
+                    {focusCount}/5
                   </span>
-                </h2>
+                </button>
+
+                {/* 2. Backlog */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveInboxTab('backlog');
+                    setCurrentPage(1);
+                  }}
+                  className={`flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold rounded-xl transition-all min-h-[34px] sm:min-h-[36px] cursor-pointer whitespace-nowrap ${
+                    activeInboxTab === 'backlog'
+                      ? 'bg-[var(--card-surface)] text-[var(--accent-terracotta)] shadow-xs border border-[var(--border-subtle)] font-bold'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <Inbox className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                  <span className="leading-none">Backlog</span>
+                  <span className={`text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full shrink-0 ${
+                    activeInboxTab === 'backlog'
+                      ? 'bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)]'
+                      : 'bg-[var(--card-hover)] text-[var(--text-muted)]'
+                  }`}>
+                    {backlogCount}
+                  </span>
+                </button>
+
+                {/* 3. Someday */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveInboxTab('someday');
+                    setCurrentPage(1);
+                  }}
+                  className={`flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold rounded-xl transition-all min-h-[34px] sm:min-h-[36px] cursor-pointer whitespace-nowrap ${
+                    activeInboxTab === 'someday'
+                      ? 'bg-[var(--card-surface)] text-[var(--accent-dusty-mauve)] shadow-xs border border-[var(--border-subtle)] font-bold'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <FolderArchive className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                  <span className="leading-none">Someday</span>
+                  <span className={`text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full shrink-0 ${
+                    activeInboxTab === 'someday'
+                      ? 'bg-[var(--accent-dusty-mauve)]/15 text-[var(--accent-dusty-mauve)]'
+                      : 'bg-[var(--card-hover)] text-[var(--text-muted)]'
+                  }`}>
+                    {somedayCount}
+                  </span>
+                </button>
               </div>
             </div>
 
-            {/* Segmented Control for Active vs Someday */}
-            <div className="flex items-center p-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] shadow-inner">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveInboxTab('active');
-                  setCurrentPage(1);
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all min-h-[32px] ${
-                  activeInboxTab === 'active'
-                    ? 'bg-[var(--card-surface)] text-[var(--accent-terracotta)] shadow-xs border border-[var(--border-subtle)]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                <Zap className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
-                <span>Active</span>
-                <span className="ml-0.5 text-[10px] font-bold opacity-75 px-1.5 py-0.2 rounded-full bg-[var(--bg-main)]">
-                  {activeCount}
-                </span>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveInboxTab('someday');
-                  setCurrentPage(1);
-                }}
-                className={`flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg transition-all min-h-[32px] ${
-                  activeInboxTab === 'someday'
-                    ? 'bg-[var(--card-surface)] text-[var(--accent-dusty-mauve)] shadow-xs border border-[var(--border-subtle)]'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                <FolderArchive className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
-                <span>Someday</span>
-                <span className="ml-0.5 text-[10px] font-bold opacity-75 px-1.5 py-0.2 rounded-full bg-[var(--bg-main)]">
-                  {somedayCount}
-                </span>
-              </button>
-            </div>
+            {/* Desktop Right: + New Task Button */}
+            <button
+              type="button"
+              onClick={() => handleOpenCreateModal(activeInboxTab === 'focus')}
+              className="hidden sm:flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-4 py-2 text-xs font-semibold shadow-xs transition-all min-h-[36px] shrink-0 sm:ml-auto cursor-pointer"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              <span>New Task</span>
+            </button>
           </div>
-
-          {/* Right: + New Task Button */}
-          <button
-            type="button"
-            onClick={() => handleOpenCreateModal(false)}
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-4 py-2.5 text-xs font-semibold shadow-xs transition-all min-h-[40px] shrink-0 sm:ml-auto cursor-pointer"
-          >
-            <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
-            <span>New Task</span>
-          </button>
         </div>
 
-        {/* Quick Add Bar with Instant Natural Syntax Detection */}
-        <div className="relative">
-          <form onSubmit={handleQuickAddSubmit} className="relative flex items-center">
-            <Sparkles className="absolute left-3.5 h-4 w-4 text-[var(--accent-terracotta)] shrink-0 pointer-events-none" />
+        {/* Quick Add Bar with Search & Filter Action on Mobile */}
+        <div className="flex items-center gap-2">
+          <form onSubmit={handleQuickAddSubmit} className="relative flex items-center flex-1 min-w-0">
+            <Sparkles className="absolute left-3 h-3.5 w-3.5 text-[var(--accent-terracotta)] shrink-0 pointer-events-none" />
             <input
               id="inbox-quick-add-input"
               name="quickAddTitle"
               type="text"
               value={quickAddTitle}
               onChange={(e) => setQuickAddTitle(e.target.value)}
-              placeholder="Quick add: e.g. 'Review slide deck tomorrow #design /urgent'..."
+              placeholder="Quick add: e.g. 'Review deck tomorrow #ops /urgent'..."
               aria-label="Quick add task title"
-              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/60 pl-10 pr-24 py-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:bg-[var(--card-surface)] transition-all min-h-[44px]"
+              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/60 pl-9 pr-16 sm:pr-20 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:bg-[var(--card-surface)] transition-all min-h-[36px] sm:min-h-[38px]"
             />
             <button
               type="submit"
               disabled={!quickAddTitle.trim()}
-              className="absolute right-1.5 rounded-lg bg-[var(--accent-terracotta)] hover:opacity-90 px-3.5 py-1.5 text-xs font-semibold text-white disabled:opacity-40 transition shadow-2xs min-h-[34px] cursor-pointer"
+              className="absolute right-1 rounded-lg bg-[var(--accent-terracotta)] hover:opacity-90 px-3 py-1 text-xs font-semibold text-white disabled:opacity-40 transition shadow-2xs min-h-[28px] sm:min-h-[30px] cursor-pointer"
             >
-              Add Task
+              Add
             </button>
           </form>
+
+          {/* Mobile Right Quick Action Icons: Search & Filter Drawer Trigger */}
+          <div className="flex sm:hidden items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsMobileSearchVisible((prev) => !prev)}
+              aria-label="Toggle search input"
+              className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-all cursor-pointer ${
+                isMobileSearchVisible || searchQuery
+                  ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)]'
+                  : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileFiltersOpen(true)}
+              aria-label="Open filter options"
+              className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all cursor-pointer ${
+                selectedPriority !== 'all' || selectedTag || sortMode !== 'recent' || !showCompleted
+                  ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold'
+                  : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              {(selectedPriority !== 'all' || selectedTag || sortMode !== 'recent' || !showCompleted) && (
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 rounded-full bg-[var(--accent-terracotta)] ring-2 ring-[var(--card-surface)]" />
+              )}
+            </button>
+          </div>
         </div>
 
-        {/* Search, Filter Bar, and Sort Controls */}
-        <div className="space-y-3 pt-1">
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5">
+        {/* Mobile Expandable Search Bar */}
+        {isMobileSearchVisible && (
+          <div className="sm:hidden relative animate-in fade-in slide-in-from-top-1 duration-150">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)] pointer-events-none" />
+            <input
+              id="inbox-mobile-search-filter-input"
+              name="mobileSearchQuery"
+              type="text"
+              placeholder="Search active tasks..."
+              aria-label="Filter tasks by keyword"
+              value={searchQuery}
+              autoFocus
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full rounded-xl border border-[var(--accent-terracotta)]/40 bg-[var(--bg-main)]/70 pl-9 pr-8 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:bg-[var(--card-surface)] min-h-[36px]"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-md"
+                aria-label="Clear search query"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsMobileSearchVisible(false)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-md"
+                aria-label="Close search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Mobile Active Filter Chips Row (Only renders when at least one filter is active) */}
+        {(Boolean(searchQuery) || selectedPriority !== 'all' || sortMode !== 'recent' || Boolean(selectedTag) || !showCompleted) && (
+          <div className="sm:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            {searchQuery && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-primary)] shrink-0">
+                <Search className="h-3 w-3 text-[var(--text-muted)]" />
+                "{searchQuery}"
+                <button type="button" onClick={() => setSearchQuery('')} className="ml-1 text-[var(--text-muted)] hover:text-rose-500">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedPriority !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[11px] font-semibold text-[var(--accent-terracotta)] shrink-0">
+                Priority: {selectedPriority.toUpperCase()}
+                <button type="button" onClick={() => setSelectedPriority('all')} className="ml-1 hover:opacity-80">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {sortMode !== 'recent' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] shrink-0">
+                Sort: {sortMode === 'quick_wins' ? 'Quick Wins' : sortMode === 'priority' ? 'Priority' : 'Due Date'}
+                <button type="button" onClick={() => setSortMode('recent')} className="ml-1 text-[var(--text-muted)] hover:text-rose-500">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedTag && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] shrink-0">
+                #{selectedTag}
+                <button type="button" onClick={() => setSelectedTag(null)} className="ml-1 text-[var(--text-muted)] hover:text-rose-500">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {!showCompleted && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] shrink-0">
+                Active Only
+                <button type="button" onClick={() => setShowCompleted(true)} className="ml-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={() => {
+                setSearchQuery('');
+                setSelectedPriority('all');
+                setSelectedTag(null);
+                setSortMode('recent');
+                setShowCompleted(true);
+                setSelectedCalendarDate(null);
+                setCurrentPage(1);
+              }}
+              className="text-[11px] text-rose-500 hover:underline px-1 py-0.5 shrink-0 whitespace-nowrap cursor-pointer font-medium"
+            >
+              Reset all
+            </button>
+          </div>
+        )}
+
+        {/* Desktop Filter Bar & Sort Controls (Hidden on mobile < 640px) */}
+        <div className="hidden sm:block space-y-2.5 pt-1">
+          <div className="flex flex-col sm:flex-row items-center gap-2">
             {/* Search Input Box */}
-            <div className="relative flex-1 min-w-[200px]">
+            <div className="relative flex-1 w-full min-w-0">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)] pointer-events-none" />
               <input
                 id="inbox-search-filter-input"
@@ -305,7 +469,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                   setSearchQuery(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/50 pl-9 pr-8 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:bg-[var(--card-surface)] min-h-[38px] transition-colors"
+                className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/50 pl-9 pr-8 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:bg-[var(--card-surface)] min-h-[36px] transition-colors"
               />
               {searchQuery && (
                 <button
@@ -319,14 +483,14 @@ export const InboxView: React.FC<InboxViewProps> = ({
               )}
             </div>
 
-            {/* Quick Filter Actions */}
-            <div className="flex items-center gap-2 flex-wrap">
+            {/* Quick Filter Actions Toolbar */}
+            <div className="flex items-center gap-1.5 w-full sm:w-auto shrink-0 justify-start sm:justify-end overflow-x-auto no-scrollbar py-0.5">
               {/* Priority Select */}
               <div className="relative">
                 <button
                   type="button"
                   onClick={() => setIsPriorityDropdownOpen(!isPriorityDropdownOpen)}
-                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium min-h-[38px] transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium min-h-[36px] transition-all cursor-pointer ${
                     selectedPriority !== 'all'
                       ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
                       : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -337,19 +501,15 @@ export const InboxView: React.FC<InboxViewProps> = ({
                   <span>
                     {selectedPriority === 'all'
                       ? 'Priority'
-                      : selectedPriority === 'high'
-                      ? 'High Priority'
-                      : selectedPriority === 'medium'
-                      ? 'Medium Priority'
-                      : 'Low Priority'}
+                      : selectedPriority.charAt(0).toUpperCase() + selectedPriority.slice(1)}
                   </span>
-                  <ChevronDown className="h-3.5 w-3.5 text-[var(--text-muted)] shrink-0" strokeWidth={1.5} aria-hidden="true" />
+                  <ChevronDown className="h-3 w-3 text-[var(--text-muted)] shrink-0" strokeWidth={1.5} aria-hidden="true" />
                 </button>
 
                 {isPriorityDropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setIsPriorityDropdownOpen(false)} />
-                    <div className="absolute right-0 sm:left-0 top-full mt-1.5 z-20 w-40 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-lg py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                    <div className="absolute left-0 sm:left-0 sm:right-auto top-full mt-1.5 z-20 w-36 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-lg py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                       {(['all', 'high', 'medium', 'low'] as const).map((p) => (
                         <button
                           key={p}
@@ -359,11 +519,11 @@ export const InboxView: React.FC<InboxViewProps> = ({
                             setIsPriorityDropdownOpen(false);
                             setCurrentPage(1);
                           }}
-                          className={`w-full text-left px-3.5 py-2 hover:bg-[var(--card-hover)] transition-colors ${
+                          className={`w-full text-left px-3 py-1.5 hover:bg-[var(--card-hover)] transition-colors ${
                             selectedPriority === p ? 'text-[var(--accent-terracotta)] font-semibold bg-[var(--accent-terracotta)]/10' : 'text-[var(--text-primary)]'
                           }`}
                         >
-                          {p === 'all' ? 'All Priorities' : `${p.charAt(0).toUpperCase() + p.slice(1)} Priority`}
+                          {p === 'all' ? 'All Priorities' : `${p.charAt(0).toUpperCase() + p.slice(1)}`}
                         </button>
                       ))}
                     </div>
@@ -376,7 +536,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
-                  className={`flex items-center gap-1.5 rounded-xl border px-3 py-2 text-xs font-medium min-h-[38px] transition-all cursor-pointer ${
+                  className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium min-h-[36px] transition-all cursor-pointer ${
                     sortMode !== 'recent'
                       ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
                       : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -384,23 +544,23 @@ export const InboxView: React.FC<InboxViewProps> = ({
                   aria-label="Sort options"
                   aria-expanded={isSortDropdownOpen}
                 >
-                  <SlidersHorizontal className="h-3.5 w-3.5 text-[var(--text-muted)]" strokeWidth={1.5} />
+                  <SlidersHorizontal className="h-3 w-3 text-[var(--text-muted)]" strokeWidth={1.5} />
                   <span>
                     {sortMode === 'recent'
-                      ? 'Default Sort'
+                      ? 'Sort'
                       : sortMode === 'quick_wins'
                       ? 'Quick Wins'
                       : sortMode === 'priority'
-                      ? 'Priority First'
+                      ? 'Priority'
                       : 'Due Date'}
                   </span>
-                  <ChevronDown className="h-3.5 w-3.5 text-[var(--text-muted)] shrink-0" strokeWidth={1.5} aria-hidden="true" />
+                  <ChevronDown className="h-3 w-3 text-[var(--text-muted)] shrink-0" strokeWidth={1.5} aria-hidden="true" />
                 </button>
 
                 {isSortDropdownOpen && (
                   <>
                     <div className="fixed inset-0 z-10" onClick={() => setIsSortDropdownOpen(false)} />
-                    <div className="absolute right-0 top-full mt-1.5 z-20 w-44 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-lg py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                    <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 z-20 w-44 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-lg py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                       {[
                         { id: 'recent', label: 'Default (Recent)' },
                         { id: 'quick_wins', label: '⚡ Quick Wins (< 15m)' },
@@ -426,11 +586,69 @@ export const InboxView: React.FC<InboxViewProps> = ({
                 )}
               </div>
 
+              {/* Tag Filter Dropdown */}
+              {allTags.length > 0 && (
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
+                    className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium min-h-[36px] transition-all cursor-pointer ${
+                      selectedTag
+                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
+                        : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                    }`}
+                    aria-label="Tag filter options"
+                    aria-expanded={isTagDropdownOpen}
+                  >
+                    <TagIcon className="h-3 w-3 text-[var(--text-muted)]" strokeWidth={1.5} />
+                    <span>{selectedTag ? `#${selectedTag}` : 'Tags'}</span>
+                    <ChevronDown className="h-3 w-3 text-[var(--text-muted)] shrink-0" strokeWidth={1.5} aria-hidden="true" />
+                  </button>
+
+                  {isTagDropdownOpen && (
+                    <>
+                      <div className="fixed inset-0 z-10" onClick={() => setIsTagDropdownOpen(false)} />
+                      <div className="absolute right-0 top-full mt-1.5 z-20 w-40 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-lg py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-56 overflow-y-auto">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setSelectedTag(null);
+                            setIsTagDropdownOpen(false);
+                            setCurrentPage(1);
+                          }}
+                          className={`w-full text-left px-3 py-1.5 hover:bg-[var(--card-hover)] transition-colors ${
+                            selectedTag === null ? 'text-[var(--accent-terracotta)] font-semibold bg-[var(--accent-terracotta)]/10' : 'text-[var(--text-primary)]'
+                          }`}
+                        >
+                          All Tags
+                        </button>
+                        {allTags.map((tag) => (
+                          <button
+                            key={tag}
+                            type="button"
+                            onClick={() => {
+                              setSelectedTag(tag);
+                              setIsTagDropdownOpen(false);
+                              setCurrentPage(1);
+                            }}
+                            className={`w-full text-left px-3 py-1.5 hover:bg-[var(--card-hover)] transition-colors ${
+                              selectedTag === tag ? 'text-[var(--accent-terracotta)] font-semibold bg-[var(--accent-terracotta)]/10' : 'text-[var(--text-primary)]'
+                            }`}
+                          >
+                            #{tag}
+                          </button>
+                        ))}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* Toggle Completed Tasks */}
               <button
                 type="button"
                 onClick={() => setShowCompleted(!showCompleted)}
-                className={`rounded-xl border px-3 py-2 text-xs font-medium transition-all min-h-[38px] cursor-pointer ${
+                className={`rounded-lg border px-2.5 py-1.5 text-xs font-medium transition-all min-h-[36px] cursor-pointer whitespace-nowrap ${
                   !showCompleted
                     ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
                     : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -453,7 +671,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
                     setSelectedCalendarDate(null);
                     setCurrentPage(1);
                   }}
-                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/50 p-2 text-xs text-[var(--text-muted)] hover:text-rose-500 hover:border-rose-500/40 transition-colors min-h-[38px] min-w-[38px] flex items-center justify-center shrink-0 cursor-pointer"
+                  className="rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)]/50 p-1.5 text-xs text-[var(--text-muted)] hover:text-rose-500 hover:border-rose-500/40 transition-colors min-h-[36px] min-w-[36px] flex items-center justify-center shrink-0 cursor-pointer"
                   title="Reset all active filters"
                   aria-label="Reset all active filters"
                 >
@@ -462,46 +680,6 @@ export const InboxView: React.FC<InboxViewProps> = ({
               )}
             </div>
           </div>
-
-          {/* Tag Filter Chips Horizontal Ribbon */}
-          {allTags.length > 0 && (
-            <div className="flex items-center gap-2 overflow-x-auto py-1 scrollbar-none text-xs">
-              <span className="text-[11px] font-medium text-[var(--text-muted)] flex items-center gap-1 shrink-0">
-                <TagIcon className="h-3 w-3" strokeWidth={1.5} aria-hidden="true" /> Tags:
-              </span>
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedTag(null);
-                  setCurrentPage(1);
-                }}
-                className={`rounded-lg px-2.5 py-1 text-[11px] font-semibold transition-all shrink-0 cursor-pointer ${
-                  selectedTag === null
-                    ? 'bg-[var(--accent-terracotta)] text-white shadow-2xs'
-                    : 'bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                All
-              </button>
-              {allTags.map((tag) => (
-                <button
-                  type="button"
-                  key={tag}
-                  onClick={() => {
-                    setSelectedTag(selectedTag === tag ? null : tag);
-                    setCurrentPage(1);
-                  }}
-                  className={`rounded-lg px-2.5 py-1 text-[11px] font-medium transition-all shrink-0 cursor-pointer ${
-                    selectedTag === tag
-                      ? 'bg-[var(--accent-terracotta)] text-white font-semibold shadow-2xs'
-                      : 'bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  #{tag}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
         {/* Action Banners & Context Banners */}
@@ -572,6 +750,8 @@ export const InboxView: React.FC<InboxViewProps> = ({
               <p className="text-xs text-[var(--text-muted)] max-w-sm">
                 {searchQuery || selectedPriority !== 'all' || selectedTag || selectedCalendarDate
                   ? 'No tasks match your active filters. Try resetting the filters or modifying your query.'
+                  : activeInboxTab === 'focus'
+                  ? "No focus tasks queued for today. Star tasks from your Backlog to queue today's priorities."
                   : activeInboxTab === 'someday'
                   ? 'Your someday incubator is clean. Add aspirational ideas and long-term goals here.'
                   : 'Your active backlog is clear! Type a task above to quick-capture it.'}
@@ -594,7 +774,7 @@ export const InboxView: React.FC<InboxViewProps> = ({
             )}
           </div>
         ) : (
-          <div className="space-y-3 pt-1">
+          <div className="space-y-3 pt-1 pb-20 sm:pb-0">
             <div className="space-y-2">
               {paginatedTasks.map((task) => (
                 <TaskItem
@@ -661,6 +841,185 @@ export const InboxView: React.FC<InboxViewProps> = ({
           setTaskToEdit(null);
         }}
       />
+
+      {/* Mobile Floating Action Button (FAB) for '+ New Task' */}
+      <button
+        type="button"
+        onClick={() => handleOpenCreateModal(activeInboxTab === 'focus')}
+        className="sm:hidden fixed bottom-6 left-6 z-30 flex h-13 w-13 items-center justify-center rounded-full bg-[var(--accent-terracotta)] text-white shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+        aria-label="Create new task"
+        title="Create new task"
+      >
+        <Plus className="h-6 w-6" strokeWidth={2.5} />
+      </button>
+
+      {/* Mobile Filter & Sort Bottom Sheet Drawer */}
+      {isMobileFiltersOpen && (
+        <div className="sm:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileFiltersOpen(false)}
+          />
+
+          {/* Sheet Content */}
+          <div className="relative w-full max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-2xl space-y-4 animate-in slide-in-from-bottom duration-200">
+            {/* Sheet Handle & Header */}
+            <div className="flex flex-col items-center">
+              <div className="h-1 w-10 rounded-full bg-[var(--text-muted)]/30 mb-3" />
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4 text-[var(--accent-terracotta)]" />
+                  <span className="font-heading font-bold text-sm text-[var(--text-primary)]">Filter & Sort Tasks</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFiltersOpen(false)}
+                  className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter: Priority */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[var(--text-secondary)]">Priority Level</label>
+              <div className="grid grid-cols-4 gap-1.5">
+                {(['all', 'high', 'medium', 'low'] as const).map((p) => (
+                  <button
+                    key={p}
+                    type="button"
+                    onClick={() => {
+                      setSelectedPriority(p);
+                      setCurrentPage(1);
+                    }}
+                    className={`py-2 px-2 text-xs font-medium rounded-xl border text-center transition-all cursor-pointer ${
+                      selectedPriority === p
+                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold shadow-2xs'
+                        : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)]'
+                    }`}
+                  >
+                    {p === 'all' ? 'All' : p.charAt(0).toUpperCase() + p.slice(1)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter: Sort Mode */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[var(--text-secondary)]">Sort Order</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {[
+                  { id: 'recent', label: 'Default (Recent)' },
+                  { id: 'quick_wins', label: '⚡ Quick Wins (< 15m)' },
+                  { id: 'priority', label: '🔥 Highest Priority' },
+                  { id: 'due_date', label: '📅 Nearest Due Date' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setSortMode(item.id as typeof sortMode);
+                      setCurrentPage(1);
+                    }}
+                    className={`py-2 px-2.5 text-xs font-medium rounded-xl border text-left transition-all cursor-pointer ${
+                      sortMode === item.id
+                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold shadow-2xs'
+                        : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)]'
+                    }`}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Filter: Tags */}
+            {allTags.length > 0 && (
+              <div className="space-y-2">
+                <label className="text-xs font-semibold text-[var(--text-secondary)]">Tags</label>
+                <div className="flex flex-wrap gap-1.5 max-h-28 overflow-y-auto no-scrollbar py-0.5">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedTag(null);
+                      setCurrentPage(1);
+                    }}
+                    className={`px-3 py-1.5 text-xs rounded-xl border transition-all cursor-pointer ${
+                      selectedTag === null
+                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold'
+                        : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)]'
+                    }`}
+                  >
+                    All Tags
+                  </button>
+                  {allTags.map((tag) => (
+                    <button
+                      key={tag}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTag(selectedTag === tag ? null : tag);
+                        setCurrentPage(1);
+                      }}
+                      className={`px-3 py-1.5 text-xs rounded-xl border transition-all cursor-pointer ${
+                        selectedTag === tag
+                          ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold'
+                          : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)]'
+                      }`}
+                    >
+                      #{tag}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Filter: Completion Toggle */}
+            <div className="flex items-center justify-between pt-1 border-t border-[var(--border-subtle)]">
+              <span className="text-xs font-medium text-[var(--text-secondary)]">Show Completed Tasks</span>
+              <button
+                type="button"
+                onClick={() => setShowCompleted(!showCompleted)}
+                className={`px-3 py-1.5 rounded-xl border text-xs font-medium transition-all ${
+                  showCompleted
+                    ? 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)]'
+                    : 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold'
+                }`}
+              >
+                {showCompleted ? 'Shown' : 'Hidden'}
+              </button>
+            </div>
+
+            {/* Action Buttons in Sheet */}
+            <div className="flex items-center gap-2 pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchQuery('');
+                  setSelectedPriority('all');
+                  setSelectedTag(null);
+                  setSortMode('recent');
+                  setShowCompleted(true);
+                  setSelectedCalendarDate(null);
+                  setCurrentPage(1);
+                  setIsMobileFiltersOpen(false);
+                }}
+                className="flex-1 py-2.5 rounded-xl border border-[var(--border-subtle)] text-xs font-semibold text-[var(--text-secondary)] hover:text-rose-500 transition-colors"
+              >
+                Reset All
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMobileFiltersOpen(false)}
+                className="flex-1 py-2.5 rounded-xl bg-[var(--accent-terracotta)] text-white text-xs font-semibold shadow-xs hover:opacity-90 transition-opacity"
+              >
+                Apply Filters
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

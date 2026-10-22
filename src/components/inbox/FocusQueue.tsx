@@ -10,6 +10,7 @@ interface FocusQueueProps {
   onDeleteTask: (id: string) => void;
   onEditTask?: (task: Task) => void;
   onOpenNewTaskModal: () => void;
+  className?: string;
 }
 
 export const FocusQueue: React.FC<FocusQueueProps> = ({
@@ -19,6 +20,7 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
   onDeleteTask,
   onEditTask,
   onOpenNewTaskModal,
+  className = '',
 }) => {
   // Only consider active, unarchived, non-someday focus tasks
   const focusTasks = tasks.filter((t) => !t.archived && !t.isSomeday && t.isTodayFocus);
@@ -29,32 +31,32 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
   const isOptimal = activeFocusTasks.length >= 3 && activeFocusTasks.length <= 5;
 
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-xs transition-colors duration-300">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] border border-[var(--accent-warm-ochre)]/30">
+    <div className={`rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-5 shadow-xs transition-colors duration-300 flex flex-col ${className}`}>
+      <div className="flex items-start sm:items-center justify-between gap-3 mb-4">
+        <div className="flex items-center gap-2.5 min-w-0">
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] border border-[var(--accent-warm-ochre)]/30">
             <Star className="h-4 w-4 fill-[var(--accent-warm-ochre)] text-[var(--accent-warm-ochre)]" />
           </div>
-          <div>
-            <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
+          <div className="min-w-0">
+            <h2 className="font-heading font-bold text-base text-[var(--text-primary)] truncate">
               Today's Focus Queue
             </h2>
-            <p className="text-xs text-[var(--text-secondary)]">
+            <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] line-clamp-1">
               Select 3–5 high priority tasks to prevent burnout.
             </p>
           </div>
         </div>
 
         {/* Counter Badge */}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
           {completedFocusTasks.length > 0 && (
-            <div className="flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 px-2.5 py-1 text-xs font-bold text-[#4D6C4F] dark:text-[#7B9E7E] border border-[var(--accent-botanical-sage)]/30">
+            <div className="flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 px-2 py-0.5 text-[11px] font-bold text-[#4D6C4F] dark:text-[#7B9E7E] border border-[var(--accent-botanical-sage)]/30">
               <CheckCircle2 className="h-3 w-3" />
               <span>{completedFocusTasks.length} Done</span>
             </div>
           )}
           <div
-            className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold border ${
+            className={`flex items-center gap-1 rounded-full px-2.5 py-0.5 text-[11px] font-bold border ${
               isOverlimit
                 ? 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30'
                 : isOptimal
@@ -62,7 +64,7 @@ export const FocusQueue: React.FC<FocusQueueProps> = ({
                 : 'bg-[var(--card-hover)] text-[var(--text-secondary)] border-[var(--border-subtle)]'
             }`}
           >
-            <span>{activeFocusTasks.length} / 5 Active Focus</span>
+            <span>{activeFocusTasks.length}/5 Active</span>
           </div>
         </div>
       </div>

@@ -79,7 +79,7 @@ export const ProfileView: React.FC = () => {
   };
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6 pb-12 animate-in fade-in duration-300">
+    <div className="max-w-5xl mx-auto space-y-3 sm:space-y-6 pb-12 animate-in fade-in duration-300">
       {/* Cover Banner & Identity Header */}
       <div className="relative rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] overflow-hidden shadow-xs transition-colors duration-300">
         {/* Cover Gradient Mesh Banner */}

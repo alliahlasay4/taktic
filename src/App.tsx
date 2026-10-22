@@ -567,7 +567,7 @@ function MainLayout() {
         )}
 
         {/* Main Container Layout */}
-        <main className={isImmersiveFocusMode ? 'w-full min-h-screen p-0' : 'mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-4 sm:py-6'}>
+        <main className={isImmersiveFocusMode ? 'w-full min-h-screen p-0' : 'mx-auto max-w-7xl px-3 sm:px-6 lg:px-8 py-2.5 sm:py-6'}>
           {isImmersiveFocusMode ? (
             <Suspense
               fallback={
@@ -590,7 +590,7 @@ function MainLayout() {
               />
             </Suspense>
           ) : (
-            <div className="flex flex-col lg:flex-row gap-6">
+            <div className="flex flex-col lg:flex-row gap-2.5 sm:gap-4 lg:gap-6">
               {/* Navigation Sidebar */}
               <Sidebar
                 activeTab={activeTab}

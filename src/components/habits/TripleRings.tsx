@@ -46,13 +46,13 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
   const strokeDashoffset3 = Math.max(0, c3 - (c3 * focusPct) / 100);
 
   return (
-    <div className="flex flex-col md:flex-row items-center justify-between gap-6 rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-7 shadow-xs w-full max-w-full relative overflow-hidden group transition-colors duration-300">
+    <div className="flex flex-row items-center justify-between gap-3.5 sm:gap-6 rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 sm:p-7 shadow-xs w-full max-w-full relative overflow-hidden group transition-colors duration-300">
       {/* Ambient Background Aura */}
-      <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-64 h-64 bg-radial from-[var(--accent-warm-ochre)]/10 via-[var(--accent-terracotta)]/5 to-transparent blur-2xl pointer-events-none" />
+      <div className="absolute top-1/2 left-1/4 -translate-x-1/2 -translate-y-1/2 w-48 sm:w-64 h-48 sm:h-64 bg-radial from-[var(--accent-warm-ochre)]/10 via-[var(--accent-terracotta)]/5 to-transparent blur-2xl pointer-events-none" />
 
-      {/* SVG Concentric Rings */}
+      {/* SVG Concentric Rings (Compact on Mobile, Full-Sized on Desktop) */}
       <div className="relative flex items-center justify-center shrink-0">
-        <svg viewBox="0 0 220 220" className="w-48 h-48 sm:w-56 sm:h-56 rotate-[-90deg]">
+        <svg viewBox="0 0 220 220" className="w-28 h-28 xs:w-32 xs:h-32 sm:w-56 sm:h-56 rotate-[-90deg]">
           <defs>
             {/* Task Ring Gradient */}
             <linearGradient id="tripleTaskGradient" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -155,8 +155,8 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
           />
         </svg>
 
-        {/* Center Percentage & High-Impact Glassmorphic Pill Display */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none select-none z-10 px-2">
+        {/* Center Percentage & Status Badge */}
+        <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none select-none z-10 px-1">
           <AnimatePresence mode="wait">
             <motion.div
               key={Math.round((taskPct + habitPct + focusPct) / 3)}
@@ -166,35 +166,36 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
               transition={{ type: 'spring', stiffness: 400, damping: 25 }}
               className="flex flex-col items-center"
             >
-              <span className="font-heading text-2xl sm:text-3xl font-black text-[var(--text-primary)] leading-none tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.12)] dark:drop-shadow-[0_3px_12px_rgba(0,0,0,0.5)]">
+              <span className="font-heading text-lg sm:text-3xl font-black text-[var(--text-primary)] leading-none tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
                 {Math.round((taskPct + habitPct + focusPct) / 3)}%
               </span>
             </motion.div>
           </AnimatePresence>
 
-          {/* Styled Glassmorphic Pill with Live Status Indicator */}
-          <div className="mt-1.5 flex items-center gap-1.5 px-3 py-1 rounded-full bg-[var(--card-surface)]/95 dark:bg-[#25201D]/95 border border-[var(--border-subtle)] shadow-md backdrop-blur-md">
-            <span className={`h-1.5 w-1.5 rounded-full ${allClosed ? 'bg-emerald-500 animate-ping' : 'bg-[#CFA052] animate-pulse'}`} />
-            <span className="text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] bg-clip-text text-transparent whitespace-nowrap">
-              {allClosed ? 'All Closed! 🎉' : 'Daily Rhythm'}
+          {/* Styled Status Pill */}
+          <div className="mt-1 flex items-center gap-1 px-1.5 sm:px-3 py-0.5 sm:py-1 rounded-full bg-[var(--card-surface)]/95 dark:bg-[#25201D]/95 border border-[var(--border-subtle)] shadow-xs backdrop-blur-md">
+            <span className={`h-1.5 w-1.5 rounded-full shrink-0 ${allClosed ? 'bg-emerald-500 animate-ping' : 'bg-[#CFA052] animate-pulse'}`} />
+            <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-wider bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] bg-clip-text text-transparent whitespace-nowrap">
+              {allClosed ? 'Closed!' : 'Rhythm'}
             </span>
           </div>
         </div>
       </div>
 
-      {/* Ring Legend & Stats */}
-      <div className="flex-1 space-y-3.5 w-full">
+      {/* Ring Legend & Stats (Positioned Right on Mobile) */}
+      <div className="flex-1 space-y-2 sm:space-y-3.5 min-w-0">
+        {/* Metric 1: Tasks */}
         <div>
-          <div className="flex items-center justify-between text-xs font-semibold mb-1">
-            <div className="flex items-center gap-2 text-[#6B8E6E] dark:text-[#7B9E7E]">
-              <CheckCircle className="h-4 w-4" />
-              <span>Tasks Completed</span>
+          <div className="flex items-center justify-between text-[11px] sm:text-xs font-semibold mb-0.5 sm:mb-1">
+            <div className="flex items-center gap-1.5 text-[#6B8E6E] dark:text-[#7B9E7E] truncate">
+              <CheckCircle className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Tasks</span>
             </div>
-            <span className="text-[var(--text-primary)]">
-              {tasksCompleted}/{totalTasks} ({taskPct}%)
+            <span className="text-[var(--text-primary)] shrink-0 ml-1">
+              {tasksCompleted}/{totalTasks} <span className="opacity-70 font-normal">({taskPct}%)</span>
             </span>
           </div>
-          <div className="h-2 w-full rounded-full bg-[var(--border-subtle)] overflow-hidden">
+          <div className="h-1.5 sm:h-2 w-full rounded-full bg-[var(--border-subtle)] overflow-hidden">
             <motion.div
               className="h-full bg-[#6B8E6E] dark:bg-[#7B9E7E]"
               initial={{ width: 0 }}
@@ -204,17 +205,18 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
           </div>
         </div>
 
+        {/* Metric 2: Habits */}
         <div>
-          <div className="flex items-center justify-between text-xs font-semibold mb-1">
-            <div className="flex items-center gap-2 text-[#C87D87] dark:text-[#D88E98]">
-              <Flame className="h-4 w-4" />
-              <span>Habits Maintained</span>
+          <div className="flex items-center justify-between text-[11px] sm:text-xs font-semibold mb-0.5 sm:mb-1">
+            <div className="flex items-center gap-1.5 text-[#C87D87] dark:text-[#D88E98] truncate">
+              <Flame className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Habits</span>
             </div>
-            <span className="text-[var(--text-primary)]">
-              {habitsCompleted}/{totalHabits} ({habitPct}%)
+            <span className="text-[var(--text-primary)] shrink-0 ml-1">
+              {habitsCompleted}/{totalHabits} <span className="opacity-70 font-normal">({habitPct}%)</span>
             </span>
           </div>
-          <div className="h-2 w-full rounded-full bg-[var(--border-subtle)] overflow-hidden">
+          <div className="h-1.5 sm:h-2 w-full rounded-full bg-[var(--border-subtle)] overflow-hidden">
             <motion.div
               className="h-full bg-[#C87D87] dark:bg-[#D88E98]"
               initial={{ width: 0 }}
@@ -224,17 +226,18 @@ export const TripleRings: React.FC<TripleRingsProps> = ({
           </div>
         </div>
 
+        {/* Metric 3: Focus */}
         <div>
-          <div className="flex items-center justify-between text-xs font-semibold mb-1">
-            <div className="flex items-center gap-2 text-[#CFA052] dark:text-[#E0AF5E]">
-              <Clock className="h-4 w-4" />
-              <span>Focus Logged </span>
+          <div className="flex items-center justify-between text-[11px] sm:text-xs font-semibold mb-0.5 sm:mb-1">
+            <div className="flex items-center gap-1.5 text-[#CFA052] dark:text-[#E0AF5E] truncate">
+              <Clock className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">Focus</span>
             </div>
-            <span className="text-[var(--text-primary)]">
-              {focusMinutes}/{targetFocusMinutes}m ({focusPct}%)
+            <span className="text-[var(--text-primary)] shrink-0 ml-1">
+              {focusMinutes}m <span className="opacity-70 font-normal">({focusPct}%)</span>
             </span>
           </div>
-          <div className="h-2 w-full rounded-full bg-[var(--border-subtle)] overflow-hidden">
+          <div className="h-1.5 sm:h-2 w-full rounded-full bg-[var(--border-subtle)] overflow-hidden">
             <motion.div
               className="h-full bg-[#CFA052] dark:bg-[#E0AF5E]"
               initial={{ width: 0 }}

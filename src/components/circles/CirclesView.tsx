@@ -462,7 +462,7 @@ export const CirclesView: React.FC<CirclesViewProps> = ({
       )}
 
       {activeTab === 'network' && (
-        <div className="space-y-6 animate-in fade-in duration-200">
+        <div className="space-y-3 sm:space-y-6 animate-in fade-in duration-200">
           {/* Accountability Network Header & Controls */}
           <div className="space-y-4">
             <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 pb-3.5 border-b border-[var(--border-subtle)]">

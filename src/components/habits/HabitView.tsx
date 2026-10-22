@@ -25,8 +25,6 @@ import confetti from 'canvas-confetti';
 import { Habit } from '../../types';
 import { HabitItem } from './HabitItem';
 import { TripleRings } from './TripleRings';
-import { HeatmapGrid } from './HeatmapGrid';
-import { MilestoneTrophyShelf } from './MilestoneTrophyShelf';
 import { IconRenderer } from '../common/IconRenderer';
 import { Pagination } from '../common/Pagination';
 import { soundEngine } from '../../lib/audio';
@@ -87,6 +85,8 @@ export const HabitView: React.FC<HabitViewProps> = ({
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'pending' | 'completed'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [isMobileSearchVisible, setIsMobileSearchVisible] = useState(false);
+  const [isMobileFiltersOpen, setIsMobileFiltersOpen] = useState(false);
   const [quickAddTitle, setQuickAddTitle] = useState('');
   const [quickAddCategory] = useState<'health' | 'mindset' | 'growth' | 'creative' | 'fitness'>('health');
   
@@ -206,8 +206,8 @@ export const HabitView: React.FC<HabitViewProps> = ({
   };
 
   return (
-    <div className="space-y-6">
-      {/* Triple Progress Rings Section */}
+    <div className="space-y-3 sm:space-y-6">
+      {/* 1. Triple Progress Rings Section (Compact Side-by-Side Rhythm Meter) */}
       <TripleRings
         tasksCompleted={tasksCompleted}
         totalTasks={totalTasks}
@@ -217,73 +217,242 @@ export const HabitView: React.FC<HabitViewProps> = ({
         targetFocusMinutes={targetFocusMinutes}
       />
 
-      {/* Consistency Milestone Trophy Shelf */}
-      <MilestoneTrophyShelf habits={habits} />
-
-      {/* Habits Routine Checklist Card */}
-      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-6 shadow-xs space-y-4">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-[var(--border-subtle)]">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)]">
-              <Repeat className="h-5 w-5" strokeWidth={1.5} aria-hidden="true" />
-            </div>
-            <div>
-              <h2 className="font-heading font-bold text-base text-[var(--text-primary)]">
-                Daily Habit Rhythm Checklist
-              </h2>
-              <div className="flex items-center gap-2 mt-0.5">
-                <span className="text-xs text-[var(--text-secondary)]">
-                  {habitsCompletedToday} of {habits.length} routines completed today
-                </span>
-                {habits.length > 0 && (
-                  <span className="text-[11px] font-semibold text-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 px-2 py-0.2 rounded-md">
-                    {Math.round((habitsCompletedToday / habits.length) * 100)}%
+      {/* 2. Primary Action Hub: Daily Habit Rhythm Checklist Card */}
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 sm:p-6 shadow-xs space-y-3 sm:space-y-4 transition-colors duration-300">
+        {/* Top Header: Segmented Tabs & Action Controls */}
+        <div className="space-y-2 sm:space-y-3 pb-2 sm:pb-3 border-b border-[var(--border-subtle)]">
+          {/* Top Row: Segmented Tab Bar (Full Width, 3 Equal Columns - Zero Horizontal Scroll on Mobile) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 sm:gap-3">
+            {/* Sleek Segmented Switcher (All, To Do, Done) */}
+            <div className="w-full sm:w-auto">
+              <div className="grid grid-cols-3 sm:flex items-center gap-1 p-1 rounded-2xl bg-[var(--bg-main)] border border-[var(--border-subtle)] shadow-inner">
+                {/* 1. All */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedStatus('all');
+                    setCurrentPage(1);
+                  }}
+                  className={`flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold rounded-xl transition-all min-h-[34px] sm:min-h-[36px] cursor-pointer whitespace-nowrap ${
+                    selectedStatus === 'all'
+                      ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs border border-[var(--border-subtle)] font-bold'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <Repeat className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                  <span className="leading-none">All</span>
+                  <span className={`text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full shrink-0 ${
+                    selectedStatus === 'all'
+                      ? 'bg-[var(--text-primary)]/10 text-[var(--text-primary)]'
+                      : 'bg-[var(--card-hover)] text-[var(--text-muted)]'
+                  }`}>
+                    {habits.length}
                   </span>
-                )}
+                </button>
+
+                {/* 2. To Do */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedStatus('pending');
+                    setCurrentPage(1);
+                  }}
+                  className={`flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold rounded-xl transition-all min-h-[34px] sm:min-h-[36px] cursor-pointer whitespace-nowrap ${
+                    selectedStatus === 'pending'
+                      ? 'bg-[var(--card-surface)] text-[var(--accent-terracotta)] shadow-xs border border-[var(--border-subtle)] font-bold'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <Clock className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                  <span className="leading-none">To Do</span>
+                  <span className={`text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full shrink-0 ${
+                    selectedStatus === 'pending'
+                      ? 'bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)]'
+                      : 'bg-[var(--card-hover)] text-[var(--text-muted)]'
+                  }`}>
+                    {habitsPendingToday}
+                  </span>
+                </button>
+
+                {/* 3. Done */}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSelectedStatus('completed');
+                    setCurrentPage(1);
+                  }}
+                  className={`flex items-center justify-center gap-1 sm:gap-1.5 px-1.5 sm:px-3 py-1.5 sm:py-2 text-[11px] sm:text-xs font-semibold rounded-xl transition-all min-h-[34px] sm:min-h-[36px] cursor-pointer whitespace-nowrap ${
+                    selectedStatus === 'completed'
+                      ? 'bg-[var(--card-surface)] text-emerald-500 shadow-xs border border-[var(--border-subtle)] font-bold'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  <Trophy className="h-3 w-3 sm:h-3.5 sm:w-3.5 shrink-0" />
+                  <span className="leading-none">Done</span>
+                  <span className={`text-[9px] sm:text-[10px] font-bold px-1 sm:px-1.5 py-0.5 rounded-full shrink-0 ${
+                    selectedStatus === 'completed'
+                      ? 'bg-emerald-500/15 text-emerald-500'
+                      : 'bg-[var(--card-hover)] text-[var(--text-muted)]'
+                  }`}>
+                    {habitsCompletedToday}
+                  </span>
+                </button>
               </div>
             </div>
-          </div>
 
-          <button
-            type="button"
-            onClick={() => setIsModalOpen(true)}
-            className="flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-4 py-2.5 text-xs font-semibold shadow-xs transition-all min-h-[44px] shrink-0"
-          >
-            <Plus className="h-4 w-4" strokeWidth={1.5} aria-hidden="true" />
-            <span>New Habit</span>
-          </button>
+            {/* Desktop Right: + New Habit Button */}
+            <button
+              type="button"
+              onClick={() => setIsModalOpen(true)}
+              className="hidden sm:flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-4 py-2 text-xs font-semibold shadow-xs transition-all min-h-[36px] shrink-0 sm:ml-auto cursor-pointer"
+            >
+              <Plus className="h-4 w-4" strokeWidth={2} aria-hidden="true" />
+              <span>New Habit</span>
+            </button>
+          </div>
         </div>
 
-        {/* Quick Add Habit Bar */}
-        <form onSubmit={handleQuickAddSubmit} className="flex items-center gap-2">
-          <div className="relative flex-1 flex items-center">
-            <Sparkles className="absolute left-3.5 h-4 w-4 text-[var(--accent-terracotta)] shrink-0" />
+        {/* Quick Add Bar with Search & Filter Action on Mobile */}
+        <div className="flex items-center gap-2">
+          <form onSubmit={handleQuickAddSubmit} className="relative flex items-center flex-1 min-w-0">
+            <Sparkles className="absolute left-3 h-3.5 w-3.5 text-[var(--accent-terracotta)] shrink-0 pointer-events-none" />
             <input
               id="quick-add-habit-title"
               name="quickAddHabitTitle"
               type="text"
               value={quickAddTitle}
               onChange={(e) => setQuickAddTitle(e.target.value)}
-              placeholder="Quick add a new daily habit routine..."
+              placeholder="Quick add: e.g. 'Morning meditation 10m'..."
               aria-label="Quick add habit routine"
-              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/60 pl-10 pr-28 py-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] transition-colors min-h-[44px]"
+              className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/60 pl-9 pr-16 sm:pr-24 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:bg-[var(--card-surface)] transition-all min-h-[36px] sm:min-h-[38px]"
             />
             <button
               type="submit"
               disabled={!quickAddTitle.trim()}
-              className="absolute right-1.5 rounded-lg bg-[var(--accent-terracotta)] hover:opacity-90 px-3.5 py-1.5 text-xs font-semibold text-white disabled:opacity-40 transition shadow-2xs min-h-[34px]"
+              className="absolute right-1 rounded-lg bg-[var(--accent-terracotta)] hover:opacity-90 px-3 py-1 text-xs font-semibold text-white disabled:opacity-40 transition shadow-2xs min-h-[28px] sm:min-h-[30px] cursor-pointer"
             >
-              Add Habit
+              Add
+            </button>
+          </form>
+
+          {/* Mobile Right Quick Action Icons: Search & Filter Drawer Trigger */}
+          <div className="flex sm:hidden items-center gap-1.5 shrink-0">
+            <button
+              type="button"
+              onClick={() => setIsMobileSearchVisible((prev) => !prev)}
+              aria-label="Toggle search input"
+              className={`flex h-9 w-9 items-center justify-center rounded-xl border transition-all cursor-pointer ${
+                isMobileSearchVisible || searchQuery
+                  ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)]'
+                  : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <Search className="h-4 w-4" />
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsMobileFiltersOpen(true)}
+              aria-label="Open filter options"
+              className={`relative flex h-9 w-9 items-center justify-center rounded-xl border transition-all cursor-pointer ${
+                selectedCategory !== 'all' || selectedTimeOfDay !== 'all'
+                  ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold'
+                  : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              <SlidersHorizontal className="h-4 w-4" />
+              {(selectedCategory !== 'all' || selectedTimeOfDay !== 'all') && (
+                <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5 rounded-full bg-[var(--accent-terracotta)] ring-2 ring-[var(--card-surface)]" />
+              )}
             </button>
           </div>
-        </form>
+        </div>
 
-        {/* High-Efficiency Filter Toolbar */}
-        <div className="space-y-3 pt-1">
-          {/* Row 1: Time of Day Tabs + Status Filter + Filter Drawer Toggle */}
-          <div className="flex flex-wrap items-center justify-between gap-2.5">
-            {/* Time of Day Pills */}
+        {/* Mobile Expandable Search Bar */}
+        {isMobileSearchVisible && (
+          <div className="sm:hidden relative animate-in fade-in slide-in-from-top-1 duration-150">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)] pointer-events-none" />
+            <input
+              id="habit-mobile-search-filter-input"
+              name="mobileHabitSearchQuery"
+              type="text"
+              placeholder="Search active habits..."
+              aria-label="Filter habits by keyword"
+              value={searchQuery}
+              autoFocus
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="w-full rounded-xl border border-[var(--accent-terracotta)]/40 bg-[var(--bg-main)]/70 pl-9 pr-8 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:bg-[var(--card-surface)] min-h-[36px]"
+            />
+            {searchQuery ? (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-md"
+                aria-label="Clear search query"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setIsMobileSearchVisible(false)}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded-md"
+                aria-label="Close search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Mobile Active Filter Chips Row */}
+        {(Boolean(searchQuery) || selectedCategory !== 'all' || selectedTimeOfDay !== 'all') && (
+          <div className="sm:hidden flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
+            {searchQuery && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-primary)] shrink-0">
+                <Search className="h-3 w-3 text-[var(--text-muted)]" />
+                "{searchQuery}"
+                <button type="button" onClick={() => setSearchQuery('')} className="ml-1 text-[var(--text-muted)] hover:text-rose-500">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedTimeOfDay !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[11px] font-semibold text-[var(--accent-terracotta)] shrink-0">
+                {selectedTimeOfDay.charAt(0).toUpperCase() + selectedTimeOfDay.slice(1)}
+                <button type="button" onClick={() => setSelectedTimeOfDay('all')} className="ml-1 hover:opacity-80">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            {selectedCategory !== 'all' && (
+              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-lg bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[11px] text-[var(--text-secondary)] shrink-0">
+                Category: {selectedCategory.charAt(0).toUpperCase() + selectedCategory.slice(1)}
+                <button type="button" onClick={() => setSelectedCategory('all')} className="ml-1 text-[var(--text-muted)] hover:text-rose-500">
+                  <X className="h-3 w-3" />
+                </button>
+              </span>
+            )}
+
+            <button
+              type="button"
+              onClick={handleResetFilters}
+              className="text-[11px] text-rose-500 hover:underline px-1 py-0.5 shrink-0 whitespace-nowrap cursor-pointer font-medium"
+            >
+              Reset all
+            </button>
+          </div>
+        )}
+
+        {/* Desktop Filter Bar & Routine Controls (Hidden on mobile < 640px) */}
+        <div className="hidden sm:block space-y-2.5 pt-1">
+          <div className="flex items-center justify-between gap-2.5">
+            {/* Time of Day Tabs */}
             <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] overflow-x-auto">
               {TIME_OF_DAY_TABS.map((t) => {
                 const TabIcon = t.icon;
@@ -293,7 +462,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
                     key={t.id}
                     type="button"
                     onClick={() => setSelectedTimeOfDay(t.id)}
-                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap ${
+                    className={`flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all whitespace-nowrap cursor-pointer ${
                       isSelected
                         ? 'bg-[var(--card-surface)] text-[var(--accent-terracotta)] shadow-2xs'
                         : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -306,109 +475,70 @@ export const HabitView: React.FC<HabitViewProps> = ({
               })}
             </div>
 
-            {/* Status Tabs + Filter Drawer Button */}
+            {/* Desktop Filter Drawer Toggle & Search */}
             <div className="flex items-center gap-2 ml-auto">
-              {/* Completion Status Toggle */}
-              <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)]">
-                <button
-                  type="button"
-                  onClick={() => setSelectedStatus('all')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    selectedStatus === 'all'
-                      ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-2xs'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  All ({habits.length})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedStatus('pending')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    selectedStatus === 'pending'
-                      ? 'bg-[var(--card-surface)] text-[var(--accent-terracotta)] shadow-2xs'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  To Do ({habitsPendingToday})
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setSelectedStatus('completed')}
-                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition ${
-                    selectedStatus === 'completed'
-                      ? 'bg-[var(--card-surface)] text-emerald-500 dark:text-emerald-400 shadow-2xs'
-                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                  }`}
-                >
-                  Done ({habitsCompletedToday})
-                </button>
+              <div className="relative w-48 lg:w-56">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)] pointer-events-none" />
+                <input
+                  id="habit-desktop-search-input"
+                  name="habitDesktopSearch"
+                  type="text"
+                  placeholder="Search habits..."
+                  value={searchQuery}
+                  onChange={(e) => {
+                    setSearchQuery(e.target.value);
+                    setCurrentPage(1);
+                  }}
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/50 pl-9 pr-7 py-1.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:bg-[var(--card-surface)] min-h-[34px] transition-colors"
+                />
+                {searchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setSearchQuery('')}
+                    className="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] rounded"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                )}
               </div>
 
-              {/* Collapsible Filter Toggle */}
               <button
                 type="button"
                 onClick={() => setIsFilterOpen(!isFilterOpen)}
                 aria-expanded={isFilterOpen}
-                aria-label="Toggle Category & Keyword Filters"
-                className={`flex items-center gap-1.5 px-3 py-2 rounded-xl border text-xs font-semibold transition-all min-h-[38px] ${
-                  isFilterOpen || selectedCategory !== 'all' || searchQuery.trim()
+                aria-label="Toggle Category Filters"
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border text-xs font-semibold transition-all min-h-[34px] cursor-pointer ${
+                  isFilterOpen || selectedCategory !== 'all'
                     ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)]'
                     : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                 }`}
               >
                 <SlidersHorizontal className="h-3.5 w-3.5" strokeWidth={1.5} aria-hidden="true" />
-                <span className="hidden sm:inline">Filters</span>
-                {(selectedCategory !== 'all' || searchQuery.trim()) && (
-                  <span className="w-2 h-2 rounded-full bg-[var(--accent-terracotta)]" />
+                <span>Filters</span>
+                {selectedCategory !== 'all' && (
+                  <span className="w-1.5 h-1.5 rounded-full bg-[var(--accent-terracotta)]" />
                 )}
               </button>
             </div>
           </div>
 
-          {/* Collapsible Search & Category Filter Drawer */}
+          {/* Desktop Category Drawer */}
           {isFilterOpen && (
-            <div className="p-4 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/80 space-y-3 animate-in fade-in duration-150">
-              <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                {/* Search Field */}
-                <div className="relative flex-1">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
-                  <input
-                    id="habit-search-input"
-                    name="habitSearch"
-                    type="text"
-                    placeholder="Search habits by keyword..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="w-full rounded-lg border border-[var(--border-subtle)] bg-[var(--card-surface)] pl-9 pr-8 py-2 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] min-h-[38px]"
-                  />
-                  {searchQuery && (
-                    <button
-                      type="button"
-                      onClick={() => setSearchQuery('')}
-                      className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-                    >
-                      <X className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-
-                {/* Reset Filters Action */}
+            <div className="p-3.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/80 space-y-2 animate-in fade-in duration-150">
+              <div className="flex items-center justify-between">
+                <span className="text-[11px] font-semibold text-[var(--text-muted)]">Filter by Category:</span>
                 {isAnyFilterActive && (
                   <button
                     type="button"
                     onClick={handleResetFilters}
-                    className="flex items-center justify-center gap-1.5 text-xs text-[var(--text-muted)] hover:text-[var(--accent-terracotta)] font-medium px-3 py-2 rounded-lg border border-transparent hover:border-[var(--border-subtle)] transition shrink-0"
+                    className="flex items-center gap-1 text-[11px] text-[var(--text-muted)] hover:text-[var(--accent-terracotta)] font-medium transition cursor-pointer"
                   >
-                    <RotateCcw className="h-3.5 w-3.5" />
-                    <span>Reset All Filters</span>
+                    <RotateCcw className="h-3 w-3" />
+                    <span>Reset</span>
                   </button>
                 )}
               </div>
-
-              {/* Category Filter Chips */}
               <div className="flex items-center gap-1.5 overflow-x-auto pt-1">
-                <span className="text-[11px] font-semibold text-[var(--text-muted)] mr-1 shrink-0">Category:</span>
                 {CATEGORIES.map((cat) => {
                   const isSelected = selectedCategory === cat.id;
                   const count = cat.id === 'all' 
@@ -419,8 +549,11 @@ export const HabitView: React.FC<HabitViewProps> = ({
                     <button
                       key={cat.id}
                       type="button"
-                      onClick={() => setSelectedCategory(cat.id)}
-                      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs transition shrink-0 border ${
+                      onClick={() => {
+                        setSelectedCategory(cat.id);
+                        setCurrentPage(1);
+                      }}
+                      className={`inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs transition shrink-0 border cursor-pointer ${
                         isSelected
                           ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold'
                           : 'border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
@@ -440,7 +573,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
         {/* Habits List or Empty State */}
         {filteredHabits.length > 0 ? (
           <>
-            <div className="space-y-2.5 pt-2">
+            <div className="space-y-2.5 pt-1 sm:pt-2 pb-20 sm:pb-0">
               {paginatedHabits.map((habit) => (
                 <HabitItem
                   key={habit.id}
@@ -463,9 +596,9 @@ export const HabitView: React.FC<HabitViewProps> = ({
             />
           </>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 text-center rounded-xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-main)]/40 p-6 space-y-2">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] mb-1">
-              <Trophy className="h-6 w-6" strokeWidth={1.5} />
+          <div className="flex flex-col items-center justify-center py-10 sm:py-12 text-center rounded-xl border border-dashed border-[var(--border-subtle)] bg-[var(--bg-main)]/40 p-6 space-y-2">
+            <div className="flex h-11 w-11 sm:h-12 sm:w-12 items-center justify-center rounded-2xl bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] mb-1">
+              <Trophy className="h-5 w-5 sm:h-6 sm:w-6" strokeWidth={1.5} />
             </div>
             <h4 className="text-sm font-bold text-[var(--text-primary)]">
               No Habit Routines Found
@@ -479,7 +612,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
               <button
                 type="button"
                 onClick={handleResetFilters}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] px-4 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] px-4 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition cursor-pointer"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 <span>Clear Filters</span>
@@ -488,7 +621,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsModalOpen(true)}
-                className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition"
+                className="mt-2 inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] px-4 py-2 text-xs font-semibold text-white hover:opacity-90 transition cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Create First Habit</span>
@@ -497,9 +630,6 @@ export const HabitView: React.FC<HabitViewProps> = ({
           </div>
         )}
       </div>
-
-      {/* Consistency Rhythm Heatmap (Connected to Real Data) */}
-      <HeatmapGrid daysCount={90} habits={habits} />
 
       {/* Spacious 2-Column Create Habit Modal */}
       {isModalOpen && (
@@ -723,6 +853,134 @@ export const HabitView: React.FC<HabitViewProps> = ({
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Mobile Floating Action Button (FAB) for '+ New Habit' */}
+      <button
+        type="button"
+        onClick={() => setIsModalOpen(true)}
+        className="sm:hidden fixed bottom-6 left-6 z-30 flex h-13 w-13 items-center justify-center rounded-full bg-[var(--accent-terracotta)] text-white shadow-xl hover:scale-105 active:scale-95 transition-all duration-200 cursor-pointer"
+        aria-label="Create new habit routine"
+        title="Create new habit routine"
+      >
+        <Plus className="h-6 w-6" strokeWidth={2.5} />
+      </button>
+
+      {/* Mobile Filter Bottom Sheet Drawer */}
+      {isMobileFiltersOpen && (
+        <div className="sm:hidden fixed inset-0 z-50 flex flex-col justify-end">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity"
+            onClick={() => setIsMobileFiltersOpen(false)}
+          />
+
+          {/* Sheet Content */}
+          <div className="relative w-full max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 shadow-2xl space-y-4 animate-in slide-in-from-bottom duration-200">
+            {/* Sheet Handle & Header */}
+            <div className="flex flex-col items-center">
+              <div className="h-1 w-10 rounded-full bg-[var(--text-muted)]/30 mb-3" />
+              <div className="flex items-center justify-between w-full">
+                <div className="flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4 text-[var(--accent-terracotta)]" />
+                  <span className="font-heading font-bold text-sm text-[var(--text-primary)]">Filter Habit Routines</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsMobileFiltersOpen(false)}
+                  className="p-1 rounded-lg text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            </div>
+
+            {/* Filter: Time of Day */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[var(--text-secondary)]">Time of Day</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {TIME_OF_DAY_TABS.map((t) => {
+                  const TabIcon = t.icon;
+                  const isSelected = selectedTimeOfDay === t.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTimeOfDay(t.id);
+                        setCurrentPage(1);
+                      }}
+                      className={`flex items-center justify-center gap-2 py-2 px-2 text-xs font-medium rounded-xl border text-center transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold shadow-2xs'
+                          : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)]'
+                      }`}
+                    >
+                      <TabIcon className="h-3.5 w-3.5" />
+                      <span>{t.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Filter: Category */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold text-[var(--text-secondary)]">Category</label>
+              <div className="grid grid-cols-2 gap-1.5">
+                {CATEGORIES.map((cat) => {
+                  const isSelected = selectedCategory === cat.id;
+                  const count = cat.id === 'all' 
+                    ? habits.length 
+                    : habits.filter((h) => h.category === cat.id).length;
+
+                  return (
+                    <button
+                      key={cat.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedCategory(cat.id);
+                        setCurrentPage(1);
+                      }}
+                      className={`flex items-center justify-between py-2 px-3 text-xs font-medium rounded-xl border transition-all cursor-pointer ${
+                        isSelected
+                          ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold shadow-2xs'
+                          : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/60 text-[var(--text-secondary)]'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2">
+                        <IconRenderer name={cat.iconName} className="h-3.5 w-3.5" />
+                        <span>{cat.label}</span>
+                      </div>
+                      <span className="text-[10px] opacity-70">({count})</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Bottom Actions */}
+            <div className="pt-2 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  handleResetFilters();
+                  setIsMobileFiltersOpen(false);
+                }}
+                className="flex-1 py-2.5 text-xs font-semibold rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-rose-500 transition-colors cursor-pointer"
+              >
+                Reset All Filters
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsMobileFiltersOpen(false)}
+                className="flex-1 py-2.5 text-xs font-bold rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+              >
+                Show Results ({filteredHabits.length})
+              </button>
+            </div>
           </div>
         </div>
       )}

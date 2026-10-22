@@ -488,7 +488,7 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
   }, [archivedTasks]);
 
   return (
-    <div className="flex flex-col h-full w-full space-y-6 pb-20">
+    <div className="flex flex-col h-full w-full space-y-3 sm:space-y-6 pb-20">
       {/* Top Header & Metrics Banner */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-[var(--border-subtle)] pb-6">
         <div>

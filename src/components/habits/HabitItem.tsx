@@ -42,76 +42,86 @@ export const HabitItem: React.FC<HabitItemProps> = ({ habit, onToggleHabit, onDe
   const TimeIcon = timeOfDayConfig.icon;
 
   return (
-    <div className="group flex items-center justify-between gap-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 transition-all hover:border-[var(--text-muted)] hover:shadow-2xs">
-      {/* Icon & Details */}
-      <div className="flex items-center gap-3.5 flex-1 min-w-0">
-        <button
-          type="button"
-          onClick={handleCheck}
-          aria-label={isCompletedToday ? `Mark ${habit.title} incomplete` : `Mark ${habit.title} completed`}
-          className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg transition-all ${
-            isCompletedToday
-              ? 'bg-[var(--accent-terracotta)]/20 border-2 border-[var(--accent-terracotta)] shadow-xs text-[var(--accent-terracotta)]'
-              : 'bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]'
-          }`}
-        >
-          {isCompletedToday ? (
-            <Check className="h-5 w-5 text-[var(--accent-terracotta)] stroke-[3]" />
-          ) : (
-            <IconRenderer name={habit.icon || habit.category} className="h-5 w-5" />
-          )}
-        </button>
+    <div
+      className={`group relative flex flex-col gap-2 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3 sm:p-3.5 transition-all duration-200 hover:border-[var(--accent-terracotta)]/40 hover:shadow-xs ${
+        isCompletedToday ? 'opacity-55 bg-[var(--card-hover)]/30' : ''
+      }`}
+    >
+      {/* Header Row: Checkbox, Title & Badges, Actions */}
+      <div className="flex items-start justify-between gap-2.5">
+        <div className="flex items-start gap-2.5 flex-1 min-w-0">
+          <button
+            type="button"
+            onClick={handleCheck}
+            aria-label={isCompletedToday ? `Mark ${habit.title} incomplete` : `Mark ${habit.title} completed`}
+            className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-lg border transition-all cursor-pointer ${
+              isCompletedToday
+                ? 'border-[var(--accent-botanical-sage)] bg-[var(--accent-botanical-sage)] text-white shadow-xs'
+                : 'border-[var(--text-muted)]/60 hover:border-[var(--accent-botanical-sage)] hover:bg-[var(--accent-botanical-sage)]/10 text-[var(--text-muted)]'
+            }`}
+            title={isCompletedToday ? 'Mark as incomplete' : 'Mark as completed'}
+          >
+            {isCompletedToday ? (
+              <Check className="h-3.5 w-3.5 stroke-[3]" />
+            ) : (
+              <IconRenderer name={habit.icon || habit.category} className="h-3 w-3 opacity-60" />
+            )}
+          </button>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+          <div className="flex items-center gap-1.5 flex-wrap min-w-0 pt-0.5">
             <span
-              className={`font-semibold text-sm text-[var(--text-primary)] ${
+              className={`font-medium text-xs text-[var(--text-primary)] leading-snug break-words ${
                 isCompletedToday ? 'line-through text-[var(--text-muted)]' : ''
               }`}
             >
               {habit.title}
             </span>
 
-            <span className="rounded-md bg-[var(--border-subtle)]/60 px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)] capitalize">
+            {/* Category Pill */}
+            <span className="inline-flex items-center rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)] capitalize shrink-0">
               {habit.category}
             </span>
 
-            <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold ${timeOfDayConfig.color}`}>
+            {/* Time of Day Pill */}
+            <span className={`inline-flex items-center gap-1 rounded-md border px-2 py-0.5 text-[10px] font-semibold shrink-0 ${timeOfDayConfig.color}`}>
               <TimeIcon className="h-3 w-3" strokeWidth={1.5} aria-hidden="true" />
               <span>{timeOfDayConfig.label}</span>
             </span>
           </div>
+        </div>
 
-          <div className="mt-1 flex items-center gap-3 text-xs text-[var(--text-secondary)] flex-wrap">
-            <span className="flex items-center gap-1 font-semibold text-[#C06C4C]">
-              <Flame className="h-3.5 w-3.5 fill-[#C06C4C]" />
-              {habit.streak} Day Streak
-            </span>
-
-            <span className="inline-flex items-center gap-1 text-[11px] font-medium text-[var(--text-muted)]">
-              <BarChart2 className="h-3 w-3 text-[var(--text-muted)]" strokeWidth={1.5} />
-              <span>{completedThisWeek}/{targetWeekly} this week</span>
-            </span>
-
-            {/* Monthly 3-Streak Freeze Shield Badge */}
-            <span className="flex items-center gap-1 text-[10px] font-bold text-emerald-500 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/30 px-2 py-0.5 rounded-full">
-              <Shield className="h-3 w-3 text-emerald-500 dark:text-emerald-400" />
-              <span>{habit.freezeShieldsRemaining ?? 3}/3 Freeze Shields</span>
-            </span>
-          </div>
+        {/* Action Controls */}
+        <div className="flex items-center gap-0.5 shrink-0 pt-0.5">
+          <button
+            type="button"
+            onClick={() => onDeleteHabit(habit.id)}
+            className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-rose-500/15 hover:text-rose-500 cursor-pointer"
+            title="Delete Habit"
+            aria-label={`Delete ${habit.title}`}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </button>
         </div>
       </div>
 
-      {/* Delete button */}
-      <button
-        type="button"
-        onClick={() => onDeleteHabit(habit.id)}
-        className="flex h-8 w-8 items-center justify-center rounded-lg text-[var(--text-muted)] opacity-0 group-hover:opacity-100 transition-all hover:bg-rose-500/15 hover:text-rose-500"
-        title="Delete Habit"
-        aria-label={`Delete ${habit.title}`}
-      >
-        <Trash2 className="h-4 w-4" />
-      </button>
+      {/* Meta Details & Consistency Chips - Full width horizontal row across the card */}
+      <div className="pl-7.5 flex flex-row flex-wrap items-center gap-1.5 text-[11px] text-[var(--text-muted)] w-full">
+        <span className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-medium text-[var(--accent-terracotta)] shrink-0">
+          <Flame className="h-3 w-3 fill-[var(--accent-terracotta)] text-[var(--accent-terracotta)]" />
+          {habit.streak} Day Streak
+        </span>
+
+        <span className="inline-flex items-center gap-1 rounded-md bg-[var(--bg-main)] border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-medium text-[var(--text-secondary)] shrink-0">
+          <BarChart2 className="h-3 w-3 text-[var(--text-muted)]" strokeWidth={1.5} />
+          <span>{completedThisWeek}/{targetWeekly} this week</span>
+        </span>
+
+        {/* Monthly 3-Streak Freeze Shield Badge */}
+        <span className="inline-flex items-center gap-1 rounded-md bg-emerald-500/10 border border-emerald-500/25 px-2 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+          <Shield className="h-3 w-3 text-emerald-500" />
+          <span>{habit.freezeShieldsRemaining ?? 3}/3 Freeze Shields</span>
+        </span>
+      </div>
     </div>
   );
 };
