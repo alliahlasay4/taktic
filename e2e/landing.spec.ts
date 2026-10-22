@@ -14,7 +14,7 @@ test.describe('Landing Page & Navigation Flow', () => {
     // Verify hero headline is present
     const headline = page.locator('h1');
     await expect(headline).toBeVisible();
-    await expect(headline).toContainText(/Plan what matters today/i);
+    await expect(headline).toContainText(/Focus on what matters today/i);
   });
 
   test('should launch interactive demo mode directly from landing page', async ({ page }) => {
@@ -48,6 +48,6 @@ test.describe('Landing Page & Navigation Flow', () => {
     await expect(backBtn).toBeVisible();
     await backBtn.click();
     await expect(page).toHaveURL(/\/landing/);
-    await expect(page.getByRole('heading', { name: /Plan what matters today/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Focus on what matters today/i })).toBeVisible();
   });
 });
