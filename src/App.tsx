@@ -23,7 +23,7 @@ const CircleInviteAcceptModal = lazy(() => import('./components/circles/CircleIn
 import { ActiveTab } from './types';
 import { getTabFromPath, getPathFromTab } from './lib/routes';
 import { soundEngine } from './lib/audio';
-import { calculateGlobalActivityStreak } from './lib/streak';
+import { calculateGlobalActivityStreak, getLocalDateString } from './lib/streak';
 import { useHabits } from './hooks/useHabits';
 import { useFocusSessions } from './hooks/useFocusSessions';
 import { useTasks } from './hooks/useTasks';
@@ -112,10 +112,21 @@ function MainLayout() {
   }, [activeTab]);
 
   // Habits State from Custom Hook (Supabase + RLS + Demo mode)
-  const { habits, loading: habitsLoading, error: habitsError, addHabit, toggleHabit, deleteHabit } = useHabits();
+  const {
+    habits,
+    loading: habitsLoading,
+    error: habitsError,
+    addHabit,
+    toggleHabit,
+    deleteHabit,
+    archiveHabit,
+    unarchiveHabit,
+    batchUnarchiveHabits,
+    batchDeleteHabits,
+  } = useHabits();
 
   // Focus Sessions State from Custom Hook (Supabase + RLS + Demo mode)
-  const { addFocusSession, totalFocusMinutesToday, focusSessions } = useFocusSessions();
+  const { addFocusSession, deleteFocusSession, totalFocusMinutesToday, focusSessions } = useFocusSessions();
 
   // Tasks State from Custom Hook (Supabase + RLS + Demo mode)
   const {
@@ -497,7 +508,7 @@ function MainLayout() {
     }
   }, [activeSoundscape]);
 
-  const todayStr = new Date().toISOString().split('T')[0];
+  const todayStr = getLocalDateString();
   const focusTasks = tasks.filter((t) => t.isTodayFocus);
   const tasksCompletedToday = tasks.filter((t) => t.completed && t.completedAt?.startsWith(todayStr)).length;
   const habitsCompletedToday = habits.filter((h) => h.completedDates.includes(todayStr)).length;
@@ -586,6 +597,8 @@ function MainLayout() {
                 activeSoundscape={activeSoundscape}
                 setActiveSoundscape={setActiveSoundscape}
                 totalFocusMinutesToday={totalFocusMinutesToday}
+                focusSessions={focusSessions}
+                onDeleteFocusSession={deleteFocusSession}
                 onExitImmersive={() => setActiveTab('dashboard')}
               />
             </Suspense>
@@ -661,13 +674,10 @@ function MainLayout() {
                       ) : (
                         <HabitView
                           habits={habits}
-                          tasksCompleted={tasksCompletedToday}
-                          totalTasks={Math.max(1, focusTasks.length)}
-                          focusMinutes={totalFocusMinutesToday}
-                          targetFocusMinutes={100}
                           onToggleHabit={handleToggleHabitWithNotification}
                           onAddHabit={addHabit}
                           onDeleteHabit={deleteHabit}
+                          onArchiveHabit={archiveHabit}
                         />
                       )}
                     </div>
@@ -712,6 +722,7 @@ function MainLayout() {
                     <ArchiveView
                       tasks={tasks}
                       notes={quickNotes}
+                      habits={habits}
                       onUnarchiveTask={handleUnarchiveTask}
                       onDeleteTask={handleDeleteTask}
                       onBatchUnarchiveTasks={handleBatchUnarchiveTasks}
@@ -720,6 +731,10 @@ function MainLayout() {
                       onDeleteNote={handleDeleteQuickNote}
                       onBatchUnarchiveNotes={handleBatchUnarchiveQuickNotes}
                       onBatchDeleteNotes={handleBatchDeleteQuickNotes}
+                      onUnarchiveHabit={unarchiveHabit}
+                      onDeleteHabit={deleteHabit}
+                      onBatchUnarchiveHabits={batchUnarchiveHabits}
+                      onBatchDeleteHabits={batchDeleteHabits}
                       onNavigateToInbox={() => setActiveTab('inbox')}
                     />
                   )}
@@ -792,14 +807,16 @@ function MainLayout() {
           onClick={() => setIsQuickNotesOpen(true)}
           notesCount={quickNotes.filter((n) => !n.archived).length}
           isOpen={isQuickNotesOpen}
+          isFocusMode={isImmersiveFocusMode}
         />
 
-        {/* Global Calendar Floating Trigger (stacked vertically above QuickNotes at bottom-21) */}
+        {/* Global Calendar Floating Trigger (stacked vertically above QuickNotes) */}
         <CalendarFloatingTrigger
           onClick={() => setIsCalendarOpen(true)}
           isOpen={isCalendarOpen}
           selectedDate={selectedCalendarDate}
           overdueCount={overdueCalendarTasksCount}
+          isFocusMode={isImmersiveFocusMode}
         />
 
         {/* Global Quick Notes Slide-over Drawer */}

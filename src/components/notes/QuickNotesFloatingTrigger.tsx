@@ -5,12 +5,14 @@ interface QuickNotesFloatingTriggerProps {
   onClick: () => void;
   notesCount: number;
   isOpen: boolean;
+  isFocusMode?: boolean;
 }
 
 export const QuickNotesFloatingTrigger: React.FC<QuickNotesFloatingTriggerProps> = ({
   onClick,
   notesCount,
   isOpen,
+  isFocusMode = false,
 }) => {
   if (isOpen) return null;
 
@@ -19,7 +21,9 @@ export const QuickNotesFloatingTrigger: React.FC<QuickNotesFloatingTriggerProps>
       onClick={onClick}
       title="Quick Notepad (Ctrl+J)"
       aria-label="Quick Notepad"
-      className="sm:hidden group fixed bottom-6 right-5 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--card-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] shadow-lg hover:shadow-xl hover:border-[var(--accent-warm-ochre)]/60 hover:scale-105 active:scale-95 transition-all duration-200"
+      className={`sm:hidden group fixed right-4 z-30 flex h-11 w-11 items-center justify-center rounded-full bg-[var(--card-surface)] border border-[var(--border-subtle)] text-[var(--text-primary)] shadow-lg hover:shadow-xl hover:border-[var(--accent-warm-ochre)]/60 hover:scale-105 active:scale-95 transition-all duration-200 ${
+        isFocusMode ? 'bottom-20' : 'bottom-6'
+      }`}
     >
       <div className="relative flex items-center justify-center">
         <div className="p-2 rounded-full bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] group-hover:scale-110 transition-transform">

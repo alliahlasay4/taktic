@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Plus, Search, Inbox, Tag as TagIcon, X, Calendar as CalendarIcon, Zap, RefreshCw, Sparkles, FolderArchive, SlidersHorizontal, RotateCcw, ChevronDown, Archive, Star } from 'lucide-react';
+import { Plus, Search, Inbox, Tag as TagIcon, X, Calendar as CalendarIcon, Zap, RefreshCw, Sparkles, FolderArchive, SlidersHorizontal, RotateCcw, ChevronDown, Archive, Star, CheckCircle2, Check } from 'lucide-react';
 import { Task, PriorityLevel } from '../../types';
 import { TaskItem } from './TaskItem';
 import { TaskFormModal } from './TaskFormModal';
@@ -192,8 +192,76 @@ export const InboxView: React.FC<InboxViewProps> = ({
     setIsTaskModalOpen(true);
   };
 
+  // Daily task metrics (incorporating tasks completed today, including those swept into the archive)
+  const todayCompletedCount = tasks.filter((t) => t.completed && t.completedAt?.startsWith(todayStr)).length;
+  // Total daily workload baseline: all active tasks plus tasks already completed today
+  const dailyWorkloadCount = activeInboxTasks.filter((t) => !t.completed).length + todayCompletedCount;
+  const taskCompletionPct = dailyWorkloadCount > 0 ? Math.min(100, Math.round((todayCompletedCount / dailyWorkloadCount) * 100)) : 0;
+  const isAllTasksCompleted = dailyWorkloadCount > 0 && todayCompletedCount >= dailyWorkloadCount;
+
   return (
     <div className="space-y-3 sm:space-y-4">
+      {/* Page Header & Completion Bar Card - Botanical Sage Tasks Theme */}
+      <div className={`rounded-2xl border ${isAllTasksCompleted ? 'border-[#6B8E6E]/40 bg-gradient-to-r from-[var(--card-surface)] to-[#6B8E6E]/5 shadow-[#6B8E6E]/10' : 'border-[var(--border-subtle)] bg-[var(--card-surface)]'} p-3.5 sm:p-5 shadow-xs transition-all duration-300`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2.5">
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-xl shrink-0 ${
+              isAllTasksCompleted
+                ? 'bg-[#6B8E6E]/15 text-[#6B8E6E] dark:text-[#7B9E7E] border border-[#6B8E6E]/30'
+                : 'bg-[#6B8E6E]/10 text-[#6B8E6E] dark:text-[#7B9E7E] border border-[#6B8E6E]/20'
+            }`}>
+              {isAllTasksCompleted ? (
+                <CheckCircle2 className="h-5 w-5 animate-in zoom-in-75 duration-300" />
+              ) : (
+                <Inbox className="h-5 w-5" />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)] tracking-tight">
+                  Inbox & Tasks
+                </h1>
+                {isAllTasksCompleted ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#6B8E6E]/15 border border-[#6B8E6E]/30 px-2 py-0.5 text-[10px] font-bold text-[#5E8061] dark:text-[#7B9E7E] animate-pulse">
+                    <Check className="h-3 w-3" />
+                    All Cleared! 🎉
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium text-[var(--text-muted)] bg-[var(--bg-main)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)]">
+                    {Math.max(0, dailyWorkloadCount - todayCompletedCount)} remaining
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                {todayCompletedCount} of {dailyWorkloadCount} tasks completed today ({taskCompletionPct}%)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+              Today's Focus: <strong className="text-[#6B8E6E] dark:text-[#7B9E7E] font-bold">{focusCount}/5</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* Task Completion Progress Bar - Botanical Sage */}
+        <div
+          className="h-2 w-full rounded-full bg-[var(--border-subtle)]/40 overflow-hidden"
+          role="progressbar"
+          aria-label="Task completion progress"
+          aria-valuenow={taskCompletionPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuetext={`${todayCompletedCount} of ${dailyWorkloadCount} tasks completed today (${taskCompletionPct}%)`}
+        >
+          <div
+            className="h-full transition-all duration-500 ease-out rounded-full bg-gradient-to-r from-[#4E7A52] to-[#7BB280]"
+            style={{ width: `${taskCompletionPct}%` }}
+          />
+        </div>
+      </div>
+
       {/* Unified Master Task Hub Container */}
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3 sm:p-6 shadow-xs space-y-2.5 sm:space-y-4 transition-colors duration-300">
         {/* Top Header: Segmented Tabs & Action Controls */}

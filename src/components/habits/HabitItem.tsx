@@ -1,5 +1,5 @@
 import React from 'react';
-import { Flame, Check, Trash2, Sun, Sunrise, Moon, Shield, BarChart2 } from 'lucide-react';
+import { Flame, Check, Trash2, Sun, Sunrise, Moon, Shield, BarChart2, Archive } from 'lucide-react';
 import { Habit } from '../../types';
 import { soundEngine } from '../../lib/audio';
 import { IconRenderer } from '../common/IconRenderer';
@@ -9,9 +9,10 @@ interface HabitItemProps {
   habit: Habit;
   onToggleHabit: (id: string) => void;
   onDeleteHabit: (id: string) => void;
+  onArchiveHabit?: (id: string) => void;
 }
 
-export const HabitItem: React.FC<HabitItemProps> = ({ habit, onToggleHabit, onDeleteHabit }) => {
+export const HabitItem: React.FC<HabitItemProps> = ({ habit, onToggleHabit, onDeleteHabit, onArchiveHabit }) => {
   const today = getLocalDateString();
   const isCompletedToday = habit.completedDates.includes(today);
 
@@ -92,6 +93,17 @@ export const HabitItem: React.FC<HabitItemProps> = ({ habit, onToggleHabit, onDe
 
         {/* Action Controls */}
         <div className="flex items-center gap-0.5 shrink-0 pt-0.5">
+          {onArchiveHabit && (
+            <button
+              type="button"
+              onClick={() => onArchiveHabit(habit.id)}
+              className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-[var(--accent-terracotta)]/15 hover:text-[var(--accent-terracotta)] cursor-pointer"
+              title="Archive Habit"
+              aria-label={`Archive ${habit.title}`}
+            >
+              <Archive className="h-3.5 w-3.5" />
+            </button>
+          )}
           <button
             type="button"
             onClick={() => onDeleteHabit(habit.id)}

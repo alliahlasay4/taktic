@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, ArrowRight, Flame, Clock, Users, Check } from 'lucide-react';
+import { ArrowRight, Flame, Clock, Users, Check } from 'lucide-react';
 import { Task, Habit, ActiveTab, CircleMember } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { TripleRings } from '../habits/TripleRings';
@@ -39,7 +39,8 @@ const DashboardViewComponent: React.FC<DashboardViewProps> = ({
   const today = getLocalDateString();
   const activeTasks = tasks.filter((t) => !t.archived);
   const focusTasks = activeTasks.filter((t) => t.isTodayFocus);
-  const tasksCompletedToday = activeTasks.filter((t) => t.completed && t.completedAt?.startsWith(today)).length;
+  // Count all tasks completed today, including those swept into the archive today
+  const tasksCompletedToday = tasks.filter((t) => t.completed && t.completedAt?.startsWith(today)).length;
   const habitsCompletedToday = habits.filter((h) => h.completedDates.includes(today)).length;
 
   return (
@@ -47,10 +48,6 @@ const DashboardViewComponent: React.FC<DashboardViewProps> = ({
       {/* Welcome Banner */}
       <div className="relative overflow-hidden rounded-2xl sm:rounded-3xl bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] p-4 sm:p-6 md:p-8 text-white shadow-lg shadow-[#C06C4C]/15">
         <div className="relative z-10 max-w-xl space-y-1.5 sm:space-y-2">
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-white/20 backdrop-blur-md px-2.5 sm:px-3 py-0.5 sm:py-1 text-[11px] sm:text-xs font-semibold">
-            <Sparkles className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-            <span>Tactical Focus & Social Rhythm</span>
-          </div>
           <h1 className="font-heading font-bold text-xl sm:text-2xl md:text-3xl tracking-tight">
             Welcome back, {firstName}.
           </h1>

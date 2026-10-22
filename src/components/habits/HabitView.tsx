@@ -19,12 +19,13 @@ import {
   Target,
   Coffee,
   Zap,
-  Shield
+  Shield,
+  CheckCircle2,
+  Check
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { Habit } from '../../types';
 import { HabitItem } from './HabitItem';
-import { TripleRings } from './TripleRings';
 import { IconRenderer } from '../common/IconRenderer';
 import { Pagination } from '../common/Pagination';
 import { soundEngine } from '../../lib/audio';
@@ -32,13 +33,10 @@ import { getLocalDateString } from '../../lib/streak';
 
 interface HabitViewProps {
   habits: Habit[];
-  tasksCompleted: number;
-  totalTasks: number;
-  focusMinutes: number;
-  targetFocusMinutes: number;
   onToggleHabit: (id: string) => void;
   onAddHabit: (habit: Omit<Habit, 'id' | 'streak' | 'completedDates' | 'createdAt'>) => void;
   onDeleteHabit: (id: string) => void;
+  onArchiveHabit?: (id: string) => void;
 }
 
 const CATEGORIES = [
@@ -72,13 +70,10 @@ const AVAILABLE_ICONS = [
 
 export const HabitView: React.FC<HabitViewProps> = ({
   habits,
-  tasksCompleted,
-  totalTasks,
-  focusMinutes,
-  targetFocusMinutes,
   onToggleHabit,
   onAddHabit,
   onDeleteHabit,
+  onArchiveHabit,
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [selectedTimeOfDay, setSelectedTimeOfDay] = useState<string>('all');
@@ -103,11 +98,12 @@ export const HabitView: React.FC<HabitViewProps> = ({
   const [pageSize, setPageSize] = useState<number>(8);
 
   const today = getLocalDateString();
-  const habitsCompletedToday = habits.filter((h) => h.completedDates.includes(today)).length;
-  const habitsPendingToday = habits.length - habitsCompletedToday;
+  const activeHabits = habits.filter((h) => !h.archived);
+  const habitsCompletedToday = activeHabits.filter((h) => h.completedDates.includes(today)).length;
+  const habitsPendingToday = activeHabits.length - habitsCompletedToday;
 
   // Filter habits by category, time of day, completion status, and search query
-  const filteredHabits = habits.filter((h) => {
+  const filteredHabits = activeHabits.filter((h) => {
     const isDoneToday = h.completedDates.includes(today);
     
     // Status filter
@@ -205,19 +201,74 @@ export const HabitView: React.FC<HabitViewProps> = ({
     setIsModalOpen(false);
   };
 
-  return (
-    <div className="space-y-3 sm:space-y-6">
-      {/* 1. Triple Progress Rings Section (Compact Side-by-Side Rhythm Meter) */}
-      <TripleRings
-        tasksCompleted={tasksCompleted}
-        totalTasks={totalTasks}
-        habitsCompleted={habitsCompletedToday}
-        totalHabits={habits.length}
-        focusMinutes={focusMinutes}
-        targetFocusMinutes={targetFocusMinutes}
-      />
+  const totalHabitsCount = activeHabits.length;
+  const habitCompletionPct = totalHabitsCount > 0 ? Math.round((habitsCompletedToday / totalHabitsCount) * 100) : 0;
+  const isAllHabitsCompleted = totalHabitsCount > 0 && habitsCompletedToday === totalHabitsCount;
 
-      {/* 2. Primary Action Hub: Daily Habit Rhythm Checklist Card */}
+  return (
+    <div className="space-y-3 sm:space-y-4">
+      {/* Page Header & Completion Bar Card - Dusty Rose Habits Theme */}
+      <div className={`rounded-2xl border ${isAllHabitsCompleted ? 'border-[#C87D87]/40 bg-gradient-to-r from-[var(--card-surface)] to-[#C87D87]/5 shadow-[#C87D87]/10' : 'border-[var(--border-subtle)] bg-[var(--card-surface)]'} p-3.5 sm:p-5 shadow-xs transition-all duration-300`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2.5">
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-xl shrink-0 ${
+              isAllHabitsCompleted
+                ? 'bg-[#C87D87]/15 text-[#C87D87] dark:text-[#D88E98] border border-[#C87D87]/30'
+                : 'bg-[#C87D87]/10 text-[#C87D87] dark:text-[#D88E98] border border-[#C87D87]/20'
+            }`}>
+              {isAllHabitsCompleted ? (
+                <CheckCircle2 className="h-5 w-5 animate-in zoom-in-75 duration-300" />
+              ) : (
+                <Repeat className="h-5 w-5" />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)] tracking-tight">
+                  Daily Habits & Routines
+                </h1>
+                {isAllHabitsCompleted ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#C87D87]/15 border border-[#C87D87]/30 px-2 py-0.5 text-[10px] font-bold text-[#B85D6A] dark:text-[#D88E98] animate-pulse">
+                    <Check className="h-3 w-3" />
+                    All Complete! 🎉
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium text-[var(--text-muted)] bg-[var(--bg-main)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)]">
+                    {habitsPendingToday} left today
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                {habitsCompletedToday} of {totalHabitsCount} habits completed today ({habitCompletionPct}%)
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="text-xs font-semibold px-2.5 py-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+              Today's Rhythm: <strong className="text-[#C87D87] dark:text-[#D88E98] font-bold">{habitsCompletedToday}/{totalHabitsCount}</strong>
+            </span>
+          </div>
+        </div>
+
+        {/* Habit Completion Progress Bar - Dusty Rose */}
+        <div
+          className="h-2 w-full rounded-full bg-[var(--border-subtle)]/40 overflow-hidden"
+          role="progressbar"
+          aria-label="Habit completion progress"
+          aria-valuenow={habitCompletionPct}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuetext={`${habitsCompletedToday} of ${totalHabitsCount} habits completed (${habitCompletionPct}%)`}
+        >
+          <div
+            className="h-full transition-all duration-500 ease-out rounded-full bg-gradient-to-r from-[#B85D6A] to-[#E58A97]"
+            style={{ width: `${habitCompletionPct}%` }}
+          />
+        </div>
+      </div>
+
+      {/* Primary Action Hub: Daily Habit Rhythm Checklist Card */}
       <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 sm:p-6 shadow-xs space-y-3 sm:space-y-4 transition-colors duration-300">
         {/* Top Header: Segmented Tabs & Action Controls */}
         <div className="space-y-2 sm:space-y-3 pb-2 sm:pb-3 border-b border-[var(--border-subtle)]">
@@ -580,6 +631,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
                   habit={habit}
                   onToggleHabit={handleToggleHabitWithConfetti}
                   onDeleteHabit={onDeleteHabit}
+                  onArchiveHabit={onArchiveHabit}
                 />
               ))}
             </div>

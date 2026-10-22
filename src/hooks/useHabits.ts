@@ -270,9 +270,54 @@ export function useHabits() {
     }
   };
 
-  // Calculate overall maximum active streak across user habits
-  const overallStreak = habits.reduce((max, h) => Math.max(max, h.streak), 0);
+  // Archive Habit (soft-archive)
+  const archiveHabit = async (id: string) => {
+    const today = getLocalDateString();
+    setHabits((prev) =>
+      prev.map((h) => (h.id === id ? { ...h, archived: true, archivedAt: today } : h))
+    );
+  };
 
+  // Unarchive / Restore Habit
+  const unarchiveHabit = async (id: string) => {
+    setHabits((prev) =>
+      prev.map((h) => (h.id === id ? { ...h, archived: false, archivedAt: undefined } : h))
+    );
+  };
+
+  // Batch Unarchive Habits
+  const batchUnarchiveHabits = async (ids: string[]) => {
+    setHabits((prev) =>
+      prev.map((h) => (ids.includes(h.id) ? { ...h, archived: false, archivedAt: undefined } : h))
+    );
+  };
+
+  // Batch Delete Habits
+  const batchDeleteHabits = async (ids: string[]) => {
+    const previousHabits = [...habits];
+    setHabits((prev) => prev.filter((h) => !ids.includes(h.id)));
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        const { error } = await supabase
+          .from('habits')
+          .delete()
+          .in('id', ids)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+      } catch (err: any) {
+        console.error('Error batch deleting habits from Supabase:', err);
+        setError(err.message || 'Failed to delete habits from database.');
+        setHabits(previousHabits);
+      }
+    }
+  };
+
+  // Calculate overall maximum active streak across user active habits
+  const overallStreak = habits
+    .filter((h) => !h.archived)
+    .reduce((max, h) => Math.max(max, h.streak), 0);
 
   return {
     habits,
@@ -282,6 +327,10 @@ export function useHabits() {
     addHabit,
     toggleHabit,
     deleteHabit,
+    archiveHabit,
+    unarchiveHabit,
+    batchUnarchiveHabits,
+    batchDeleteHabits,
     refreshHabits: fetchHabits,
   };
 }

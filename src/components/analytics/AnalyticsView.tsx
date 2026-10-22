@@ -203,95 +203,141 @@ ${
     setIsExportMenuOpen(false);
   };
 
-  return (
-    <div className="space-y-3 sm:space-y-6 animate-in fade-in duration-300 max-w-5xl mx-auto">
-      {/* 1. Header: Clean title, Time Horizon Pills & Export */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-[var(--border-subtle)]">
-        <div>
-          <h1 className="font-heading font-bold text-xl sm:text-2xl text-[var(--text-primary)] tracking-tight">
-            Activity & Trends
-          </h1>
-          <p className="text-xs sm:text-sm text-[var(--text-secondary)] mt-0.5">
-            A clear summary of your focus time, habit consistency, and daily work.
-          </p>
-        </div>
+  const isOptimalScore = rhythmScore >= 80;
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {/* Time Horizon Pills */}
-          <div className="flex items-center rounded-xl bg-[var(--surface-sunken)] p-1 border border-[var(--border-subtle)] text-xs">
-            {(['week', 'month', 'all'] as TimeHorizon[]).map((horizon) => (
-              <button
-                key={horizon}
-                type="button"
-                onClick={() => setTimeHorizon(horizon)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
-                  timeHorizon === horizon
-                    ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs font-bold'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                }`}
-              >
-                {horizon === 'week' ? '7 Days' : horizon === 'month' ? '30 Days' : 'All-Time'}
-              </button>
-            ))}
+  return (
+    <div className="space-y-3 sm:space-y-4 animate-in fade-in duration-300 max-w-5xl mx-auto">
+      {/* Page Header & Completion Bar Card - Warm Ochre / Dusty Mauve Rhythm Theme */}
+      <div className={`rounded-2xl border ${isOptimalScore ? 'border-[#CFA052]/40 bg-gradient-to-r from-[var(--card-surface)] to-[#CFA052]/5 shadow-[#CFA052]/10' : 'border-[var(--border-subtle)] bg-[var(--card-surface)]'} p-3.5 sm:p-5 shadow-xs transition-all duration-300`}>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2.5">
+          <div className="flex items-center gap-3">
+            <div className={`flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-xl shrink-0 ${
+              isOptimalScore
+                ? 'bg-[#CFA052]/15 text-[#CFA052] dark:text-[#E0AF5E] border border-[#CFA052]/30'
+                : 'bg-[#CFA052]/10 text-[#CFA052] dark:text-[#E0AF5E] border border-[#CFA052]/20'
+            }`}>
+              {isOptimalScore ? (
+                <Award className="h-5 w-5 animate-in zoom-in-75 duration-300" />
+              ) : (
+                <TrendingUp className="h-5 w-5" />
+              )}
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h1 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)] tracking-tight">
+                  Activity & Trends
+                </h1>
+                {isOptimalScore ? (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[#CFA052]/15 border border-[#CFA052]/30 px-2 py-0.5 text-[10px] font-bold text-[#B88636] dark:text-[#E0AF5E] animate-pulse">
+                    <Check className="h-3 w-3" />
+                    High Rhythm! ⚡
+                  </span>
+                ) : (
+                  <span className="text-[10px] font-medium text-[var(--text-muted)] bg-[var(--bg-main)] px-2 py-0.5 rounded-full border border-[var(--border-subtle)]">
+                    {rhythmRankTitle}
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                Rhythm Score: <strong className="text-[#CFA052] dark:text-[#E0AF5E] font-bold">{rhythmScore}/100</strong> • {rhythmRankTitle} ({horizonLabel})
+              </p>
+            </div>
           </div>
 
-          {/* Export Dropdown */}
-          <div className="relative">
-            <button
-              type="button"
-              onClick={() => setIsExportMenuOpen((prev) => !prev)}
-              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-3.5 py-1.5 text-xs font-semibold text-[var(--text-primary)] shadow-xs transition active:scale-95 cursor-pointer"
-            >
-              {copiedRecap ? (
+          {/* Time Horizon Switcher & Export */}
+          <div className="flex items-center gap-2 flex-wrap self-start sm:self-auto">
+            {/* Time Horizon Pills */}
+            <div className="flex items-center rounded-xl bg-[var(--bg-main)] p-1 border border-[var(--border-subtle)] text-xs">
+              {(['week', 'month', 'all'] as TimeHorizon[]).map((horizon) => (
+                <button
+                  key={horizon}
+                  type="button"
+                  onClick={() => setTimeHorizon(horizon)}
+                  className={`px-2.5 sm:px-3 py-1 sm:py-1.5 rounded-lg text-xs font-semibold transition cursor-pointer ${
+                    timeHorizon === horizon
+                      ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs font-bold border border-[var(--border-subtle)]'
+                      : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                >
+                  {horizon === 'week' ? '7 Days' : horizon === 'month' ? '30 Days' : 'All-Time'}
+                </button>
+              ))}
+            </div>
+
+            {/* Export Dropdown */}
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsExportMenuOpen((prev) => !prev)}
+                className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] shadow-xs transition active:scale-95 cursor-pointer"
+              >
+                {copiedRecap ? (
+                  <>
+                    <Check className="h-3.5 w-3.5 text-emerald-500" />
+                    <span className="text-emerald-500 font-bold">Copied!</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="h-3.5 w-3.5 text-[var(--accent-terracotta)]" />
+                    <span>Export</span>
+                  </>
+                )}
+              </button>
+
+              {isExportMenuOpen && (
                 <>
-                  <Check className="h-3.5 w-3.5 text-emerald-500" />
-                  <span className="text-emerald-500 font-bold">Copied!</span>
-                </>
-              ) : (
-                <>
-                  <Copy className="h-3.5 w-3.5 text-[var(--accent-terracotta)]" />
-                  <span>Export</span>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsExportMenuOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-2 z-50 w-52 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-1.5 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
+                    <button
+                      type="button"
+                      onClick={handleExportPDF}
+                      className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition text-left cursor-pointer"
+                    >
+                      <Layers className="h-4 w-4 text-[var(--accent-terracotta)]" />
+                      <span>Download PDF</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleExportCSV}
+                      className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition text-left cursor-pointer"
+                    >
+                      <TrendingUp className="h-4 w-4 text-[var(--accent-botanical-sage)]" />
+                      <span>Download CSV (.csv)</span>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={handleCopyRecapSummary}
+                      className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition text-left cursor-pointer"
+                    >
+                      <Copy className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
+                      <span>Copy Text Summary</span>
+                    </button>
+                  </div>
                 </>
               )}
-            </button>
-
-            {isExportMenuOpen && (
-              <>
-                <div
-                  className="fixed inset-0 z-40"
-                  onClick={() => setIsExportMenuOpen(false)}
-                />
-                <div className="absolute right-0 mt-2 z-50 w-52 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-1.5 shadow-xl backdrop-blur-md animate-in fade-in zoom-in-95 duration-150">
-                  <button
-                    type="button"
-                    onClick={handleExportPDF}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition text-left cursor-pointer"
-                  >
-                    <Layers className="h-4 w-4 text-[var(--accent-terracotta)]" />
-                    <span>Download PDF</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleExportCSV}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition text-left cursor-pointer"
-                  >
-                    <TrendingUp className="h-4 w-4 text-[var(--accent-botanical-sage)]" />
-                    <span>Download CSV (.csv)</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={handleCopyRecapSummary}
-                    className="w-full flex items-center gap-2.5 rounded-xl px-2.5 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition text-left cursor-pointer"
-                  >
-                    <Copy className="h-4 w-4 text-[var(--accent-warm-ochre)]" />
-                    <span>Copy Text Summary</span>
-                  </button>
-                </div>
-              </>
-            )}
+            </div>
           </div>
+        </div>
+
+        {/* Rhythm Consistency Progress Bar - Warm Ochre */}
+        <div
+          className="h-2 w-full rounded-full bg-[var(--border-subtle)]/40 overflow-hidden"
+          role="progressbar"
+          aria-label="Rhythm consistency score"
+          aria-valuenow={rhythmScore}
+          aria-valuemin={0}
+          aria-valuemax={100}
+          aria-valuetext={`Rhythm Score: ${rhythmScore} out of 100 (${rhythmRankTitle})`}
+        >
+          <div
+            className="h-full transition-all duration-500 ease-out rounded-full bg-gradient-to-r from-[#B88636] to-[#E6B870]"
+            style={{ width: `${Math.min(100, Math.max(0, rhythmScore))}%` }}
+          />
         </div>
       </div>
 

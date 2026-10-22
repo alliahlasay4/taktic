@@ -138,6 +138,27 @@ export function useFocusSessions() {
     return newSession;
   };
 
+  // Delete a focus session (e.g. accidentally logged or inaccurate)
+  const deleteFocusSession = async (id: string) => {
+    // Optimistic UI update
+    setFocusSessions((prev) => prev.filter((s) => s.id !== id));
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        const { error: dbError } = await supabase
+          .from('focus_sessions')
+          .delete()
+          .eq('id', id)
+          .eq('user_id', user.id);
+
+        if (dbError) throw dbError;
+      } catch (err: any) {
+        console.error('Error deleting focus session from Supabase:', err);
+        setError(err.message || 'Failed to remove focus session.');
+      }
+    }
+  };
+
   // Calculate today's total focus minutes
   const todayStr = getLocalDateString();
   const totalFocusMinutesToday = focusSessions
@@ -149,6 +170,7 @@ export function useFocusSessions() {
     loading,
     error,
     addFocusSession,
+    deleteFocusSession,
     totalFocusMinutesToday,
     refreshFocusSessions: fetchFocusSessions,
   };

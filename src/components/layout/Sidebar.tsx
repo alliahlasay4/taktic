@@ -414,7 +414,7 @@ const SidebarComponent: React.FC<SidebarProps> = ({
     },
     {
       id: 'habits' as ActiveTab,
-      label: 'Habit Rings',
+      label: 'Habits',
       icon: Repeat,
       badge: null,
     },

@@ -31,6 +31,8 @@ export interface Habit {
   createdAt: string;
   timeOfDay?: 'morning' | 'afternoon' | 'evening';
   freezeShieldsRemaining?: number;
+  archived?: boolean;
+  archivedAt?: string;
 }
 
 export interface FocusSession {
