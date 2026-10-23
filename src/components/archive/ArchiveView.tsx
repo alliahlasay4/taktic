@@ -909,25 +909,25 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
         </div>
       </div>
 
-      {/* Segmented Tab Switcher (Tasks vs Scratchpad Notes) */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div className="inline-flex p-1 rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] shadow-2xs">
+      {/* Segmented Tab Switcher (Tasks vs Scratchpad Notes vs Habit Vault) */}
+      <div className="w-full">
+        <div className="grid grid-cols-3 sm:inline-flex items-center gap-1 p-1 rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] shadow-2xs w-full sm:w-auto">
           <button
             onClick={() => {
               setActiveTab('tasks');
               setSearchQuery('');
               setConfirmDeleteId(null);
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all ${
+            className={`flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap min-h-[36px] ${
               activeTab === 'tasks'
-                ? 'bg-[var(--accent-terracotta)] text-white shadow-xs'
+                ? 'bg-[var(--accent-terracotta)] text-white shadow-xs font-bold'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--theme-surface-hover)]'
             }`}
           >
-            <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>Master Tasks</span>
+            <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Tasks</span>
             <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
                 activeTab === 'tasks' ? 'bg-white/20 text-white' : 'bg-[var(--theme-surface-active)] text-[var(--text-muted)]'
               }`}
             >
@@ -941,16 +941,16 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
               setSearchQuery('');
               setConfirmDeleteId(null);
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap min-h-[36px] ${
               activeTab === 'notes'
-                ? 'bg-[var(--accent-terracotta)] text-white shadow-xs'
+                ? 'bg-[var(--accent-terracotta)] text-white shadow-xs font-bold'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--theme-surface-hover)]'
             }`}
           >
-            <StickyNote className="w-3.5 h-3.5" />
-            <span>Scratchpad Notes</span>
+            <StickyNote className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Notes</span>
             <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
                 activeTab === 'notes' ? 'bg-white/20 text-white' : 'bg-[var(--theme-surface-active)] text-[var(--text-muted)]'
               }`}
             >
@@ -964,16 +964,16 @@ export const ArchiveView: React.FC<ArchiveViewProps> = ({
               setSearchQuery('');
               setConfirmDeleteId(null);
             }}
-            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer ${
+            className={`flex items-center justify-center gap-1 sm:gap-2 px-2 sm:px-4 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer whitespace-nowrap min-h-[36px] ${
               activeTab === 'habits'
-                ? 'bg-[var(--accent-terracotta)] text-white shadow-xs'
+                ? 'bg-[var(--accent-terracotta)] text-white shadow-xs font-bold'
                 : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--theme-surface-hover)]'
             }`}
           >
-            <Repeat className="w-3.5 h-3.5" />
-            <span>Habit Vault</span>
+            <Repeat className="w-3.5 h-3.5 shrink-0" />
+            <span className="truncate">Habits</span>
             <span
-              className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+              className={`px-1.5 py-0.5 rounded-full text-[10px] font-bold shrink-0 ${
                 activeTab === 'habits' ? 'bg-white/20 text-white' : 'bg-[var(--theme-surface-active)] text-[var(--text-muted)]'
               }`}
             >

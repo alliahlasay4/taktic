@@ -137,6 +137,7 @@ function MainLayout() {
     updateTimeBlock: handleUpdateTimeBlock,
     updateTask: handleUpdateTask,
     deleteTask: handleDeleteTask,
+    restoreTask: handleRestoreTask,
     archiveTask: handleArchiveTask,
     unarchiveTask: handleUnarchiveTask,
     sweepCompletedTasks: handleSweepCompletedTasks,
@@ -528,6 +529,30 @@ function MainLayout() {
     [handleToggleTodayFocus, showToast]
   );
 
+  const handleDeleteTaskWithToast = React.useCallback(
+    (id: string) => {
+      const taskToDelete = tasks.find((t) => t.id === id);
+      if (!taskToDelete) return;
+
+      handleDeleteTask(id);
+
+      showToast(
+        'Task deleted',
+        `"${taskToDelete.title}" was permanently removed.`,
+        'system',
+        {
+          label: 'Undo',
+          onClick: () => {
+            handleRestoreTask(taskToDelete);
+            showToast('Task restored', `"${taskToDelete.title}" has been restored.`, 'system');
+          },
+        },
+        7000
+      );
+    },
+    [tasks, handleDeleteTask, handleRestoreTask, showToast]
+  );
+
   const handleQuickAddTask = React.useCallback(
     (taskData: any) =>
       handleAddTask({
@@ -641,7 +666,7 @@ function MainLayout() {
                       members={members}
                       onToggleComplete={handleToggleCompleteTask}
                       onToggleTodayFocus={handleToggleTodayFocusWithToast}
-                      onDeleteTask={handleDeleteTask}
+                      onDeleteTask={handleDeleteTaskWithToast}
                       onToggleHabit={handleToggleHabitWithNotification}
                       setActiveTab={setActiveTab}
                       onOpenSummary={() => setIsSummaryOpen(true)}
@@ -655,7 +680,7 @@ function MainLayout() {
                       onUpdateTask={handleUpdateTask}
                       onToggleComplete={handleToggleCompleteTask}
                       onToggleTodayFocus={handleToggleTodayFocusWithToast}
-                      onDeleteTask={handleDeleteTask}
+                      onDeleteTask={handleDeleteTaskWithToast}
                       onArchiveTask={handleArchiveTask}
                       onSweepCompleted={handleSweepCompletedTasks}
                       onRolloverOverdueTasks={handleRolloverOverdueTasks}

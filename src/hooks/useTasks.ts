@@ -339,6 +339,44 @@ export function useTasks() {
     }
   };
 
+  // Restore a deleted or previous task
+  const restoreTask = async (taskToRestore: Task) => {
+    // Optimistic restore
+    setTasks((prev) => {
+      if (prev.some((t) => t.id === taskToRestore.id)) return prev;
+      return [taskToRestore, ...prev];
+    });
+
+    if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      try {
+        const { error } = await supabase.from('tasks').upsert({
+          id: taskToRestore.id,
+          user_id: user.id,
+          title: taskToRestore.title,
+          description: taskToRestore.description || null,
+          priority: taskToRestore.priority || 'medium',
+          tags: taskToRestore.tags || [],
+          due_date: formatDueDateForDb(taskToRestore.dueDate),
+          completed: taskToRestore.completed || false,
+          is_today_focus: taskToRestore.isTodayFocus || false,
+          time_block: taskToRestore.timeBlock || null,
+          estimated_minutes: taskToRestore.estimatedMinutes || null,
+          is_someday: taskToRestore.isSomeday || false,
+          recurring: taskToRestore.recurring || null,
+          archived: taskToRestore.archived || false,
+          archived_at: taskToRestore.archivedAt || null,
+          completed_at: taskToRestore.completedAt || null,
+        });
+
+        if (error) throw error;
+      } catch (err: any) {
+        console.error('Error restoring task in Supabase:', err);
+        setError(err.message || 'Failed to restore task.');
+        setTasks((prev) => prev.filter((t) => t.id !== taskToRestore.id));
+      }
+    }
+  };
+
   // Archive a single task
   const archiveTask = async (id: string) => {
     const targetTask = tasks.find((t) => t.id === id);
@@ -529,6 +567,7 @@ export function useTasks() {
     updateTimeBlock,
     updateTask,
     deleteTask,
+    restoreTask,
     archiveTask,
     unarchiveTask,
     sweepCompletedTasks,

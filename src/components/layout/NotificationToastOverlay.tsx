@@ -43,11 +43,24 @@ export const NotificationToastOverlay: React.FC<NotificationToastOverlayProps> =
             <div className="flex-1 min-w-0 pr-1">
               <h4 className="text-xs font-bold text-[var(--text-primary)] tracking-tight">{toast.title}</h4>
               <p className="mt-0.5 text-xs text-[var(--text-secondary)] leading-relaxed break-words">{toast.message}</p>
+              {toast.action && (
+                <div className="mt-2.5">
+                  <button
+                    onClick={() => {
+                      toast.action?.onClick();
+                      onDismiss(toast.id);
+                    }}
+                    className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold rounded-lg bg-[var(--accent-terracotta)] text-white hover:opacity-90 active:scale-95 transition shadow-sm cursor-pointer"
+                  >
+                    {toast.action.label}
+                  </button>
+                </div>
+              )}
             </div>
 
             <button
               onClick={() => onDismiss(toast.id)}
-              className="rounded-lg p-1 text-[var(--text-muted)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)] transition shrink-0"
+              className="rounded-lg p-1 text-[var(--text-muted)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)] transition shrink-0 cursor-pointer"
             >
               <X className="h-3.5 w-3.5" />
             </button>

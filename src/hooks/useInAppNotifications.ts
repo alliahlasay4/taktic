@@ -9,6 +9,10 @@ export interface ToastItem {
   title: string;
   message: string;
   type: InAppNotification['type'];
+  action?: {
+    label: string;
+    onClick: () => void;
+  };
 }
 
 /**
@@ -83,23 +87,29 @@ export function useInAppNotifications() {
   const isInitialMount = useRef(true);
 
   // Trigger toast with sound and automatic dismissal (with deduplication)
-  const showToast = useCallback((title: string, message: string, type: InAppNotification['type'] = 'system') => {
+  const showToast = useCallback((
+    title: string,
+    message: string,
+    type: InAppNotification['type'] = 'system',
+    action?: { label: string; onClick: () => void },
+    durationMs: number = 5000
+  ) => {
     const toastKey = `${title.trim()}:::${message.trim()}`;
     const now = Date.now();
     const lastSeen = recentToastsRef.current.get(toastKey);
 
-    // Debounce/deduplicate: don't show identical toast within 2.5s
-    if (lastSeen && now - lastSeen < 2500) {
+    // Debounce/deduplicate: don't show identical toast within 2.5s (unless it has an action)
+    if (!action && lastSeen && now - lastSeen < 2500) {
       return;
     }
     recentToastsRef.current.set(toastKey, now);
 
     const toastId = `toast-${now}-${Math.random().toString(36).substring(2, 6)}`;
-    const newToast: ToastItem = { id: toastId, title, message, type };
+    const newToast: ToastItem = { id: toastId, title, message, type, action };
 
     setToasts((prev) => {
       // Check if identical toast is already active in the overlay
-      if (prev.some((t) => t.title === title && t.message === message)) {
+      if (!action && prev.some((t) => t.title === title && t.message === message)) {
         return prev;
       }
       return [...prev, newToast];
@@ -112,7 +122,7 @@ export function useInAppNotifications() {
 
     setTimeout(() => {
       setToasts((prev) => prev.filter((t) => t.id !== toastId));
-    }, 5000);
+    }, durationMs);
   }, []);
 
   // Fetch notifications from Supabase for real user

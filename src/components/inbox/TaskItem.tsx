@@ -135,8 +135,8 @@ export const TaskItem: React.FC<TaskItemProps> = ({
           <button
             onClick={() => onDeleteTask(task.id)}
             className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-muted)] opacity-70 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:bg-rose-500/15 hover:text-rose-600 dark:hover:text-rose-400 cursor-pointer"
-            title="Delete task"
-            aria-label="Delete task"
+            title="Permanently delete task"
+            aria-label="Permanently delete task"
           >
             <Trash2 className="h-3.5 w-3.5" />
           </button>
