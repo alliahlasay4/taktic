@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Users, Check, Sparkles, Calendar, Clock, Search, Layers, CheckSquare, Square } from 'lucide-react';
+import { X, Users, Check, Calendar, Clock, Search, CheckSquare, Square, Plus } from 'lucide-react';
 import { CircleMember } from '../../types';
 
 interface CreatePodModalProps {
@@ -9,19 +9,11 @@ interface CreatePodModalProps {
   onCreatePod: (name: string, selectedMemberIds: string[], selectedMemberNames: string[], durationMinutes: number) => void;
 }
 
-const PRESET_POD_NAMES = [
-  'Deep Work Sprint',
-  'Morning Solopreneurs',
-  'Design & UX Guild',
-  'Code & Build Squad',
-  'Reading & Research',
-];
-
 const DURATION_OPTIONS = [
-  { mins: 15, label: '15 Mins', sublabel: 'Quick Sprint' },
-  { mins: 25, label: '25 Mins', sublabel: 'Classic Pomodoro' },
-  { mins: 50, label: '50 Mins', sublabel: 'Deep Flow' },
-  { mins: 90, label: '90 Mins', sublabel: 'Extended Marathon' },
+  { mins: 15, label: '15 Mins', sublabel: 'Quick check-in' },
+  { mins: 25, label: '25 Mins', sublabel: 'Standard flow' },
+  { mins: 50, label: '50 Mins', sublabel: 'Deep session' },
+  { mins: 90, label: '90 Mins', sublabel: 'Extended block' },
 ];
 
 export const CreatePodModal: React.FC<CreatePodModalProps> = ({
@@ -75,25 +67,20 @@ export const CreatePodModal: React.FC<CreatePodModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/75 p-3 sm:p-5 backdrop-blur-md animate-in fade-in duration-200">
-      <div className="relative w-full max-w-md md:max-w-3xl lg:max-w-4xl max-h-[92dvh] flex flex-col rounded-2xl sm:rounded-3xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-200">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 sm:p-6 backdrop-blur-sm animate-in fade-in duration-150">
+      <div className="relative w-full max-w-lg md:max-w-3xl max-h-[90vh] flex flex-col rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-2xl overflow-hidden animate-in zoom-in-95 duration-150">
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[var(--border-subtle)] shrink-0 bg-[var(--bg-main)]/50">
-          <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 pr-2">
-            <div className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-2xl bg-[var(--accent-terracotta)] text-white font-bold shrink-0 shadow-md">
-              <Users className="h-4 w-4 sm:h-5 sm:w-5" />
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[var(--border-subtle)] shrink-0">
+          <div className="flex items-center gap-3 min-w-0 pr-2">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] shrink-0 shadow-2xs">
+              <Users className="h-4.5 w-4.5" />
             </div>
             <div className="min-w-0">
-              <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                <h2 className="font-heading font-bold text-sm sm:text-lg text-[var(--text-primary)] truncate">
-                  Create Standing Focus Pod
-                </h2>
-                <span className="rounded-full bg-[var(--accent-warm-ochre)]/15 border border-[var(--accent-warm-ochre)]/30 px-2 py-0.5 text-[9px] font-bold text-[var(--accent-warm-ochre)] shrink-0">
-                  Standing Pod
-                </span>
-              </div>
-              <p className="text-[11px] sm:text-xs text-[var(--text-secondary)] truncate sm:whitespace-normal">
-                Private co-working room for selected Circle Partners.
+              <h2 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)] truncate">
+                Create Focus Pod
+              </h2>
+              <p className="text-xs text-[var(--text-secondary)] truncate">
+                Set up a recurring co-working space for your circle.
               </p>
             </div>
           </div>
@@ -101,24 +88,24 @@ export const CreatePodModal: React.FC<CreatePodModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl p-1.5 sm:p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition shrink-0"
+            className="rounded-lg p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition cursor-pointer shrink-0"
             aria-label="Close dialog"
           >
-            <X className="h-4 w-4 sm:h-5 sm:w-5" />
+            <X className="h-4.5 w-4.5" />
           </button>
         </div>
 
-        {/* Modal Content - Two-column horizontal layout on Tablet & Desktop */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <form id="create-pod-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-12 gap-5 lg:gap-6">
-            {/* Left Column (Pod Configuration & Lease Policy) */}
-            <div className="md:col-span-6 space-y-4 flex flex-col justify-between">
+        {/* Modal Body: 2 columns on Tablet and Desktop, 1 column on Mobile */}
+        <div className="flex-1 overflow-y-auto p-5 sm:p-6">
+          <form id="create-pod-form" onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Left Column: Pod Name & Duration */}
+            <div className="space-y-4 flex flex-col justify-between">
               <div className="space-y-4">
                 {/* Pod Name Input */}
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label htmlFor="create-pod-name" className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                      1. Pod Name
+                    <label htmlFor="create-pod-name" className="block text-xs font-semibold text-[var(--text-secondary)]">
+                      Pod Name
                     </label>
                     <span className="text-[10px] text-[var(--text-muted)]">{podName.length}/50</span>
                   </div>
@@ -128,82 +115,65 @@ export const CreatePodModal: React.FC<CreatePodModalProps> = ({
                     type="text"
                     required
                     maxLength={50}
-                    placeholder="e.g. Design Guild, Morning Solopreneurs"
+                    placeholder="e.g. Design Sync, Deep Work Squad"
                     value={podName}
                     onChange={(e) => setPodName(e.target.value)}
-                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-terracotta)]"
+                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)] px-3.5 py-2.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:border-[var(--accent-terracotta)] focus:outline-none focus:ring-1 focus:ring-[var(--accent-terracotta)] transition"
                   />
-
-                  {/* Preset Suggestions */}
-                  <div className="mt-2 flex items-center gap-1.5 flex-wrap">
-                    <span className="text-[10px] text-[var(--text-muted)]">Presets:</span>
-                    {PRESET_POD_NAMES.map((preset) => (
-                      <button
-                        key={preset}
-                        type="button"
-                        onClick={() => setPodName(preset)}
-                        className={`text-[10px] px-2 py-0.5 rounded-lg border transition ${
-                          podName === preset
-                            ? 'bg-[var(--accent-terracotta)] text-white border-[var(--accent-terracotta)] font-semibold'
-                            : 'border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-terracotta)]/40'
-                        }`}
-                      >
-                        {preset}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
-                {/* Sprint Duration Selector */}
+                {/* Duration Options */}
                 <div>
-                  <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-2">
-                    2. Standard Sprint Length
+                  <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                    Sprint Duration
                   </label>
                   <div className="grid grid-cols-2 gap-2">
-                    {DURATION_OPTIONS.map((opt) => (
-                      <button
-                        key={opt.mins}
-                        type="button"
-                        onClick={() => setDurationMinutes(opt.mins)}
-                        className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition ${
-                          durationMinutes === opt.mins
-                            ? 'border-[var(--accent-warm-ochre)] bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] ring-1 ring-[var(--accent-warm-ochre)] font-bold'
-                            : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)]'
-                        }`}
-                      >
-                        <div className="flex items-center gap-1.5">
-                          <Clock className="h-3.5 w-3.5 shrink-0" />
-                          <span className="text-xs font-bold">{opt.label}</span>
-                        </div>
-                        <span className="text-[10px] text-[var(--text-muted)] mt-0.5">{opt.sublabel}</span>
-                      </button>
-                    ))}
+                    {DURATION_OPTIONS.map((opt) => {
+                      const isSelected = durationMinutes === opt.mins;
+                      return (
+                        <button
+                          key={opt.mins}
+                          type="button"
+                          onClick={() => setDurationMinutes(opt.mins)}
+                          className={`flex flex-col items-start p-2.5 rounded-xl border text-left transition cursor-pointer ${
+                            isSelected
+                              ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--text-primary)] ring-1 ring-[var(--accent-terracotta)]'
+                              : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-secondary)] hover:border-[var(--text-muted)]'
+                          }`}
+                        >
+                          <div className="flex items-center gap-1.5">
+                            <Clock className={`h-3.5 w-3.5 shrink-0 ${isSelected ? 'text-[var(--accent-terracotta)]' : 'text-[var(--text-muted)]'}`} />
+                            <span className="text-xs font-bold">{opt.label}</span>
+                          </div>
+                          <span className="text-[10px] text-[var(--text-muted)] mt-0.5">{opt.sublabel}</span>
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               </div>
 
-              {/* Lease & Privacy Notice */}
-              <div className="rounded-2xl border border-[var(--accent-botanical-sage)]/30 bg-[var(--accent-botanical-sage)]/10 p-3 flex items-start gap-2.5">
-                <Calendar className="h-4 w-4 shrink-0 text-[var(--accent-botanical-sage)] mt-0.5" />
-                <p className="text-[11px] text-[var(--text-primary)] leading-snug">
-                  <span className="font-bold text-[var(--accent-botanical-sage)]">30-Day Lease: </span>
-                  Auto-renews when active. Inactive rooms expire after 30 days.
+              {/* Lease Policy Notice */}
+              <div className="rounded-xl border border-[var(--border-subtle)] bg-[var(--surface-sunken)]/60 p-3 flex items-start gap-2.5 text-[11px] text-[var(--text-secondary)]">
+                <Calendar className="h-4 w-4 shrink-0 text-[var(--accent-warm-ochre)] mt-0.5" />
+                <p className="leading-snug">
+                  Pods stay active for 30 days and renew automatically whenever a session is held.
                 </p>
               </div>
             </div>
 
-            {/* Right Column (Member Selection & Live Pod Preview) */}
-            <div className="md:col-span-6 space-y-4 flex flex-col justify-between">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <label className="text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider">
-                    3. Invite Circle Partners ({selectedIds.length} chosen)
+            {/* Right Column: Invite Partners */}
+            <div className="space-y-3 flex flex-col justify-between">
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <label className="text-xs font-semibold text-[var(--text-secondary)]">
+                    Invite Partners {selectedIds.length > 0 && `(${selectedIds.length} selected)`}
                   </label>
                   {partnerMembers.length > 0 && (
                     <button
                       type="button"
                       onClick={handleSelectAll}
-                      className="text-[11px] font-semibold text-[var(--accent-terracotta)] hover:underline flex items-center gap-1"
+                      className="text-[11px] font-semibold text-[var(--accent-terracotta)] hover:underline flex items-center gap-1 cursor-pointer"
                     >
                       {selectedIds.length === filteredMembers.length ? (
                         <>
@@ -220,7 +190,7 @@ export const CreatePodModal: React.FC<CreatePodModalProps> = ({
 
                 {/* Member Search Bar */}
                 {partnerMembers.length > 3 && (
-                  <div className="relative mb-2">
+                  <div className="relative">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[var(--text-muted)]" />
                     <input
                       id="search-pod-partners-input"
@@ -236,8 +206,8 @@ export const CreatePodModal: React.FC<CreatePodModalProps> = ({
                   </div>
                 )}
 
-                {/* Member List Container */}
-                <div className="max-h-52 overflow-y-auto space-y-1.5 border border-[var(--border-subtle)] rounded-2xl p-2 bg-[var(--surface-sunken)]">
+                {/* Member Roster List */}
+                <div className="max-h-60 overflow-y-auto space-y-1.5 border border-[var(--border-subtle)] rounded-xl p-2 bg-[var(--surface-sunken)]">
                   {partnerMembers.length > 0 ? (
                     filteredMembers.map((member) => {
                       const isSelected = selectedIds.includes(member.id);
@@ -245,10 +215,10 @@ export const CreatePodModal: React.FC<CreatePodModalProps> = ({
                         <div
                           key={member.id}
                           onClick={() => toggleSelectMember(member.id)}
-                          className={`flex items-center justify-between p-2 rounded-xl border transition cursor-pointer select-none ${
+                          className={`flex items-center justify-between p-2 rounded-lg border transition cursor-pointer select-none ${
                             isSelected
-                              ? 'border-[var(--accent-terracotta)]/50 bg-[var(--accent-terracotta)]/10 shadow-xs'
-                              : 'border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)]'
+                              ? 'border-[var(--accent-terracotta)]/40 bg-[var(--card-surface)] shadow-2xs'
+                              : 'border-transparent bg-[var(--card-surface)] hover:bg-[var(--card-hover)]'
                           }`}
                         >
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -259,65 +229,46 @@ export const CreatePodModal: React.FC<CreatePodModalProps> = ({
                             />
                             <div className="min-w-0">
                               <p className="text-xs font-semibold text-[var(--text-primary)] truncate">{member.name}</p>
-                              <p className="text-[10px] text-[var(--text-secondary)] truncate">{member.statusText || 'Circle Partner'}</p>
+                              <p className="text-[10px] text-[var(--text-secondary)] truncate">{member.statusText || 'Partner'}</p>
                             </div>
                           </div>
 
                           <div
-                            className={`flex h-5 w-5 items-center justify-center rounded-lg border transition shrink-0 ${
+                            className={`flex h-4.5 w-4.5 items-center justify-center rounded border transition shrink-0 ${
                               isSelected
                                 ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)] text-white'
                                 : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-transparent'
                             }`}
                           >
-                            <Check className="h-3.5 w-3.5" />
+                            <Check className="h-3 w-3 stroke-[3]" />
                           </div>
                         </div>
                       );
                     })
                   ) : (
-                    <div className="py-6 text-center text-xs text-[var(--text-muted)] space-y-1">
+                    <div className="py-8 text-center text-xs text-[var(--text-muted)] space-y-1">
                       <p>No circle partners available.</p>
-                      <p className="text-[10px] text-[var(--accent-terracotta)] font-medium">Add members via "Invite Partner" first!</p>
+                      <p className="text-[10px] text-[var(--accent-terracotta)] font-medium">Add partners to your circle first.</p>
                     </div>
                   )}
                 </div>
               </div>
 
-              {/* Pod Live Preview Snippet */}
-              <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3 space-y-1.5 shadow-xs">
-                <div className="flex items-center justify-between text-[10px] font-bold text-[var(--text-muted)] uppercase tracking-wider">
-                  <span className="flex items-center gap-1">
-                    <Layers className="h-3 w-3 text-[var(--accent-terracotta)]" /> Room Badge Preview
-                  </span>
-                  <span className="text-[var(--accent-warm-ochre)] font-bold">{durationMinutes}m sprint</span>
-                </div>
-                <div className="flex items-center justify-between pt-1 border-t border-[var(--border-subtle)]">
-                  <div className="min-w-0">
-                    <p className="text-xs font-bold text-[var(--text-primary)] truncate">
-                      {podName || 'Your Pod Name'}
-                    </p>
-                    <p className="text-[10px] text-[var(--text-secondary)]">
-                      {selectedIds.length === 0
-                        ? 'Open to all approved circle partners'
-                        : `${selectedIds.length} designated partners`}
-                    </p>
-                  </div>
-                  <span className="rounded-full bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] px-2 py-0.5 text-[9px] font-bold shrink-0">
-                    Ready to Start
-                  </span>
-                </div>
-              </div>
+              <p className="text-[11px] text-[var(--text-muted)]">
+                {selectedIds.length === 0
+                  ? 'All circle partners will be able to join this pod.'
+                  : `Only the ${selectedIds.length} selected partner${selectedIds.length === 1 ? '' : 's'} can access this pod.`}
+              </p>
             </div>
           </form>
         </div>
 
-        {/* Modal Footer Actions */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-main)]/50 shrink-0 flex-wrap gap-2">
+        {/* Modal Footer */}
+        <div className="flex items-center justify-end gap-2.5 px-5 sm:px-6 py-3.5 border-t border-[var(--border-subtle)] bg-[var(--bg-main)]/40 shrink-0">
           <button
             type="button"
             onClick={onClose}
-            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition"
+            className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
           >
             Cancel
           </button>
@@ -326,13 +277,14 @@ export const CreatePodModal: React.FC<CreatePodModalProps> = ({
             type="submit"
             form="create-pod-form"
             disabled={!podName.trim()}
-            className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 sm:px-5 py-2 text-xs font-bold text-white shadow-md transition active:scale-95 disabled:opacity-40"
+            className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2 text-xs font-bold text-white shadow-xs transition active:scale-95 disabled:opacity-40 cursor-pointer"
           >
-            <Sparkles className="h-4 w-4" />
-            <span>Create Focus Pod</span>
+            <Plus className="h-3.5 w-3.5" />
+            <span>Create Pod</span>
           </button>
         </div>
       </div>
     </div>
   );
 };
+

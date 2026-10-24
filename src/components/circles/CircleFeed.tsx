@@ -1,5 +1,17 @@
-import React, { useState } from 'react';
-import { Heart, Sparkles, ShieldCheck, Flame, Lock, Trophy, Zap, Target, Filter, Plus, Settings, Trash2 } from 'lucide-react';
+import React, { useState, useMemo } from 'react';
+import {
+  Heart,
+  Sparkles,
+  ShieldCheck,
+  Flame,
+  Lock,
+  Trophy,
+  Zap,
+  Target,
+  Plus,
+  Settings,
+  Trash2,
+} from 'lucide-react';
 import { CircleFeedPost, CircleMember } from '../../types';
 import { ShareMilestoneModal } from './ShareMilestoneModal';
 import { CircleManagerModal } from './CircleManagerModal';
@@ -7,6 +19,7 @@ import { CircleManagerModal } from './CircleManagerModal';
 interface CircleFeedProps {
   feedPosts: CircleFeedPost[];
   members?: CircleMember[];
+  userStreak?: number;
   currentUserId?: string;
   currentUserName?: string;
   onToggleLike: (postId: string, reaction?: string) => void;
@@ -21,6 +34,7 @@ interface CircleFeedProps {
 export const CircleFeed: React.FC<CircleFeedProps> = ({
   feedPosts,
   members = [],
+  userStreak = 0,
   currentUserId,
   currentUserName,
   onToggleLike,
@@ -42,14 +56,23 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
     }
   };
 
-  const filteredPosts = feedPosts.filter((post) => {
-    const isOwnPost = Boolean(currentUserId && post.userId && post.userId === currentUserId) || post.userId === 'user';
-    if (audienceFilter === 'mine' && !isOwnPost) return false;
-    if (audienceFilter === 'partners' && isOwnPost) return false;
+  const partnerMembers = useMemo(() => members.filter((m) => m.isCirclePartner !== false), [members]);
 
-    if (activeFilter === 'all') return true;
-    return post.type === activeFilter;
-  });
+  const filteredPosts = useMemo(() => {
+    return feedPosts.filter((post) => {
+      const isOwnPost = Boolean(currentUserId && post.userId && post.userId === currentUserId) || post.userId === 'user';
+      if (audienceFilter === 'mine' && !isOwnPost) return false;
+      if (audienceFilter === 'partners' && isOwnPost) return false;
+
+      if (activeFilter === 'all') return true;
+      return post.type === activeFilter;
+    });
+  }, [feedPosts, audienceFilter, activeFilter, currentUserId]);
+
+  // Total cheers given across circle
+  const totalCircleCheers = useMemo(() => {
+    return feedPosts.reduce((acc, p) => acc + (p.likes || 0), 0);
+  }, [feedPosts]);
 
   const getPostBadge = (type: CircleFeedPost['type']) => {
     switch (type) {
@@ -57,155 +80,199 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
         return {
           icon: Trophy,
           label: 'Ring Closed',
-          bg: 'bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] border border-[var(--accent-warm-ochre)]/30',
-          tag: '#FocusRings',
+          accentColor: 'var(--accent-warm-ochre)',
+          badgeClass: 'bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] border-[var(--accent-warm-ochre)]/25',
+          borderAccent: 'border-l-[var(--accent-warm-ochre)]',
         };
       case 'streak_milestone':
         return {
           icon: Flame,
           label: 'Streak Milestone',
-          bg: 'bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] border border-[var(--accent-terracotta)]/30',
-          tag: '#Consistency',
+          accentColor: 'var(--accent-terracotta)',
+          badgeClass: 'bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] border-[var(--accent-terracotta)]/25',
+          borderAccent: 'border-l-[var(--accent-terracotta)]',
         };
       case 'focus_marathon':
         return {
           icon: Zap,
-          label: 'Focus Sprint',
-          bg: 'bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/30',
-          tag: '#DeepWork',
+          label: 'Deep Focus Sprint',
+          accentColor: 'var(--accent-botanical-sage)',
+          badgeClass: 'bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] border-[var(--accent-botanical-sage)]/25',
+          borderAccent: 'border-l-[var(--accent-botanical-sage)]',
         };
       case 'habit_mastered':
         return {
           icon: Target,
           label: 'Habit Mastered',
-          bg: 'bg-[var(--accent-dusty-mauve)]/15 text-[var(--accent-dusty-mauve)] border border-[var(--accent-dusty-mauve)]/30',
-          tag: '#Routine',
+          accentColor: 'var(--accent-dusty-mauve)',
+          badgeClass: 'bg-[var(--accent-dusty-mauve)]/15 text-[var(--accent-dusty-mauve)] border-[var(--accent-dusty-mauve)]/25',
+          borderAccent: 'border-l-[var(--accent-dusty-mauve)]',
         };
       default:
         return {
           icon: Sparkles,
           label: 'Milestone',
-          bg: 'bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)] border border-[var(--accent-dusty-rose)]/30',
-          tag: '#Achievement',
+          accentColor: 'var(--accent-dusty-rose)',
+          badgeClass: 'bg-[var(--accent-dusty-rose)]/15 text-[var(--accent-dusty-rose)] border-[var(--accent-dusty-rose)]/25',
+          borderAccent: 'border-l-[var(--accent-dusty-rose)]',
         };
     }
   };
 
+  const filterTabs = [
+    { id: 'all' as const, label: 'All' },
+    { id: 'ring_closed' as const, label: 'Rings', icon: Trophy },
+    { id: 'streak_milestone' as const, label: 'Streaks', icon: Flame },
+    { id: 'focus_marathon' as const, label: 'Sprints', icon: Zap },
+    { id: 'habit_mastered' as const, label: 'Habits', icon: Target },
+  ];
+
+  const reactionEmojis = [
+    { id: 'fire', icon: Flame, label: 'Fire', activeColor: 'text-amber-500 fill-amber-500' },
+    { id: 'zap', icon: Zap, label: 'Sprint', activeColor: 'text-yellow-500 fill-yellow-500' },
+    { id: 'sparkles', icon: Sparkles, label: 'Sparkle', activeColor: 'text-teal-500 fill-teal-500' },
+    { id: 'heart', icon: Heart, label: 'Love', activeColor: 'text-rose-500 fill-rose-500' },
+  ];
+
   return (
-    <div className="space-y-6" data-tour="tour-feed-tab">
-      {/* Feed Controls Header */}
-      <div className="space-y-4">
-        {/* Header & Quick Action Row */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3.5 border-b border-[var(--border-subtle)]">
-          <div>
-            <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-heading font-bold text-sm sm:text-base text-[var(--text-primary)]">
-                Milestone Feed & Social Activity
-              </h2>
-              <span className="flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-botanical-sage)]">
-                <ShieldCheck className="h-3 w-3" /> Privacy Mask Active
-              </span>
+    <div className="max-w-4xl mx-auto space-y-6" data-tour="tour-feed-tab">
+      {/* 1. Clean, Unified Header */}
+      <header className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3.5">
+            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--accent-terracotta)] to-[var(--accent-warm-ochre)] text-white shadow-xs shrink-0">
+              <Sparkles className="h-5 w-5" />
             </div>
-            <p className="mt-0.5 text-xs text-[var(--text-secondary)]">
-              Celebrate ring closures and focus streaks without leaking private task titles.
-            </p>
+            <div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <h1 className="font-heading font-bold text-lg sm:text-xl text-[var(--text-primary)] tracking-tight">
+                  Milestones Feed
+                </h1>
+                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/25 px-2.5 py-0.5 text-[10px] font-semibold text-[var(--accent-botanical-sage)]">
+                  <ShieldCheck className="h-3 w-3" /> Private & Masked
+                </span>
+              </div>
+              <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+                Celebrate focus milestones, unbroken streaks, and cheering circle momentum.
+              </p>
+            </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0">
+          {/* Action Buttons */}
+          <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
             <button
               type="button"
               onClick={() => setIsManagerOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] hover:bg-[var(--card-hover)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition active:scale-95 shadow-2xs"
-              title="Manage Circle Members & Mute Controls"
+              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] hover:bg-[var(--card-hover)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] transition active:scale-95 cursor-pointer"
+              title="Manage Circle & Privacy"
             >
               <Settings className="h-3.5 w-3.5 text-[var(--text-muted)]" />
-              <span>Manage Circle</span>
+              <span>Circle</span>
             </button>
 
             {onBroadcastAchievement && (
               <button
                 type="button"
                 onClick={() => setIsShareOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs transition active:scale-95 shrink-0"
+                className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2 text-xs font-bold text-white shadow-xs transition active:scale-95 cursor-pointer"
               >
-                <Plus className="h-3.5 w-3.5" />
-                <span>Broadcast</span>
+                <Plus className="h-4 w-4" />
+                <span>Share Milestone</span>
               </button>
             )}
           </div>
         </div>
 
-        {/* Audience and Category Filter Chips Bar */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
-          {/* Audience Filter Pills */}
-          <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--surface-sunken)] border border-[var(--border-subtle)] self-start overflow-x-auto">
-            {[
-              { id: 'all' as const, label: 'All Feed' },
-              { id: 'mine' as const, label: 'My Broadcasts' },
-              { id: 'partners' as const, label: 'Partners Only' },
-            ].map((scope) => (
+        {/* Quiet At-a-glance Metric Bar */}
+        <div className="mt-5 pt-4 border-t border-[var(--border-subtle)] grid grid-cols-3 gap-3 text-center sm:text-left">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2.5 px-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] mx-auto sm:mx-0 shrink-0">
+              <Trophy className="h-3.5 w-3.5" />
+            </span>
+            <div>
+              <p className="font-heading font-bold text-sm text-[var(--text-primary)] leading-tight">
+                {feedPosts.length}
+              </p>
+              <p className="text-[11px] text-[var(--text-muted)]">Milestones</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2.5 px-2 border-x border-[var(--border-subtle)]">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] mx-auto sm:mx-0 shrink-0">
+              <Flame className="h-3.5 w-3.5" />
+            </span>
+            <div>
+              <p className="font-heading font-bold text-sm text-[var(--text-primary)] leading-tight">
+                {userStreak} {userStreak === 1 ? 'Day' : 'Days'}
+              </p>
+              <p className="text-[11px] text-[var(--text-muted)]">Your Streak</p>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row sm:items-center gap-1.5 sm:gap-2.5 px-2">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-rose-500/15 text-rose-500 mx-auto sm:mx-0 shrink-0">
+              <Heart className="h-3.5 w-3.5 fill-current" />
+            </span>
+            <div>
+              <p className="font-heading font-bold text-sm text-[var(--text-primary)] leading-tight">
+                {totalCircleCheers}
+              </p>
+              <p className="text-[11px] text-[var(--text-muted)]">Circle Cheers</p>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      {/* 2. Streamlined Controls Bar: Audience Tabs + Type Filter Dropdown/Pills */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-1">
+        {/* Audience Segmented Control */}
+        <div className="inline-flex items-center rounded-xl bg-[var(--surface-sunken)] p-1 border border-[var(--border-subtle)] self-start">
+          {[
+            { id: 'all' as const, label: 'All Feed' },
+            { id: 'mine' as const, label: 'My Milestones' },
+            { id: 'partners' as const, label: `Partners (${partnerMembers.length})` },
+          ].map((scope) => (
+            <button
+              key={scope.id}
+              type="button"
+              onClick={() => setAudienceFilter(scope.id)}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all cursor-pointer ${
+                audienceFilter === scope.id
+                  ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs font-bold'
+                  : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              }`}
+            >
+              {scope.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Category Filter Pills (Minimal & clean) */}
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 scrollbar-none">
+          {filterTabs.map((tab) => {
+            const isSelected = activeFilter === tab.id;
+            const Icon = tab.icon;
+            return (
               <button
-                key={scope.id}
+                key={tab.id}
                 type="button"
-                onClick={() => setAudienceFilter(scope.id)}
-                className={`px-3 py-1 text-xs font-semibold rounded-lg transition whitespace-nowrap ${
-                  audienceFilter === scope.id
-                    ? 'bg-[var(--accent-terracotta)] text-white shadow-xs font-bold'
-                    : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                onClick={() => setActiveFilter(tab.id)}
+                className={`inline-flex items-center gap-1.5 rounded-xl px-2.5 py-1.5 text-xs font-medium transition cursor-pointer shrink-0 ${
+                  isSelected
+                    ? 'bg-[var(--text-primary)] text-[var(--bg-main)] font-semibold shadow-xs'
+                    : 'bg-[var(--card-surface)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--text-muted)]'
                 }`}
               >
-                {scope.label}
+                {Icon && <Icon className="h-3 w-3" />}
+                <span>{tab.label}</span>
               </button>
-            ))}
-          </div>
-
-          {/* Category Filter Chips */}
-          <div className="flex items-center gap-1.5 overflow-x-auto pb-1">
-            <span className="text-xs font-semibold text-[var(--text-muted)] mr-1 flex items-center gap-1 shrink-0">
-              <Filter className="h-3.5 w-3.5" />
-              <span>Type:</span>
-            </span>
-
-            {[
-              { id: 'all' as const, label: 'All', icon: Sparkles, count: feedPosts.length },
-              { id: 'ring_closed' as const, label: 'Rings', icon: Trophy, count: feedPosts.filter((p) => p.type === 'ring_closed').length },
-              { id: 'streak_milestone' as const, label: 'Streaks', icon: Flame, count: feedPosts.filter((p) => p.type === 'streak_milestone').length },
-              { id: 'focus_marathon' as const, label: 'Sprints', icon: Zap, count: feedPosts.filter((p) => p.type === 'focus_marathon').length },
-              { id: 'habit_mastered' as const, label: 'Habits', icon: Target, count: feedPosts.filter((p) => p.type === 'habit_mastered').length },
-            ].map((tab) => {
-              const TabIcon = tab.icon;
-              const isSelected = activeFilter === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveFilter(tab.id)}
-                  className={`flex items-center gap-1.5 rounded-xl px-2.5 py-1 text-xs font-semibold transition shrink-0 whitespace-nowrap min-h-[32px] ${
-                    isSelected
-                      ? 'bg-[var(--accent-terracotta)] text-white shadow-xs font-bold'
-                      : 'bg-[var(--surface-sunken)] border border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
-                  }`}
-                >
-                  <TabIcon className="h-3.5 w-3.5" />
-                  <span>{tab.label}</span>
-                  {tab.count > 0 && (
-                    <span
-                      className={`rounded-full px-1.5 py-0.2 text-[10px] font-bold ${
-                        isSelected ? 'bg-white/25 text-white' : 'bg-[var(--card-surface)] text-[var(--text-muted)]'
-                      }`}
-                    >
-                      {tab.count}
-                    </span>
-                  )}
-                </button>
-              );
-            })}
-          </div>
+            );
+          })}
         </div>
       </div>
 
-      {/* Feed Stream Cards */}
-      <div className="space-y-4">
+      {/* 3. Milestone Cards Stream (Clean, uncluttered, breathable layout) */}
+      <div className="space-y-3.5">
         {filteredPosts.length > 0 ? (
           filteredPosts.map((post) => {
             const badge = getPostBadge(post.type);
@@ -216,55 +283,51 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
             const displayAuthorName = isOwnPost && currentUserName ? currentUserName : post.userName;
 
             return (
-              <div
+              <article
                 key={post.id}
-                className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 transition-all hover:border-[var(--accent-dusty-rose)]/40 shadow-xs space-y-4"
+                className={`group relative rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-4 sm:p-5 transition duration-150 hover:border-[var(--accent-warm-ochre)]/40 hover:shadow-xs border-l-4 ${badge.borderAccent}`}
               >
-                {/* Post Header: User, Time, Category Badges */}
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3 min-w-0">
+                {/* Top Row: Author Info + Date + Mask Status */}
+                <div className="flex items-center justify-between gap-3 mb-2.5">
+                  <div className="flex items-center gap-2.5 min-w-0">
                     <img
                       src={post.userAvatar}
                       alt={displayAuthorName}
-                      className="h-10 w-10 rounded-xl object-cover ring-2 ring-[var(--border-subtle)] shrink-0"
+                      className="h-8 w-8 sm:h-9 sm:w-9 rounded-xl object-cover ring-1 ring-[var(--border-subtle)] shrink-0"
                     />
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-bold text-xs text-[var(--text-primary)]">{displayAuthorName}</span>
-                        {isOwnPost && (
-                          <span className="rounded-full bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 px-1.5 py-0.2 text-[9px] font-bold text-[var(--accent-terracotta)]">
-                            You
-                          </span>
-                        )}
-                        <span className="text-[11px] text-[var(--text-muted)]">• {post.timestamp}</span>
-                      </div>
-                      <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                        <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[9px] font-bold ${badge.bg}`}>
-                          <BadgeIcon className="h-3 w-3" />
-                          {badge.label}
+                    <div className="min-w-0 flex items-center gap-2 flex-wrap">
+                      <span className="font-semibold text-xs sm:text-sm text-[var(--text-primary)] truncate">
+                        {displayAuthorName}
+                      </span>
+                      {isOwnPost && (
+                        <span className="rounded-md bg-[var(--surface-sunken)] px-1.5 py-0.2 text-[10px] font-medium text-[var(--text-secondary)]">
+                          You
                         </span>
-                        <span className="rounded-full bg-[var(--surface-sunken)] px-2 py-0.5 text-[9px] font-mono font-medium text-[var(--text-muted)]">
-                          {badge.tag}
-                        </span>
-                      </div>
+                      )}
+                      <span className="text-[11px] text-[var(--text-muted)]">
+                        • {post.timestamp}
+                      </span>
                     </div>
                   </div>
 
-                  {/* Privacy / Audience Badge & Actions */}
                   <div className="flex items-center gap-2 shrink-0">
-                    {post.isPrivate ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-amber-500/15 border border-amber-500/30 px-2 py-0.5 text-[9px] font-bold text-amber-500 shrink-0">
-                        <Lock className="h-2.5 w-2.5 text-amber-500" />
-                        <span>Masked (Self)</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2 py-0.5 text-[9px] font-bold text-[var(--accent-botanical-sage)] shrink-0">
-                        <ShieldCheck className="h-2.5 w-2.5 text-[var(--accent-botanical-sage)]" />
-                        <span className="hidden sm:inline">Circle</span>
+                    <span
+                      className={`inline-flex items-center gap-1 rounded-md px-2 py-0.5 text-[10px] font-semibold border ${badge.badgeClass}`}
+                    >
+                      <BadgeIcon className="h-3 w-3" />
+                      <span>{badge.label}</span>
+                    </span>
+
+                    {post.isPrivate && (
+                      <span
+                        className="inline-flex items-center gap-1 text-[10px] font-medium text-amber-500 bg-amber-500/10 rounded-md px-1.5 py-0.5"
+                        title="Only you can see full breakdown"
+                      >
+                        <Lock className="h-2.5 w-2.5" />
+                        <span className="hidden sm:inline">Masked</span>
                       </span>
                     )}
 
-                    {/* Delete Post Button (for author only) */}
                     {isOwnPost && onDeletePost && (
                       <button
                         type="button"
@@ -273,7 +336,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
                             onDeletePost(post.id);
                           }
                         }}
-                        className="p-1.5 rounded-lg text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition"
+                        className="opacity-60 hover:opacity-100 p-1 rounded-md text-[var(--text-muted)] hover:text-red-500 hover:bg-red-500/10 transition"
                         title="Delete Milestone"
                         aria-label="Delete milestone"
                       >
@@ -283,96 +346,78 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
                   </div>
                 </div>
 
-                {/* Post Body */}
-                <div className="space-y-1.5 rounded-xl bg-[var(--bg-main)]/50 border border-[var(--border-subtle)] p-3.5">
-                  <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">
+                {/* Milestone Content: Title & Detail */}
+                <div className="pl-0 sm:pl-11 pr-2 space-y-1">
+                  <h2 className="font-heading font-semibold text-sm sm:text-base text-[var(--text-primary)] leading-snug">
                     {post.title}
-                  </h3>
-                  <p className="text-xs text-[var(--text-secondary)] leading-relaxed">
-                    {post.detail}
-                  </p>
+                  </h2>
+                  {post.detail && (
+                    <p className="text-xs sm:text-sm text-[var(--text-secondary)] leading-relaxed">
+                      {post.detail}
+                    </p>
+                  )}
                 </div>
 
-                {/* Post Footer: Cheer Count on Left, Single-Select Reaction Buttons on Right */}
-                <div className="pt-3 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
-                  {/* Total Cheers Counter */}
+                {/* Bottom Footer: Minimal, friendly cheer interaction */}
+                <div className="mt-3.5 pt-3 sm:pl-11 border-t border-[var(--border-subtle)] flex items-center justify-between gap-3">
+                  {/* Cheer counts */}
                   <div className="flex items-center gap-1.5 text-xs text-[var(--text-secondary)]">
-                    <Heart className={`h-3.5 w-3.5 transition-colors ${selectedCheer ? 'fill-rose-500 text-rose-500' : 'text-[var(--text-muted)]'}`} />
-                    <span className="font-bold text-xs text-[var(--text-primary)]">
-                      {totalCheers} <span className="font-normal text-[var(--text-secondary)]">{totalCheers === 1 ? 'Cheer' : 'Cheers'}</span>
+                    <Heart
+                      className={`h-3.5 w-3.5 transition-colors ${
+                        selectedCheer ? 'fill-rose-500 text-rose-500' : 'text-[var(--text-muted)]'
+                      }`}
+                    />
+                    <span className="font-medium text-xs text-[var(--text-primary)]">
+                      {totalCheers} <span className="font-normal text-[var(--text-muted)]">{totalCheers === 1 ? 'cheer' : 'cheers'}</span>
                     </span>
                   </div>
 
-                  {/* Reaction Icons (Single Selection Only) - Aligned to Right */}
-                  <div className="flex items-center gap-1.5 ml-auto">
-                    {[
-                      {
-                        id: 'fire',
-                        icon: Flame,
-                        label: 'Fire',
-                        activeClass: 'border-[var(--accent-terracotta)]/60 bg-[var(--accent-terracotta)]/20 text-[var(--accent-terracotta)] shadow-xs scale-105',
-                      },
-                      {
-                        id: 'zap',
-                        icon: Zap,
-                        label: 'Sprint',
-                        activeClass: 'border-[var(--accent-warm-ochre)]/60 bg-[var(--accent-warm-ochre)]/20 text-[var(--accent-warm-ochre)] shadow-xs scale-105',
-                      },
-                      {
-                        id: 'sparkles',
-                        icon: Sparkles,
-                        label: 'Sparkle',
-                        activeClass: 'border-amber-400/60 bg-amber-400/20 text-amber-500 shadow-xs scale-105',
-                      },
-                      {
-                        id: 'heart',
-                        icon: Heart,
-                        label: 'Love',
-                        activeClass: 'border-rose-500/60 bg-rose-500/20 text-rose-500 shadow-xs scale-105',
-                      },
-                    ].map((item) => {
-                      const Icon = item.icon;
-                      const isSelected = selectedCheer === item.id;
+                  {/* Reaction Pickers */}
+                  <div className="flex items-center gap-1">
+                    {reactionEmojis.map((emoji) => {
+                      const Icon = emoji.icon;
+                      const isSelected = selectedCheer === emoji.id;
                       return (
                         <button
-                          key={item.id}
+                          key={emoji.id}
                           type="button"
-                          onClick={() => handleToggleCheer(post.id, item.id)}
-                          className={`flex h-8 w-8 items-center justify-center rounded-xl border transition active:scale-90 cursor-pointer ${
+                          onClick={() => handleToggleCheer(post.id, emoji.id)}
+                          className={`flex h-7 w-7 items-center justify-center rounded-lg border transition-all cursor-pointer ${
                             isSelected
-                              ? item.activeClass
-                              : 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:border-[var(--border-subtle)]'
+                              ? 'border-[var(--border-subtle)] bg-[var(--surface-sunken)] shadow-2xs scale-105 ' + emoji.activeColor
+                              : 'border-transparent text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--surface-sunken)]'
                           }`}
-                          title={`Cheer with ${item.label}`}
-                          aria-label={`Cheer with ${item.label}`}
+                          title={`Cheer with ${emoji.label}`}
+                          aria-label={`Cheer with ${emoji.label}`}
                         >
-                          <Icon className={`h-3.5 w-3.5 ${isSelected && item.id === 'heart' ? 'fill-current' : ''}`} />
+                          <Icon className={`h-3.5 w-3.5 ${isSelected ? 'fill-current' : ''}`} />
                         </button>
                       );
                     })}
                   </div>
                 </div>
-              </div>
+              </article>
             );
           })
         ) : (
-          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--card-surface)] p-10 text-center space-y-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--accent-warm-ochre)]/10 text-[var(--accent-warm-ochre)]">
-              <Sparkles className="h-6 w-6" />
+          /* Clean, friendly Empty State */
+          <div className="flex flex-col items-center justify-center rounded-2xl border border-dashed border-[var(--border-subtle)] bg-[var(--card-surface)]/60 py-12 px-6 text-center">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--surface-sunken)] text-[var(--accent-warm-ochre)] mb-3">
+              <Sparkles className="h-5 w-5" />
             </div>
-            <div>
-              <p className="font-heading font-bold text-sm text-[var(--text-primary)]">
-                No Activity in this Category Yet
-              </p>
-              <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-sm">
-                Complete your daily focus sprint or close a habit ring to broadcast your first milestone!
-              </p>
-            </div>
+            <h3 className="font-heading font-semibold text-sm text-[var(--text-primary)]">
+              No milestones found
+            </h3>
+            <p className="text-xs text-[var(--text-secondary)] mt-1 max-w-xs leading-relaxed">
+              {activeFilter !== 'all' || audienceFilter !== 'all'
+                ? 'Try adjusting your filters to see more circle milestones.'
+                : 'Complete a focus session or finish your daily habit ring to share your first milestone!'}
+            </p>
             {onBroadcastAchievement && (
               <button
                 type="button"
                 onClick={() => setIsShareOpen(true)}
-                className="inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2 text-xs font-bold text-white shadow-xs transition active:scale-95"
+                className="mt-4 inline-flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2 text-xs font-bold text-white shadow-xs transition active:scale-95 cursor-pointer"
               >
                 <Plus className="h-3.5 w-3.5" />
                 <span>Broadcast Milestone</span>
@@ -391,7 +436,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
         />
       )}
 
-      {/* Circle Roster Control Manager Modal */}
+      {/* Circle Roster Manager Modal */}
       <CircleManagerModal
         isOpen={isManagerOpen}
         onClose={() => setIsManagerOpen(false)}

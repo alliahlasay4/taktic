@@ -177,20 +177,20 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
         aria-labelledby="task-modal-heading"
       >
         {/* Modal Header */}
-        <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 sm:py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-main)]/50 shrink-0">
-          <div className="flex items-center gap-2 sm:gap-3 min-w-0 pr-2">
-            <span className="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 px-2 py-0.5 sm:px-2.5 sm:py-1 rounded-md shrink-0">
-              {mode === 'edit' ? 'Edit Task' : 'New Task'}
+        <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-main)]/50 shrink-0">
+          <div className="flex items-center gap-2.5 min-w-0 pr-2">
+            <span className="text-[11px] font-semibold tracking-wide uppercase text-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 px-2 py-0.5 rounded-md shrink-0">
+              {mode === 'edit' ? 'Edit' : 'New'}
             </span>
-            <h2 id="task-modal-heading" className="text-xs sm:text-sm font-semibold text-[var(--text-primary)] truncate">
-              {mode === 'edit' ? 'Modify Task Details & Schedule' : 'Create & Schedule Task'}
+            <h2 id="task-modal-heading" className="text-sm sm:text-base font-semibold text-[var(--text-primary)] truncate">
+              {mode === 'edit' ? 'Edit Task' : 'New Task'}
             </h2>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Close task modal"
-            className="rounded-xl p-1.5 sm:p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition-colors shrink-0"
+            aria-label="Close"
+            className="rounded-lg p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition-colors shrink-0"
           >
             <X className="h-4 w-4 sm:h-5 sm:w-5" />
           </button>
@@ -198,16 +198,16 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
 
         {/* Modal Form Body */}
         <form onSubmit={handleFormSubmit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
-          <div className="p-4 sm:p-6 grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 overflow-y-auto flex-1">
-            {/* Left Column (60% / 7 cols) - Core Information */}
-            <div className="lg:col-span-7 space-y-5">
+          <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 overflow-y-auto flex-1">
+            {/* Left Column - Core Information (md: 7 cols) */}
+            <div className="md:col-span-7 space-y-4">
               {/* Task Title */}
               <div>
                 <label 
                   htmlFor="task-modal-title" 
-                  className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5"
+                  className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5"
                 >
-                  Task Title <span className="text-[var(--accent-terracotta)]">*</span>
+                  Title <span className="text-[var(--accent-terracotta)]">*</span>
                 </label>
                 <input
                   ref={titleInputRef}
@@ -215,10 +215,10 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                   name="title"
                   type="text"
                   required
-                  placeholder="What needs to get done?"
+                  placeholder="Task title"
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-4 py-3 text-base font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:ring-1 focus:ring-[var(--accent-terracotta)] transition-all"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3.5 py-2.5 text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:ring-1 focus:ring-[var(--accent-terracotta)] transition-all"
                 />
               </div>
 
@@ -226,36 +226,36 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
               <div>
                 <label 
                   htmlFor="task-modal-description" 
-                  className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5"
+                  className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5"
                 >
-                  Description & Context
+                  Description
                 </label>
                 <textarea
                   id="task-modal-description"
                   name="description"
                   rows={4}
-                  placeholder="Add background context, checklist items, links, or notes..."
+                  placeholder="Notes, subtasks, or links..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
-                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-3.5 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:ring-1 focus:ring-[var(--accent-terracotta)] transition-all resize-y leading-relaxed"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] p-3 text-xs text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:ring-1 focus:ring-[var(--accent-terracotta)] transition-all resize-y leading-relaxed"
                 />
               </div>
 
-              {/* Interactive Tag System */}
+              {/* Tags */}
               <div>
                 <label 
                   htmlFor="task-modal-tag-input" 
-                  className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5"
+                  className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5"
                 >
-                  Tags & Categories
+                  Tags
                 </label>
                 
                 {/* Active Tag Chips */}
-                <div className="flex flex-wrap items-center gap-1.5 mb-2 min-h-[28px]">
+                <div className="flex flex-wrap items-center gap-1.5 mb-2 min-h-[26px]">
                   {tags.map((tag) => (
                     <span
                       key={tag}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] px-2.5 py-1 text-xs font-medium text-[var(--text-primary)] shadow-xs"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-main)] px-2.5 py-1 text-xs font-medium text-[var(--text-primary)]"
                     >
                       <TagIcon className="h-3 w-3 text-[var(--accent-terracotta)]" />
                       <span>{tag}</span>
@@ -270,7 +270,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                     </span>
                   ))}
                   {tags.length === 0 && (
-                    <span className="text-xs text-[var(--text-muted)] italic">No tags assigned yet</span>
+                    <span className="text-xs text-[var(--text-muted)]">No tags</span>
                   )}
                 </div>
 
@@ -280,7 +280,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                     id="task-modal-tag-input"
                     name="tagInput"
                     type="text"
-                    placeholder="Type tag and press Enter..."
+                    placeholder="Add a tag..."
                     value={tagInput}
                     onChange={(e) => setTagInput(e.target.value)}
                     onKeyDown={handleTagInputKeyDown}
@@ -290,16 +290,16 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                     type="button"
                     onClick={() => handleAddTag(tagInput)}
                     disabled={!tagInput.trim()}
-                    className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] hover:bg-[var(--card-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition"
+                    className="rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs font-medium text-[var(--text-primary)] hover:bg-[var(--card-hover)] disabled:opacity-40 disabled:cursor-not-allowed transition"
                   >
                     Add
                   </button>
                 </div>
 
-                {/* Tag suggestions from workspace */}
+                {/* Tag suggestions */}
                 {availableTags.length > 0 && (
                   <div className="mt-2 flex flex-wrap items-center gap-1">
-                    <span className="text-[10px] uppercase font-bold text-[var(--text-muted)] mr-1">Suggested:</span>
+                    <span className="text-[11px] text-[var(--text-muted)] mr-1">Suggested:</span>
                     {availableTags.slice(0, 6).map((sTag) => {
                       const isAdded = tags.includes(sTag);
                       return (
@@ -308,7 +308,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                           type="button"
                           onClick={() => handleAddTag(sTag)}
                           disabled={isAdded}
-                          className={`text-[11px] rounded-md px-2 py-0.5 border transition ${
+                          className={`text-xs rounded-md px-2 py-0.5 border transition ${
                             isAdded
                               ? 'border-transparent text-[var(--text-muted)] opacity-50 cursor-default'
                               : 'border-[var(--border-subtle)] bg-[var(--card-surface)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:border-[var(--accent-terracotta)]'
@@ -323,13 +323,13 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
               </div>
             </div>
 
-            {/* Right Column (40% / 5 cols) - Scheduling & Attributes */}
-            <div className="lg:col-span-5 space-y-4 lg:border-l lg:border-[var(--border-subtle)] lg:pl-6">
+            {/* Right Column - Scheduling & Details (md: 5 cols) */}
+            <div className="md:col-span-5 space-y-4 md:border-l md:border-[var(--border-subtle)] md:pl-6">
               {/* Priority Selector */}
               <div>
-                <div className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
-                  Priority Level
-                </div>
+                <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                  Priority
+                </label>
                 <div className="grid grid-cols-3 gap-2">
                   {(['low', 'medium', 'high'] as PriorityLevel[]).map((p) => {
                     const isSelected = priority === p;
@@ -339,9 +339,9 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                       high: 'High',
                     };
                     const colorStyles: Record<PriorityLevel, string> = {
-                      low: isSelected ? 'border-[var(--accent-sage-moss)] bg-[var(--accent-sage-moss)]/15 text-[var(--text-primary)] font-bold ring-1 ring-[var(--accent-sage-moss)]' : 'border-[var(--border-subtle)] text-[var(--text-secondary)]',
-                      medium: isSelected ? 'border-[var(--accent-dusty-mauve)] bg-[var(--accent-dusty-mauve)]/15 text-[var(--text-primary)] font-bold ring-1 ring-[var(--accent-dusty-mauve)]' : 'border-[var(--border-subtle)] text-[var(--text-secondary)]',
-                      high: isSelected ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--text-primary)] font-bold ring-1 ring-[var(--accent-terracotta)]' : 'border-[var(--border-subtle)] text-[var(--text-secondary)]',
+                      low: isSelected ? 'border-[var(--accent-sage-moss)] bg-[var(--accent-sage-moss)]/15 text-[var(--text-primary)] font-semibold ring-1 ring-[var(--accent-sage-moss)]' : 'border-[var(--border-subtle)] text-[var(--text-secondary)]',
+                      medium: isSelected ? 'border-[var(--accent-dusty-mauve)] bg-[var(--accent-dusty-mauve)]/15 text-[var(--text-primary)] font-semibold ring-1 ring-[var(--accent-dusty-mauve)]' : 'border-[var(--border-subtle)] text-[var(--text-secondary)]',
+                      high: isSelected ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--text-primary)] font-semibold ring-1 ring-[var(--accent-terracotta)]' : 'border-[var(--border-subtle)] text-[var(--text-secondary)]',
                     };
 
                     return (
@@ -349,7 +349,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                         key={p}
                         type="button"
                         onClick={() => setPriority(p)}
-                        className={`rounded-xl border py-2.5 text-xs text-center transition-all ${colorStyles[p]} hover:bg-[var(--card-hover)]`}
+                        className={`rounded-xl border py-2 text-xs text-center transition-all ${colorStyles[p]} hover:bg-[var(--card-hover)]`}
                       >
                         {labels[p]}
                       </button>
@@ -358,16 +358,14 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                 </div>
               </div>
 
-              {/* Scheduled Date with Presets */}
+              {/* Due Date with Presets */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label 
-                    htmlFor="task-modal-due-date" 
-                    className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]"
-                  >
-                    Scheduled Due Date
-                  </label>
-                </div>
+                <label 
+                  htmlFor="task-modal-due-date" 
+                  className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5"
+                >
+                  Due Date
+                </label>
                 <input
                   id="task-modal-due-date"
                   name="dueDate"
@@ -382,7 +380,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                       setIsTodayFocus(true);
                     }
                   }}
-                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)]"
+                  className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)]"
                 />
 
                 {/* Quick Date Presets */}
@@ -395,7 +393,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                     }}
                     className={`text-[11px] px-2.5 py-1 rounded-lg border transition ${
                       dueDate === todayStr
-                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
+                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-medium'
                         : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
@@ -409,7 +407,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                     }}
                     className={`text-[11px] px-2.5 py-1 rounded-lg border transition ${
                       dueDate === tomorrowStr
-                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
+                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-medium'
                         : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
@@ -423,7 +421,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                     }}
                     className={`text-[11px] px-2.5 py-1 rounded-lg border transition ${
                       dueDate === nextWeekStr
-                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
+                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-medium'
                         : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                     }`}
                   >
@@ -446,7 +444,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                 <div>
                   <label 
                     htmlFor="task-modal-time-block" 
-                    className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5"
+                    className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5"
                   >
                     Time Block
                   </label>
@@ -455,7 +453,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                     name="timeBlock"
                     value={timeBlock || ''}
                     onChange={(e) => setTimeBlock((e.target.value as TimeBlockSlot) || null)}
-                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)]"
+                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)]"
                   >
                     <option value="morning">Morning</option>
                     <option value="afternoon">Afternoon</option>
@@ -466,18 +464,18 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                 <div>
                   <label 
                     htmlFor="task-modal-recurring" 
-                    className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5"
+                    className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5"
                   >
-                    Routine
+                    Repeat
                   </label>
                   <select
                     id="task-modal-recurring"
                     name="recurring"
                     value={recurring || ''}
                     onChange={(e) => setRecurring((e.target.value as any) || null)}
-                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2.5 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)]"
+                    className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)]"
                   >
-                    <option value="">One-time</option>
+                    <option value="">Never</option>
                     <option value="daily">Daily</option>
                     <option value="weekly">Weekly</option>
                     <option value="monthly">Monthly</option>
@@ -487,14 +485,12 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
 
               {/* Estimated Duration */}
               <div>
-                <div className="flex items-center justify-between mb-1.5">
-                  <label 
-                    htmlFor="task-modal-est-minutes" 
-                    className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)]"
-                  >
-                    Est. Duration (Minutes)
-                  </label>
-                </div>
+                <label 
+                  htmlFor="task-modal-est-minutes" 
+                  className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5"
+                >
+                  Duration (minutes)
+                </label>
                 <div className="flex items-center gap-2">
                   <input
                     id="task-modal-est-minutes"
@@ -504,7 +500,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                     step="5"
                     value={estimatedMinutes}
                     onChange={(e) => setEstimatedMinutes(Number(e.target.value))}
-                    className="w-24 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)]"
+                    className="w-20 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3 py-1.5 text-xs font-medium text-[var(--text-primary)] focus:outline-none focus:border-[var(--accent-terracotta)]"
                   />
                   <div className="flex flex-wrap items-center gap-1 flex-1">
                     {durationOptions.map((mins) => (
@@ -514,7 +510,7 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                         onClick={() => setEstimatedMinutes(mins)}
                         className={`text-[11px] px-2 py-1 rounded-md border transition ${
                           estimatedMinutes === mins
-                            ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-bold'
+                            ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-medium'
                             : 'border-[var(--border-subtle)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                         }`}
                       >
@@ -525,13 +521,13 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                 </div>
               </div>
 
-              {/* Queue Toggles (Today Focus & Someday) */}
-              <div className="pt-2 border-t border-[var(--border-subtle)] space-y-2.5">
+              {/* Options Toggles */}
+              <div className="pt-2 border-t border-[var(--border-subtle)] space-y-2">
                 {/* Someday Switch */}
                 <label htmlFor="task-modal-is-someday" className="flex items-center justify-between p-2.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)]/60 cursor-pointer hover:bg-[var(--card-hover)] transition">
                   <div className="pr-2">
-                    <span className="block text-xs font-semibold text-[var(--text-primary)]">Someday / Backlog</span>
-                    <span className="block text-[11px] text-[var(--text-muted)]">Park for later without scheduling pressure</span>
+                    <span className="block text-xs font-medium text-[var(--text-primary)]">Someday</span>
+                    <span className="block text-[11px] text-[var(--text-muted)]">Save for later without a due date</span>
                   </div>
                   <input
                     type="checkbox"
@@ -553,18 +549,18 @@ export const TaskFormModal: React.FC<TaskFormModalProps> = ({
                   }`}
                 >
                   <div className="pr-2">
-                    <span className="block text-xs font-semibold text-[var(--text-primary)]">
-                      Star for Today Focus
+                    <span className="block text-xs font-medium text-[var(--text-primary)]">
+                      Focus on Today
                       {isFocusQueueFull && !isTodayFocus && (
-                        <span className="ml-1.5 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20">
-                          Queue Full (5/5)
+                        <span className="ml-1.5 text-[10px] font-medium text-amber-600 dark:text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-md border border-amber-500/20">
+                          Full (5/5)
                         </span>
                       )}
                     </span>
                     <span className="block text-[11px] text-[var(--text-muted)]">
                       {isFocusQueueFull && !isTodayFocus
-                        ? 'Focus Queue is currently full (5/5). Complete an active task to add more.'
-                        : "Pin directly into today's priority focus queue"}
+                        ? 'Queue is full (5/5). Complete an active task first.'
+                        : "Add to today's focus list"}
                     </span>
                   </div>
                   <input

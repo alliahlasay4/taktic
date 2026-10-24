@@ -698,55 +698,55 @@ export const HabitView: React.FC<HabitViewProps> = ({
             aria-labelledby="habit-modal-heading"
           >
             {/* Modal Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-main)]/50">
-              <div className="flex items-center gap-3">
-                <span className="text-xs font-bold uppercase tracking-wider text-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 px-2.5 py-1 rounded-md">
-                  New Habit
+            <div className="flex items-center justify-between px-5 sm:px-6 py-4 border-b border-[var(--border-subtle)] bg-[var(--bg-main)]/50 shrink-0">
+              <div className="flex items-center gap-2.5 min-w-0 pr-2">
+                <span className="text-[11px] font-semibold tracking-wide uppercase text-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 px-2 py-0.5 rounded-md shrink-0">
+                  New
                 </span>
-                <h2 id="habit-modal-heading" className="text-sm font-semibold text-[var(--text-primary)]">
-                  Design Your Daily Rhythm
+                <h2 id="habit-modal-heading" className="text-sm sm:text-base font-semibold text-[var(--text-primary)] truncate">
+                  New Habit
                 </h2>
               </div>
               <button
                 type="button"
                 onClick={() => setIsModalOpen(false)}
-                aria-label="Close modal"
-                className="rounded-xl p-2 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition-colors"
+                aria-label="Close"
+                className="rounded-lg p-1.5 text-[var(--text-muted)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition-colors shrink-0"
               >
-                <X className="h-5 w-5" />
+                <X className="h-4 w-4 sm:h-5 sm:w-5" />
               </button>
             </div>
 
             {/* Modal Form */}
-            <form onSubmit={handleSubmitNewHabit}>
-              <div className="p-6 grid grid-cols-1 md:grid-cols-12 gap-6 max-h-[75vh] overflow-y-auto">
-                {/* Left Column (60% / 7 cols) - Identity, Category & Icon */}
-                <div className="md:col-span-7 space-y-5">
+            <form onSubmit={handleSubmitNewHabit} className="flex-1 flex flex-col min-h-0 overflow-hidden">
+              <div className="p-4 sm:p-6 grid grid-cols-1 md:grid-cols-12 gap-5 md:gap-6 overflow-y-auto max-h-[78vh]">
+                {/* Left Column (Core Info) - md: 7 cols */}
+                <div className="md:col-span-7 space-y-4">
                   {/* Habit Title */}
                   <div>
                     <label 
                       htmlFor="modal-new-habit-title" 
-                      className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5"
+                      className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5"
                     >
-                      Habit Routine Title <span className="text-[var(--accent-terracotta)]">*</span>
+                      Habit Name <span className="text-[var(--accent-terracotta)]">*</span>
                     </label>
                     <input
                       id="modal-new-habit-title"
                       name="habitTitle"
                       type="text"
                       required
-                      placeholder="e.g. 15-minute Morning Mindful Stretches"
+                      placeholder="e.g., Morning stretch, Read 10 pages..."
                       value={newTitle}
                       onChange={(e) => setNewTitle(e.target.value)}
-                      className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-4 py-3 text-base font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:ring-1 focus:ring-[var(--accent-terracotta)] transition-all"
+                      className="w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] px-3.5 py-2.5 text-sm font-medium text-[var(--text-primary)] placeholder-[var(--text-muted)] focus:outline-none focus:border-[var(--accent-terracotta)] focus:ring-1 focus:ring-[var(--accent-terracotta)] transition-all"
                     />
                   </div>
 
                   {/* Category Selection */}
                   <div>
-                    <div className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
-                      Focus Category
-                    </div>
+                    <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                      Category
+                    </label>
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                       {[
                         { id: 'health', label: 'Health', iconName: 'droplet' },
@@ -764,9 +764,9 @@ export const HabitView: React.FC<HabitViewProps> = ({
                               setNewCategory(cat.id as any);
                               setNewIcon(cat.iconName);
                             }}
-                            className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-semibold transition text-left ${
+                            className={`flex items-center gap-2 p-2.5 rounded-xl border text-xs font-medium transition text-left cursor-pointer ${
                               isSelected
-                                ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] ring-1 ring-[var(--accent-terracotta)]'
+                                ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-semibold ring-1 ring-[var(--accent-terracotta)]'
                                 : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
                             }`}
                           >
@@ -780,9 +780,9 @@ export const HabitView: React.FC<HabitViewProps> = ({
 
                   {/* Icon Selector Grid */}
                   <div>
-                    <div className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
-                      Visual Icon
-                    </div>
+                    <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                      Icon
+                    </label>
                     <div className="flex flex-wrap gap-2">
                       {AVAILABLE_ICONS.map((item) => {
                         const isSelected = newIcon === item.name;
@@ -794,13 +794,13 @@ export const HabitView: React.FC<HabitViewProps> = ({
                             onClick={() => setNewIcon(item.name)}
                             title={item.label}
                             aria-label={`Select ${item.label} icon`}
-                            className={`flex h-10 w-10 items-center justify-center rounded-xl border transition ${
+                            className={`flex h-9 w-9 items-center justify-center rounded-xl border transition cursor-pointer ${
                               isSelected
-                                ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/20 text-[var(--accent-terracotta)] ring-1 ring-[var(--accent-terracotta)]'
+                                ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] ring-1 ring-[var(--accent-terracotta)]'
                                 : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
                             }`}
                           >
-                            <ItemIcon className="h-5 w-5" strokeWidth={1.5} />
+                            <ItemIcon className="h-4 w-4" strokeWidth={1.5} />
                           </button>
                         );
                       })}
@@ -808,18 +808,18 @@ export const HabitView: React.FC<HabitViewProps> = ({
                   </div>
                 </div>
 
-                {/* Right Column (40% / 5 cols) - Schedule & Target Frequency */}
-                <div className="md:col-span-5 space-y-5 md:border-l md:border-[var(--border-subtle)] md:pl-6">
+                {/* Right Column (Schedule & Frequency) - md: 5 cols */}
+                <div className="md:col-span-5 space-y-4 md:border-l md:border-[var(--border-subtle)] md:pl-6">
                   {/* Time of Day */}
                   <div>
-                    <div className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
-                      Time of Day Slot
-                    </div>
+                    <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                      Time of Day
+                    </label>
                     <div className="space-y-2">
                       {[
-                        { id: 'morning', label: 'Morning Routine', sub: 'Start of day momentum', icon: Sunrise },
-                        { id: 'afternoon', label: 'Afternoon Refresh', sub: 'Mid-day focus & recharge', icon: Sun },
-                        { id: 'evening', label: 'Evening Wind-down', sub: 'End of day reflection', icon: Moon },
+                        { id: 'morning', label: 'Morning', sub: 'Start of day', icon: Sunrise },
+                        { id: 'afternoon', label: 'Afternoon', sub: 'Midday', icon: Sun },
+                        { id: 'evening', label: 'Evening', sub: 'End of day', icon: Moon },
                       ].map((slot) => {
                         const isSelected = newTimeOfDay === slot.id;
                         const SlotIcon = slot.icon;
@@ -828,7 +828,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
                             key={slot.id}
                             type="button"
                             onClick={() => setNewTimeOfDay(slot.id as any)}
-                            className={`w-full flex items-center gap-3 p-3 rounded-xl border text-left transition ${
+                            className={`w-full flex items-center gap-2.5 p-2.5 rounded-xl border text-left transition cursor-pointer ${
                               isSelected
                                 ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--text-primary)] ring-1 ring-[var(--accent-terracotta)]'
                                 : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
@@ -836,7 +836,7 @@ export const HabitView: React.FC<HabitViewProps> = ({
                           >
                             <SlotIcon className={`h-4 w-4 ${isSelected ? 'text-[var(--accent-terracotta)]' : 'text-[var(--text-muted)]'}`} strokeWidth={1.5} />
                             <div>
-                              <span className="block text-xs font-bold text-[var(--text-primary)]">{slot.label}</span>
+                              <span className="block text-xs font-semibold text-[var(--text-primary)]">{slot.label}</span>
                               <span className="block text-[11px] text-[var(--text-muted)]">{slot.sub}</span>
                             </div>
                           </button>
@@ -847,14 +847,14 @@ export const HabitView: React.FC<HabitViewProps> = ({
 
                   {/* Target Frequency */}
                   <div>
-                    <div className="block text-xs font-bold uppercase tracking-wider text-[var(--text-secondary)] mb-1.5">
-                      Weekly Frequency Goal
-                    </div>
+                    <label className="block text-xs font-semibold text-[var(--text-secondary)] mb-1.5">
+                      Weekly Frequency
+                    </label>
                     <div className="flex items-center gap-1.5">
                       {[
                         { days: 7, label: 'Daily (7d)' },
-                        { days: 5, label: '5x / wk' },
-                        { days: 3, label: '3x / wk' },
+                        { days: 5, label: '5 days' },
+                        { days: 3, label: '3 days' },
                       ].map((freq) => {
                         const isSelected = newTargetDays === freq.days;
                         return (
@@ -862,9 +862,9 @@ export const HabitView: React.FC<HabitViewProps> = ({
                             key={freq.days}
                             type="button"
                             onClick={() => setNewTargetDays(freq.days)}
-                            className={`flex-1 py-2 rounded-xl border text-xs font-semibold text-center transition ${
+                            className={`flex-1 py-2 rounded-xl border text-xs text-center transition cursor-pointer ${
                               isSelected
-                                ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-bold ring-1 ring-[var(--accent-terracotta)]'
+                                ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] font-semibold ring-1 ring-[var(--accent-terracotta)]'
                                 : 'border-[var(--border-subtle)] bg-[var(--bg-main)] text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
                             }`}
                           >
@@ -875,31 +875,31 @@ export const HabitView: React.FC<HabitViewProps> = ({
                     </div>
                   </div>
 
-                  {/* Freeze Shield Info Card */}
+                  {/* Streak Freeze Info Card */}
                   <div className="p-3 rounded-xl border border-emerald-500/20 bg-emerald-500/5 text-xs">
-                    <div className="flex items-center gap-1.5 text-emerald-500 dark:text-emerald-400 font-bold mb-1">
-                      <Shield className="h-4 w-4" />
-                      <span>3 Freeze Shields Protection</span>
+                    <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-semibold mb-1">
+                      <Shield className="h-4 w-4 shrink-0" />
+                      <span>Streak Protection</span>
                     </div>
                     <p className="text-[11px] text-[var(--text-secondary)] leading-relaxed">
-                      Habits automatically include 3 monthly streak protection shields to keep your consistency intact during unexpected busy days.
+                      Includes 3 monthly streak freezes to protect your streak on busy days.
                     </p>
                   </div>
                 </div>
               </div>
 
               {/* Sticky Footer */}
-              <div className="flex items-center justify-end gap-3 px-6 py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-main)]/80">
+              <div className="flex items-center justify-end gap-2.5 px-5 sm:px-6 py-3.5 sm:py-4 border-t border-[var(--border-subtle)] bg-[var(--bg-main)]/80 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsModalOpen(false)}
-                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] px-4 py-2.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition"
+                  className="rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] px-4 py-2 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)] transition cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-5 py-2.5 text-xs font-bold shadow-sm transition"
+                  className="rounded-xl bg-[var(--accent-terracotta)] text-white hover:opacity-90 px-4 sm:px-5 py-2 text-xs font-bold shadow-sm transition cursor-pointer"
                 >
                   Save Habit
                 </button>

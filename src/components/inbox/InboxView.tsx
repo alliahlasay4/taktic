@@ -552,12 +552,16 @@ export const InboxView: React.FC<InboxViewProps> = ({
             </div>
 
             {/* Quick Filter Actions Toolbar */}
-            <div className="flex items-center gap-1.5 w-full sm:w-auto shrink-0 justify-start sm:justify-end overflow-x-auto no-scrollbar py-0.5">
+            <div className="flex items-center gap-1.5 w-full sm:w-auto shrink-0 justify-start sm:justify-end py-0.5 relative z-20">
               {/* Priority Select */}
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setIsPriorityDropdownOpen(!isPriorityDropdownOpen)}
+                  onClick={() => {
+                    setIsPriorityDropdownOpen(!isPriorityDropdownOpen);
+                    setIsSortDropdownOpen(false);
+                    setIsTagDropdownOpen(false);
+                  }}
                   className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium min-h-[36px] transition-all cursor-pointer ${
                     selectedPriority !== 'all'
                       ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
@@ -576,8 +580,8 @@ export const InboxView: React.FC<InboxViewProps> = ({
 
                 {isPriorityDropdownOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setIsPriorityDropdownOpen(false)} />
-                    <div className="absolute left-0 sm:left-0 sm:right-auto top-full mt-1.5 z-20 w-36 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-lg py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                    <div className="fixed inset-0 z-40" onClick={() => setIsPriorityDropdownOpen(false)} />
+                    <div className="absolute left-0 sm:left-0 sm:right-auto top-full mt-1.5 z-50 w-36 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-xl py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                       {(['all', 'high', 'medium', 'low'] as const).map((p) => (
                         <button
                           key={p}
@@ -603,7 +607,11 @@ export const InboxView: React.FC<InboxViewProps> = ({
               <div className="relative">
                 <button
                   type="button"
-                  onClick={() => setIsSortDropdownOpen(!isSortDropdownOpen)}
+                  onClick={() => {
+                    setIsSortDropdownOpen(!isSortDropdownOpen);
+                    setIsPriorityDropdownOpen(false);
+                    setIsTagDropdownOpen(false);
+                  }}
                   className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium min-h-[36px] transition-all cursor-pointer ${
                     sortMode !== 'recent'
                       ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
@@ -627,8 +635,8 @@ export const InboxView: React.FC<InboxViewProps> = ({
 
                 {isSortDropdownOpen && (
                   <>
-                    <div className="fixed inset-0 z-10" onClick={() => setIsSortDropdownOpen(false)} />
-                    <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 z-20 w-44 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-lg py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100">
+                    <div className="fixed inset-0 z-40" onClick={() => setIsSortDropdownOpen(false)} />
+                    <div className="absolute left-0 sm:right-0 sm:left-auto top-full mt-1.5 z-50 w-48 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-xl py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100">
                       {[
                         { id: 'recent', label: 'Default (Recent)' },
                         { id: 'quick_wins', label: '⚡ Quick Wins (< 15m)' },
@@ -655,42 +663,46 @@ export const InboxView: React.FC<InboxViewProps> = ({
               </div>
 
               {/* Tag Filter Dropdown */}
-              {allTags.length > 0 && (
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                    className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium min-h-[36px] transition-all cursor-pointer ${
-                      selectedTag
-                        ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
-                        : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
-                    }`}
-                    aria-label="Tag filter options"
-                    aria-expanded={isTagDropdownOpen}
-                  >
-                    <TagIcon className="h-3 w-3 text-[var(--text-muted)]" strokeWidth={1.5} />
-                    <span>{selectedTag ? `#${selectedTag}` : 'Tags'}</span>
-                    <ChevronDown className="h-3 w-3 text-[var(--text-muted)] shrink-0" strokeWidth={1.5} aria-hidden="true" />
-                  </button>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsTagDropdownOpen(!isTagDropdownOpen);
+                    setIsPriorityDropdownOpen(false);
+                    setIsSortDropdownOpen(false);
+                  }}
+                  className={`flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-medium min-h-[36px] transition-all cursor-pointer ${
+                    selectedTag
+                      ? 'border-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] font-semibold'
+                      : 'border-[var(--border-subtle)] bg-[var(--bg-main)]/50 text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+                  }`}
+                  aria-label="Tag filter options"
+                  aria-expanded={isTagDropdownOpen}
+                >
+                  <TagIcon className="h-3 w-3 text-[var(--text-muted)]" strokeWidth={1.5} />
+                  <span>{selectedTag ? `#${selectedTag}` : 'Tags'}</span>
+                  <ChevronDown className="h-3 w-3 text-[var(--text-muted)] shrink-0" strokeWidth={1.5} aria-hidden="true" />
+                </button>
 
-                  {isTagDropdownOpen && (
-                    <>
-                      <div className="fixed inset-0 z-10" onClick={() => setIsTagDropdownOpen(false)} />
-                      <div className="absolute right-0 top-full mt-1.5 z-20 w-40 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-lg py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-56 overflow-y-auto">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setSelectedTag(null);
-                            setIsTagDropdownOpen(false);
-                            setCurrentPage(1);
-                          }}
-                          className={`w-full text-left px-3 py-1.5 hover:bg-[var(--card-hover)] transition-colors ${
-                            selectedTag === null ? 'text-[var(--accent-terracotta)] font-semibold bg-[var(--accent-terracotta)]/10' : 'text-[var(--text-primary)]'
-                          }`}
-                        >
-                          All Tags
-                        </button>
-                        {allTags.map((tag) => (
+                {isTagDropdownOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsTagDropdownOpen(false)} />
+                    <div className="absolute right-0 top-full mt-1.5 z-50 w-44 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-xl py-1 text-xs overflow-hidden animate-in fade-in zoom-in-95 duration-100 max-h-56 overflow-y-auto">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setSelectedTag(null);
+                          setIsTagDropdownOpen(false);
+                          setCurrentPage(1);
+                        }}
+                        className={`w-full text-left px-3 py-1.5 hover:bg-[var(--card-hover)] transition-colors ${
+                          selectedTag === null ? 'text-[var(--accent-terracotta)] font-semibold bg-[var(--accent-terracotta)]/10' : 'text-[var(--text-primary)]'
+                        }`}
+                      >
+                        All Tags
+                      </button>
+                      {allTags.length > 0 ? (
+                        allTags.map((tag) => (
                           <button
                             key={tag}
                             type="button"
@@ -705,12 +717,16 @@ export const InboxView: React.FC<InboxViewProps> = ({
                           >
                             #{tag}
                           </button>
-                        ))}
-                      </div>
-                    </>
-                  )}
-                </div>
-              )}
+                        ))
+                      ) : (
+                        <div className="px-3 py-2 text-xs text-[var(--text-muted)] italic">
+                          No tags created yet
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
 
               {/* Toggle Completed Tasks */}
               <button
