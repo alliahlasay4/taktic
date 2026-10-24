@@ -192,20 +192,20 @@ export const NotificationCenterDropdown: React.FC<NotificationCenterDropdownProp
                       <span>Accept & Join</span>
                     </button>
 
-                    <button
-                      type="button"
-                      onClick={() => {
-                        onMarkAsRead(item.id);
-                        if (onSelectTab) {
-                          onSelectTab('circles');
-                        }
-                        onClose();
-                      }}
-                      className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-subtle)] hover:bg-[var(--card-hover)] text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
-                    >
-                      <span>View in Circles</span>
-                      <ArrowRight className="h-3 w-3" />
-                    </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onMarkAsRead(item.id);
+                          if (onSelectTab) {
+                            onSelectTab('partners');
+                          }
+                          onClose();
+                        }}
+                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-subtle)] hover:bg-[var(--card-hover)] text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
+                      >
+                        <span>View in Partners</span>
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
                   </div>
                 )}
               </div>

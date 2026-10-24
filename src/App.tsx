@@ -9,7 +9,9 @@ import { DashboardView } from './components/dashboard/DashboardView';
 const InboxView = lazy(() => import('./components/inbox/InboxView').then((m) => ({ default: m.InboxView })));
 const FocusView = lazy(() => import('./components/focus/FocusView').then((m) => ({ default: m.FocusView })));
 const HabitView = lazy(() => import('./components/habits/HabitView').then((m) => ({ default: m.HabitView })));
+const CoWorkingPodsView = lazy(() => import('./components/circles/CoWorkingPodsView').then((m) => ({ default: m.CoWorkingPodsView })));
 const CirclesView = lazy(() => import('./components/circles/CirclesView').then((m) => ({ default: m.CirclesView })));
+const PartnerNetworkView = lazy(() => import('./components/circles/PartnerNetworkView').then((m) => ({ default: m.PartnerNetworkView })));
 const AnalyticsView = lazy(() => import('./components/analytics/AnalyticsView').then((m) => ({ default: m.AnalyticsView })));
 const ProfileView = lazy(() => import('./components/ProfileView').then((m) => ({ default: m.ProfileView })));
 const ArchiveView = lazy(() => import('./components/archive/ArchiveView').then((m) => ({ default: m.ArchiveView })));
@@ -103,7 +105,9 @@ function MainLayout() {
       inbox: 'Inbox & Planning | Taktic',
       focus: 'Deep Focus Mode | Taktic',
       habits: 'Habit Rings | Taktic',
+      pods: 'Focus Pods | Taktic',
       circles: 'Social Circles | Taktic',
+      partners: 'Accountability Network | Taktic',
       analytics: 'Insights & Recap | Taktic',
       archive: 'Archive & History | Taktic',
       profile: 'My Profile | Taktic',
@@ -217,7 +221,6 @@ function MainLayout() {
     removeMember,
     sendCircleInvite,
     cancelCircleInvite,
-    resendCircleInvite,
     generateMagicInviteLink,
     acceptCircleInvite,
     declineCircleInvite,
@@ -708,12 +711,18 @@ function MainLayout() {
                     </div>
                   )}
 
+                  {activeTab === 'pods' && (
+                    <CoWorkingPodsView
+                      members={members}
+                      userStreak={userStreak}
+                      onTogglePartner={togglePartner}
+                    />
+                  )}
+
                   {activeTab === 'circles' && (
                     <CirclesView
                       members={members}
                       feedPosts={feedPosts}
-                      invites={invites}
-                      incomingInvites={incomingInvites}
                       userStreak={userStreak}
                       currentUserId={user?.id}
                       currentUserName={currentUserName}
@@ -725,9 +734,22 @@ function MainLayout() {
                       onToggleMute={toggleMute}
                       onAddMemberByName={addMemberByName}
                       onRemoveMember={removeMember}
+                    />
+                  )}
+
+                  {activeTab === 'partners' && (
+                    <PartnerNetworkView
+                      members={members}
+                      invites={invites}
+                      incomingInvites={incomingInvites}
+                      currentUserId={user?.id}
+                      currentUserName={currentUserName}
+                      currentUserEmail={user?.email}
+                      onTogglePartner={togglePartner}
+                      onToggleMute={toggleMute}
+                      onRemoveMember={removeMember}
                       onSendInvite={sendCircleInvite}
                       onCancelInvite={cancelCircleInvite}
-                      onResendInvite={resendCircleInvite}
                       onGenerateMagicLink={generateMagicInviteLink}
                       onAcceptInvite={handleAcceptCircleInvite}
                       onDeclineInvite={handleDeclineCircleInvite}

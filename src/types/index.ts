@@ -99,7 +99,7 @@ export interface HeatmapDay {
   level: 0 | 1 | 2 | 3 | 4;
 }
 
-export type ActiveTab = 'dashboard' | 'inbox' | 'focus' | 'habits' | 'circles' | 'analytics' | 'archive' | 'profile';
+export type ActiveTab = 'dashboard' | 'inbox' | 'focus' | 'habits' | 'pods' | 'circles' | 'partners' | 'analytics' | 'archive' | 'profile';
 
 export interface IncomingCircleInvite {
   token: string;

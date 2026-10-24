@@ -4,7 +4,6 @@ import {
   Inbox,
   Clock,
   Repeat,
-  Users,
   BarChart3,
   Play,
   Pause,
@@ -27,6 +26,8 @@ import {
   Sunrise,
   Moon,
   Zap,
+  Radio,
+  ShieldCheck,
 } from 'lucide-react';
 import { ActiveTab, CircleMember } from '../../types';
 import { useTimerState, useTimerTick } from '../../context/TimerContext';
@@ -419,11 +420,23 @@ const SidebarComponent: React.FC<SidebarProps> = ({
       badge: null,
     },
     {
-      id: 'circles' as ActiveTab,
-      label: 'Social Circles',
-      icon: Users,
+      id: 'pods' as ActiveTab,
+      label: 'Focus Pods',
+      icon: Radio,
       badge: activePartners.length > 0 ? `${activePartners.length} Active` : undefined,
-      badgeColor: 'bg-[var(--accent-dusty-rose)]/20 text-[var(--accent-dusty-rose)] border border-[var(--accent-dusty-rose)]/30',
+      badgeColor: 'bg-[var(--accent-botanical-sage)]/20 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/30',
+    },
+    {
+      id: 'circles' as ActiveTab,
+      label: 'Milestones Feed',
+      icon: Sparkles,
+      badge: null,
+    },
+    {
+      id: 'partners' as ActiveTab,
+      label: 'Partners & Network',
+      icon: ShieldCheck,
+      badge: null,
     },
     {
       id: 'analytics' as ActiveTab,

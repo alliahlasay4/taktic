@@ -192,8 +192,8 @@ const DashboardViewComponent: React.FC<DashboardViewProps> = ({
                 </h3>
               </div>
               <button
-                onClick={() => setActiveTab('circles')}
-                className="text-xs font-semibold text-[#B08B9E] hover:underline"
+                onClick={() => setActiveTab('pods')}
+                className="text-xs font-semibold text-[#B08B9E] hover:underline cursor-pointer"
               >
                 Join Room
               </button>
@@ -206,7 +206,8 @@ const DashboardViewComponent: React.FC<DashboardViewProps> = ({
                   return (
                     <div
                       key={m.id}
-                      className="relative group shrink-0"
+                      className="relative group shrink-0 cursor-pointer"
+                      onClick={() => setActiveTab('partners')}
                       title={`${m.name}: ${isOffline ? 'Offline' : (m.statusText || 'Online')}`}
                     >
                       <img
@@ -232,8 +233,8 @@ const DashboardViewComponent: React.FC<DashboardViewProps> = ({
                 </p>
                 <button
                   type="button"
-                  onClick={() => setActiveTab('circles')}
-                  className="mt-1.5 text-xs font-semibold text-[var(--accent-terracotta)] hover:underline"
+                  onClick={() => setActiveTab('partners')}
+                  className="mt-1.5 text-xs font-semibold text-[var(--accent-terracotta)] hover:underline cursor-pointer"
                 >
                   Invite Friends & Co-Work &rarr;
                 </button>
