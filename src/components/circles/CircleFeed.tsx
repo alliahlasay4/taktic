@@ -137,18 +137,19 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
   return (
     <div className="max-w-4xl mx-auto space-y-6" data-tour="tour-feed-tab">
       {/* 1. Clean, Unified Header */}
-      <header className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-5 sm:p-6 shadow-xs">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3.5">
-            <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[var(--accent-terracotta)] to-[var(--accent-warm-ochre)] text-white shadow-xs shrink-0">
+      {/* Page Header Card - Warm Ochre & Gold Milestones Theme */}
+      <header className="rounded-2xl border border-[var(--accent-warm-ochre)]/35 bg-gradient-to-r from-[var(--card-surface)] to-[var(--accent-warm-ochre)]/5 p-3.5 sm:p-5 shadow-xs shadow-[var(--accent-warm-ochre)]/5 transition-all duration-300">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-[var(--accent-warm-ochre)]/15 text-[var(--accent-warm-ochre)] border border-[var(--accent-warm-ochre)]/30 font-bold shrink-0 shadow-2xs">
               <Sparkles className="h-5 w-5" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-heading font-bold text-lg sm:text-xl text-[var(--text-primary)] tracking-tight">
+                <h1 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)] tracking-tight">
                   Milestones Feed
                 </h1>
-                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/25 px-2.5 py-0.5 text-[10px] font-semibold text-[var(--accent-botanical-sage)]">
+                <span className="inline-flex items-center gap-1 rounded-full bg-[var(--accent-warm-ochre)]/15 border border-[var(--accent-warm-ochre)]/30 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-warm-ochre)]">
                   <ShieldCheck className="h-3 w-3" /> Private & Masked
                 </span>
               </div>
@@ -163,7 +164,7 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
             <button
               type="button"
               onClick={() => setIsManagerOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] hover:bg-[var(--card-hover)] px-3 py-2 text-xs font-semibold text-[var(--text-primary)] transition active:scale-95 cursor-pointer"
+              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition active:scale-95 cursor-pointer shadow-2xs h-8.5"
               title="Manage Circle & Privacy"
             >
               <Settings className="h-3.5 w-3.5 text-[var(--text-muted)]" />
@@ -174,9 +175,9 @@ export const CircleFeed: React.FC<CircleFeedProps> = ({
               <button
                 type="button"
                 onClick={() => setIsShareOpen(true)}
-                className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-4 py-2 text-xs font-bold text-white shadow-xs transition active:scale-95 cursor-pointer"
+                className="flex items-center gap-1.5 rounded-xl bg-[var(--accent-warm-ochre)] hover:brightness-110 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition active:scale-95 cursor-pointer h-8.5"
               >
-                <Plus className="h-4 w-4" />
+                <Plus className="h-3.5 w-3.5" />
                 <span>Share Milestone</span>
               </button>
             )}

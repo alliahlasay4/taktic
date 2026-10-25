@@ -35,30 +35,27 @@ export const ArchiveHeader: React.FC<ArchiveHeaderProps> = ({
   const [isExportMenuOpen, setIsExportMenuOpen] = useState(false);
 
   return (
-    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 py-2 px-1">
-      {/* Title & Stats */}
-      <div className="flex items-center gap-3.5">
-        <div className="flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-2xl shrink-0 bg-[var(--accent-terracotta)]/10 text-[var(--accent-terracotta)] border border-[var(--accent-terracotta)]/20 shadow-2xs">
-          <Archive className="h-5 w-5" />
-        </div>
-        <div>
-          <div className="flex items-center gap-2.5">
-            <h1 className="font-heading font-bold text-lg sm:text-xl text-[var(--text-primary)] tracking-tight">
-              Archive & History
-            </h1>
-            <span className="text-[11px] font-semibold text-[var(--text-secondary)] bg-[var(--card-surface)] px-2.5 py-0.5 rounded-full border border-[var(--border-subtle)] shadow-2xs">
-              {totalCount} {totalCount === 1 ? 'item' : 'items'}
-            </span>
+    <div className="rounded-2xl border border-[var(--accent-terracotta)]/35 bg-gradient-to-r from-[var(--card-surface)] to-[var(--accent-terracotta)]/5 p-3.5 sm:p-5 shadow-xs shadow-[var(--accent-terracotta)]/5 transition-all duration-300">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-2.5">
+        {/* Title & Stats */}
+        <div className="flex items-center gap-3">
+          <div className="flex items-center justify-center h-10 w-10 sm:h-11 sm:w-11 rounded-xl shrink-0 bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] border border-[var(--accent-terracotta)]/30 shadow-2xs">
+            <Archive className="h-5 w-5" />
           </div>
-          <div className="flex items-center gap-2 text-xs text-[var(--text-muted)] mt-0.5">
-            <span>{tasksCount} tasks</span>
-            <span>•</span>
-            <span>{notesCount} notes</span>
-            <span>•</span>
-            <span>{habitsCount} habits</span>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)] tracking-tight">
+                Archive & History
+              </h1>
+              <span className="text-[10px] font-bold text-[var(--accent-terracotta)] bg-[var(--accent-terracotta)]/10 px-2 py-0.5 rounded-full border border-[var(--accent-terracotta)]/25">
+                {totalCount} {totalCount === 1 ? 'item' : 'items'}
+              </span>
+            </div>
+            <p className="text-xs text-[var(--text-secondary)] mt-0.5">
+              {tasksCount} tasks • {notesCount} notes • {habitsCount} habits
+            </p>
           </div>
         </div>
-      </div>
 
       {/* Top Action Buttons (Purge Vault & Export Dropdown) */}
       <div className="flex items-center gap-2 self-start sm:self-auto">
@@ -147,5 +144,7 @@ export const ArchiveHeader: React.FC<ArchiveHeaderProps> = ({
         </div>
       </div>
     </div>
+    </div>
   );
 };
+

@@ -34,9 +34,8 @@ import { useCircles } from './hooks/useCircles';
 import { useNotifications } from './hooks/useNotifications';
 import { useInAppNotifications } from './hooks/useInAppNotifications';
 import { NotificationToastOverlay } from './components/layout/NotificationToastOverlay';
-import { QuickNotesDrawer } from './components/notes/QuickNotesDrawer';
+import { TacticalDrawer, TacticalDrawerMode } from './components/common/TacticalDrawer';
 import { QuickNotesFloatingTrigger } from './components/notes/QuickNotesFloatingTrigger';
-import { CalendarDrawer } from './components/inbox/CalendarDrawer';
 import { CalendarFloatingTrigger } from './components/inbox/CalendarFloatingTrigger';
 import { TimerProvider } from './context/TimerContext';
 
@@ -150,10 +149,22 @@ function MainLayout() {
     rolloverOverdueTasksToToday: handleRolloverOverdueTasks,
   } = useTasks();
 
-  // Quick Notes Scratchpad Hook & Drawer State
-  const [isQuickNotesOpen, setIsQuickNotesOpen] = useState<boolean>(false);
-  const [isCalendarOpen, setIsCalendarOpen] = useState<boolean>(false);
+  // Tactical Drawer Hook & State (Notepad & Calendar)
+  const [isTacticalDrawerOpen, setIsTacticalDrawerOpen] = useState<boolean>(false);
+  const [tacticalDrawerMode, setTacticalDrawerMode] = useState<TacticalDrawerMode>('notes');
   const [selectedCalendarDate, setSelectedCalendarDate] = useState<string | null>(null);
+
+  const isQuickNotesOpen = isTacticalDrawerOpen && tacticalDrawerMode === 'notes';
+  const isCalendarOpen = isTacticalDrawerOpen && tacticalDrawerMode === 'calendar';
+
+  const openTacticalDrawer = (mode: TacticalDrawerMode) => {
+    setTacticalDrawerMode(mode);
+    setIsTacticalDrawerOpen(true);
+  };
+
+  const closeTacticalDrawer = () => {
+    setIsTacticalDrawerOpen(false);
+  };
 
   const overdueCalendarTasksCount = useMemo(() => {
     const today = new Date().toISOString().split('T')[0];
@@ -181,16 +192,26 @@ function MainLayout() {
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'j') {
         e.preventDefault();
-        setIsQuickNotesOpen((prev) => !prev);
+        setIsTacticalDrawerOpen((prev) => {
+          if (!prev) {
+            setTacticalDrawerMode('notes');
+            return true;
+          }
+          if (tacticalDrawerMode === 'notes') {
+            return false;
+          }
+          setTacticalDrawerMode('notes');
+          return true;
+        });
       }
-      if (e.key === 'Escape' && isQuickNotesOpen) {
-        setIsQuickNotesOpen(false);
+      if (e.key === 'Escape' && isTacticalDrawerOpen) {
+        setIsTacticalDrawerOpen(false);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isQuickNotesOpen]);
+  }, [isTacticalDrawerOpen, tacticalDrawerMode]);
 
   // Notifications Hook
   const { sendNotification, requestPermission } = useNotifications();
@@ -582,10 +603,21 @@ function MainLayout() {
             activeSoundscape={activeSoundscape}
             onToggleSoundscape={handleToggleSoundscapeGlobal}
             onOpenSummary={() => setIsSummaryOpen(true)}
-            onOpenProfile={() => setActiveTab('profile')}
-            onToggleQuickNotes={() => setIsQuickNotesOpen((prev) => !prev)}
+            onToggleQuickNotes={() => {
+              if (isQuickNotesOpen) {
+                closeTacticalDrawer();
+              } else {
+                openTacticalDrawer('notes');
+              }
+            }}
             notesCount={quickNotes.filter((n) => !n.archived).length}
-            onToggleCalendar={() => setIsCalendarOpen((prev) => !prev)}
+            onToggleCalendar={() => {
+              if (isCalendarOpen) {
+                closeTacticalDrawer();
+              } else {
+                openTacticalDrawer('calendar');
+              }
+            }}
             calendarActiveDate={selectedCalendarDate}
             overdueTasksCount={overdueCalendarTasksCount}
             notifications={notifications}
@@ -851,7 +883,7 @@ function MainLayout() {
 
         {/* Global Quick Notes Floating Trigger */}
         <QuickNotesFloatingTrigger
-          onClick={() => setIsQuickNotesOpen(true)}
+          onClick={() => openTacticalDrawer('notes')}
           notesCount={quickNotes.filter((n) => !n.archived).length}
           isOpen={isQuickNotesOpen}
           isFocusMode={isImmersiveFocusMode}
@@ -859,17 +891,19 @@ function MainLayout() {
 
         {/* Global Calendar Floating Trigger (stacked vertically above QuickNotes) */}
         <CalendarFloatingTrigger
-          onClick={() => setIsCalendarOpen(true)}
+          onClick={() => openTacticalDrawer('calendar')}
           isOpen={isCalendarOpen}
           selectedDate={selectedCalendarDate}
           overdueCount={overdueCalendarTasksCount}
           isFocusMode={isImmersiveFocusMode}
         />
 
-        {/* Global Quick Notes Slide-over Drawer */}
-        <QuickNotesDrawer
-          isOpen={isQuickNotesOpen}
-          onClose={() => setIsQuickNotesOpen(false)}
+        {/* Unified Tactical Drawer (Notepad & Calendar with seamless top tabs) */}
+        <TacticalDrawer
+          isOpen={isTacticalDrawerOpen}
+          mode={tacticalDrawerMode}
+          onClose={closeTacticalDrawer}
+          onSelectMode={setTacticalDrawerMode}
           notes={quickNotes}
           onAddNote={handleAddQuickNote}
           onUpdateNote={handleUpdateQuickNote}
@@ -882,25 +916,12 @@ function MainLayout() {
             handleAddTask(taskData);
             notify('Task Created from Note', `Added "${taskData.title}" to your active master tasks.`, 'system', 'inbox');
           }}
-          onSwitchToCalendar={() => {
-            setIsQuickNotesOpen(false);
-            setIsCalendarOpen(true);
-          }}
-        />
-
-        {/* Global Calendar Slide-over Drawer */}
-        <CalendarDrawer
-          isOpen={isCalendarOpen}
-          onClose={() => setIsCalendarOpen(false)}
           tasks={tasks}
           selectedDate={selectedCalendarDate}
           onSelectDate={(date) => {
             setSelectedCalendarDate(date);
           }}
-          onSwitchToNotes={() => {
-            setIsCalendarOpen(false);
-            setIsQuickNotesOpen(true);
-          }}
+          overdueCalendarTasksCount={overdueCalendarTasksCount}
         />
 
         {/* Real-time Floating Toast Overlay */}

@@ -63,17 +63,17 @@ export const CoWorkingPodsView: React.FC<CoWorkingPodsViewProps> = ({
   );
 
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-xs transition-colors duration-300">
-      {/* Streamlined Focus Header */}
-      <div className="p-4 sm:p-5 border-b border-[var(--border-subtle)]">
+    <div className="space-y-3 sm:space-y-4">
+      {/* Streamlined Focus Header Card - Terracotta Co-Working Pods Theme */}
+      <div className="rounded-2xl border border-[var(--accent-terracotta)]/35 bg-gradient-to-r from-[var(--card-surface)] to-[var(--accent-terracotta)]/5 p-3.5 sm:p-5 shadow-xs shadow-[var(--accent-terracotta)]/5 transition-all duration-300">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[var(--accent-terracotta)] text-white font-bold shrink-0 shadow-xs">
-              <Radio className="h-5 w-5" strokeWidth={1.5} aria-hidden="true" />
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-[var(--accent-terracotta)]/15 text-[var(--accent-terracotta)] border border-[var(--accent-terracotta)]/30 font-bold shrink-0 shadow-2xs">
+              <Radio className="h-5 w-5" strokeWidth={1.75} aria-hidden="true" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)]">
+                <h1 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)] tracking-tight">
                   Focus Pods
                 </h1>
                 <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2.5 py-0.5 text-[10px] font-bold text-[var(--accent-botanical-sage)]">
@@ -92,7 +92,7 @@ export const CoWorkingPodsView: React.FC<CoWorkingPodsViewProps> = ({
             <button
               type="button"
               onClick={() => setIsJoinRoomOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-transparent hover:border-[var(--border-subtle)] hover:bg-[var(--card-hover)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer h-8.5"
+              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer h-8.5 shadow-2xs"
               title="Join an active room or pod with code"
             >
               <KeyRound className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)]" />
@@ -102,7 +102,7 @@ export const CoWorkingPodsView: React.FC<CoWorkingPodsViewProps> = ({
             <button
               type="button"
               onClick={() => setIsCreateRoomOpen(true)}
-              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-main)] hover:bg-[var(--card-hover)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition cursor-pointer shadow-2xs h-8.5"
+              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-3 py-1.5 text-xs font-semibold text-[var(--text-primary)] transition cursor-pointer shadow-2xs h-8.5"
               title="Start an instant ad-hoc sprint room"
             >
               <Zap className="h-3.5 w-3.5 text-[var(--accent-warm-ochre)]" />
@@ -116,13 +116,13 @@ export const CoWorkingPodsView: React.FC<CoWorkingPodsViewProps> = ({
               title="Create a 30-day standing focus pod"
             >
               <Plus className="h-3.5 w-3.5" />
-              <span> New Pod</span>
+              <span>New Pod</span>
             </button>
           </div>
         </div>
 
-        {/* Ambient Subtle Metrics Strip (cleaner & uncluttered) */}
-        <div className="mt-3.5 pt-2.5 border-t border-[var(--border-subtle)] flex items-center gap-3 sm:gap-6 text-xs text-[var(--text-secondary)] flex-wrap">
+        {/* Ambient Subtle Metrics Strip */}
+        <div className="mt-3 pt-2.5 border-t border-[var(--border-subtle)]/70 flex items-center gap-3 sm:gap-6 text-xs text-[var(--text-secondary)] flex-wrap">
           <div className="flex items-center gap-1.5">
             <Users className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)]" />
             <span className="font-semibold text-[var(--text-primary)]">{activeFocusingCount}</span>
@@ -152,8 +152,8 @@ export const CoWorkingPodsView: React.FC<CoWorkingPodsViewProps> = ({
         </div>
       </div>
 
-      {/* Main Co-Working Area */}
-      <div className="p-4 sm:p-6">
+      {/* Main Co-Working Container Card */}
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 sm:p-6 shadow-xs transition-colors duration-300">
         <LiveFocusRoom
           members={members}
           userStreak={userStreak}

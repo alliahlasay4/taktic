@@ -93,20 +93,20 @@ export const PartnerNetworkView: React.FC<PartnerNetworkViewProps> = ({
   }, [members, filterRole, searchQuery]);
 
   return (
-    <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] shadow-xs transition-colors duration-300">
-      {/* Top Header */}
-      <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-[var(--border-subtle)]">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="space-y-3 sm:space-y-4">
+      {/* Top Header Card - Botanical Sage Partner Network Theme */}
+      <div className="rounded-2xl border border-[var(--accent-botanical-sage)]/35 bg-gradient-to-r from-[var(--card-surface)] to-[var(--accent-botanical-sage)]/5 p-3.5 sm:p-5 shadow-xs shadow-[var(--accent-botanical-sage)]/5 transition-all duration-300">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] font-bold shrink-0">
+            <div className="flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-xl bg-[var(--accent-botanical-sage)]/15 text-[var(--accent-botanical-sage)] border border-[var(--accent-botanical-sage)]/30 font-bold shrink-0 shadow-2xs">
               <ShieldCheck className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
             </div>
             <div>
               <div className="flex items-center gap-2 flex-wrap">
-                <h1 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)]">
+                <h1 className="font-heading font-bold text-base sm:text-lg text-[var(--text-primary)] tracking-tight">
                   Partners & Network
                 </h1>
-                <span className="rounded-full bg-[var(--surface-sunken)] border border-[var(--border-subtle)] px-2 py-0.5 text-[10px] font-semibold text-[var(--text-secondary)]">
+                <span className="rounded-full bg-[var(--accent-botanical-sage)]/15 border border-[var(--accent-botanical-sage)]/30 px-2 py-0.5 text-[10px] font-bold text-[var(--accent-botanical-sage)]">
                   {partnerMembers.length} active
                 </span>
               </div>
@@ -120,7 +120,7 @@ export const PartnerNetworkView: React.FC<PartnerNetworkViewProps> = ({
             <button
               type="button"
               onClick={() => setShowPrivacyTip((prev) => !prev)}
-              className="flex items-center gap-1.5 rounded-xl border border-transparent hover:border-[var(--border-subtle)] hover:bg-[var(--card-hover)] px-2.5 py-1.5 text-xs font-medium text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer h-8.5"
+              className="flex items-center gap-1.5 rounded-xl border border-[var(--border-subtle)] bg-[var(--card-surface)] hover:bg-[var(--card-hover)] px-2.5 py-1.5 text-xs font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer h-8.5 shadow-2xs"
               title="Privacy & sharing info"
             >
               <Lock className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)]" />
@@ -131,7 +131,7 @@ export const PartnerNetworkView: React.FC<PartnerNetworkViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsInviteModalOpen(true)}
-                className="flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-terracotta)] hover:brightness-110 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition active:scale-95 cursor-pointer h-8.5"
+                className="flex items-center justify-center gap-1.5 rounded-xl bg-[var(--accent-botanical-sage)] hover:brightness-110 px-3.5 py-1.5 text-xs font-bold text-white shadow-xs transition active:scale-95 cursor-pointer h-8.5"
               >
                 <UserPlus className="h-3.5 w-3.5" />
                 <span>Invite Partner</span>
@@ -142,7 +142,7 @@ export const PartnerNetworkView: React.FC<PartnerNetworkViewProps> = ({
 
         {/* Ambient Privacy Tip Toggle */}
         {showPrivacyTip && (
-          <div className="mt-3 rounded-xl border border-[var(--accent-botanical-sage)]/25 bg-[var(--accent-botanical-sage)]/5 p-3 flex items-start justify-between gap-3 text-xs animate-in fade-in duration-150">
+          <div className="mt-3 rounded-xl border border-[var(--accent-botanical-sage)]/25 bg-[var(--accent-botanical-sage)]/10 p-3 flex items-start justify-between gap-3 text-xs animate-in fade-in duration-150">
             <div className="flex items-start gap-2 text-[var(--text-secondary)]">
               <Lock className="h-3.5 w-3.5 text-[var(--accent-botanical-sage)] shrink-0 mt-0.5" />
               <span>
@@ -158,15 +158,18 @@ export const PartnerNetworkView: React.FC<PartnerNetworkViewProps> = ({
             </button>
           </div>
         )}
+      </div>
 
+      {/* Main Container Card: Segment Tabs & SubTab Content */}
+      <div className="rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)] p-3.5 sm:p-6 shadow-xs transition-colors duration-300">
         {/* Clean Segment Tabs */}
-        <div className="mt-4 flex items-center gap-1.5 border-t border-[var(--border-subtle)] pt-3 overflow-x-auto">
+        <div className="flex items-center gap-1.5 pb-3 border-b border-[var(--border-subtle)] overflow-x-auto">
           <button
             type="button"
             onClick={() => setSubTab('partners')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
               subTab === 'partners'
-                ? 'bg-[var(--accent-terracotta)] text-white shadow-xs'
+                ? 'bg-[var(--accent-botanical-sage)] text-white shadow-xs font-bold'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -184,7 +187,7 @@ export const PartnerNetworkView: React.FC<PartnerNetworkViewProps> = ({
             onClick={() => setSubTab('requests')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
               subTab === 'requests'
-                ? 'bg-[var(--accent-terracotta)] text-white shadow-xs'
+                ? 'bg-[var(--accent-botanical-sage)] text-white shadow-xs font-bold'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -202,7 +205,7 @@ export const PartnerNetworkView: React.FC<PartnerNetworkViewProps> = ({
             onClick={() => setSubTab('invites')}
             className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold transition cursor-pointer ${
               subTab === 'invites'
-                ? 'bg-[var(--accent-terracotta)] text-white shadow-xs'
+                ? 'bg-[var(--accent-botanical-sage)] text-white shadow-xs font-bold'
                 : 'text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)]'
             }`}
           >
@@ -217,10 +220,9 @@ export const PartnerNetworkView: React.FC<PartnerNetworkViewProps> = ({
             )}
           </button>
         </div>
-      </div>
 
-      {/* Main Tab Content */}
-      <div className="p-4 sm:p-6">
+        {/* Main Tab Content */}
+        <div className="pt-4 sm:pt-6">
         {/* SUBTAB 1: ROSTER */}
         {subTab === 'partners' && (
           <div className="space-y-4 animate-in fade-in duration-150">
@@ -633,6 +635,7 @@ export const PartnerNetworkView: React.FC<PartnerNetworkViewProps> = ({
             )}
           </div>
         )}
+        </div>
       </div>
 
       {/* Modals */}
