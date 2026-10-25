@@ -1,7 +1,16 @@
 import React, { useState, useRef } from 'react';
 import { UserProfile } from '../../types';
 import { ToggleSwitch } from './ToggleSwitch';
-import { User, Clock, Shield, Save, Check, Sparkles, Target, Volume2, Upload, Camera, Image as ImageIcon } from 'lucide-react';
+import { 
+  User, 
+  Clock, 
+  Shield, 
+  Save, 
+  Check, 
+  Upload, 
+  Camera, 
+  Globe
+} from 'lucide-react';
 
 interface ProfileSettingsProps {
   profile: UserProfile;
@@ -16,7 +25,6 @@ const AVATAR_PRESETS = [
   'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=150&auto=format&fit=crop&q=80',
 ];
 
-const SOUNDSCAPE_OPTIONS = ['Gentle Rain', 'Ocean Waves', 'Warm Chords', 'Coffee Shop Ambience'];
 
 const TIMEZONE_OPTIONS = [
   'GMT+8 (Asia/Manila)',
@@ -27,19 +35,17 @@ const TIMEZONE_OPTIONS = [
   'GMT-8 (America/Los_Angeles)',
 ];
 
+type SettingsSection = 'identity' | 'routine' | 'privacy';
+
 export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSave }) => {
+  const [section, setSection] = useState<SettingsSection>('identity');
   const [fullName, setFullName] = useState(profile.fullName);
   const [username, setUsername] = useState(profile.username);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl);
   const [bio, setBio] = useState(profile.bio || '');
-  const [microGoal, setMicroGoal] = useState(profile.microGoal || '');
-  const [statusMessage, setStatusMessage] = useState(profile.statusMessage || '');
   const [timezone, setTimezone] = useState(profile.timezone || TIMEZONE_OPTIONS[0]);
   const [workHoursStart, setWorkHoursStart] = useState(profile.workHoursStart || '09:00');
   const [workHoursEnd, setWorkHoursEnd] = useState(profile.workHoursEnd || '17:00');
-  const [favoriteSoundscape, setFavoriteSoundscape] = useState(
-    profile.favoriteSoundscape || SOUNDSCAPE_OPTIONS[0]
-  );
   const [privacySettings, setPrivacySettings] = useState(profile.privacySettings);
   const [savedSuccess, setSavedSuccess] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -54,7 +60,6 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
       return;
     }
 
-    // Limit upload file size to 2MB
     if (file.size > 2 * 1024 * 1024) {
       alert('Avatar file is too large. Please select an image under 2MB.');
       return;
@@ -65,7 +70,6 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
       const dataUrl = event.target?.result as string;
       if (!dataUrl) return;
 
-      // Downscale avatar to a clean 256x256 thumbnail to avoid huge payloads in DB / storage
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
@@ -111,12 +115,9 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
       username,
       avatarUrl,
       bio,
-      microGoal,
-      statusMessage,
       timezone,
       workHoursStart,
       workHoursEnd,
-      favoriteSoundscape,
       privacySettings,
     });
     setSavedSuccess(true);
@@ -124,332 +125,284 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
   };
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl mx-auto animate-in fade-in duration-300">
-      {/* Identity Card */}
-      <div className="rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-6 space-y-5 transition-colors duration-300">
-        <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border-subtle)]">
-          <div className="p-2 rounded-lg bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[var(--accent-terracotta)]">
-            <User className="w-4 h-4" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-[var(--text-primary)]">Public Identity</h3>
-            <p className="text-xs text-[var(--text-secondary)]">Information displayed across your Focus circles and pods.</p>
-          </div>
-        </div>
+    <form onSubmit={handleSubmit} className="space-y-4 animate-in fade-in duration-300">
+      {/* Settings Sub-Tab Navigation */}
+      <div className="flex items-center gap-1.5 p-1 rounded-xl bg-[var(--card-surface)] border border-[var(--border-subtle)] w-fit">
+        <button
+          type="button"
+          onClick={() => setSection('identity')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            section === 'identity'
+              ? 'bg-[var(--accent-terracotta)] text-white shadow-2xs'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+          }`}
+        >
+          <User className="w-3.5 h-3.5" />
+          <span>Profile Info</span>
+        </button>
 
-        {/* Avatar Picker with File Upload Option */}
-        <div className="space-y-3">
-          <div className="flex items-center justify-between flex-wrap gap-2">
-            <label className="text-xs font-semibold text-[var(--text-secondary)]">Profile Avatar</label>
-            <span className="text-[11px] text-[var(--text-muted)]">Upload a photo or choose a preset</span>
-          </div>
+        <button
+          type="button"
+          onClick={() => setSection('routine')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            section === 'routine'
+              ? 'bg-[var(--accent-terracotta)] text-white shadow-2xs'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+          }`}
+        >
+          <Clock className="w-3.5 h-3.5" />
+          <span>Routine & Hours</span>
+        </button>
 
-          <div className="flex items-center gap-4 flex-wrap">
-            {/* Avatar preview with upload overlay button */}
-            <div
-              className="relative group cursor-pointer"
-              onClick={() => fileInputRef.current?.click()}
-              title="Click to upload custom picture"
-            >
-              <img
-                src={avatarUrl}
-                alt="Avatar Preview"
-                className="w-16 h-16 rounded-2xl object-cover border-2 border-[var(--accent-terracotta)] shadow-sm group-hover:opacity-85 transition"
-              />
-              <div className="absolute inset-0 rounded-2xl bg-black/45 opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center text-white transition duration-200">
-                <Camera className="w-4 h-4 mb-0.5" />
-                <span className="text-[8px] font-bold uppercase tracking-wider">Change</span>
-              </div>
-            </div>
+        <button
+          type="button"
+          onClick={() => setSection('privacy')}
+          className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
+            section === 'privacy'
+              ? 'bg-[var(--accent-terracotta)] text-white shadow-2xs'
+              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--card-hover)]'
+          }`}
+        >
+          <Shield className="w-3.5 h-3.5" />
+          <span>Privacy & Badges</span>
+        </button>
+      </div>
 
-            {/* Presets + Custom Upload Button */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <button
-                type="button"
+      {/* Main Form Body */}
+      <div className="rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-5 sm:p-6 transition-colors duration-300">
+        {/* Section 1: Public Identity */}
+        {section === 'identity' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            {/* Avatar Row */}
+            <div className="flex items-center gap-3.5 pb-4 border-b border-[var(--border-subtle)]/70">
+              <div
+                className="relative group cursor-pointer shrink-0"
                 onClick={() => fileInputRef.current?.click()}
-                className="flex items-center gap-1.5 px-3 py-2 rounded-xl bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[var(--accent-terracotta)] hover:bg-[var(--accent-terracotta)] hover:text-white transition-all text-xs font-semibold shadow-xs"
-                title="Upload a picture file from your device"
+                title="Change picture"
               >
-                <Upload className="w-3.5 h-3.5" />
-                <span>Upload Photo</span>
-              </button>
-
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="hidden"
-              />
-
-              <div className="h-6 w-px bg-[var(--border-subtle)] mx-1 hidden sm:block" />
-
-              {AVATAR_PRESETS.map((preset, idx) => (
-                <button
-                  key={idx}
-                  type="button"
-                  onClick={() => setAvatarUrl(preset)}
-                  className={`w-9 h-9 rounded-xl overflow-hidden border-2 transition-all ${
-                    avatarUrl === preset
-                      ? 'border-[var(--accent-terracotta)] scale-105 shadow-xs'
-                      : 'border-[var(--border-subtle)] hover:border-[var(--text-muted)] opacity-60 hover:opacity-100'
-                  }`}
-                  title={`Preset Avatar ${idx + 1}`}
-                >
-                  <img src={preset} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover" />
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2 mt-2">
-            <ImageIcon className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" />
-            <input
-              type="url"
-              value={avatarUrl}
-              onChange={(e) => setAvatarUrl(e.target.value)}
-              placeholder="Or paste an image URL..."
-              className="w-full px-3.5 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-xs font-mono focus:border-[var(--accent-terracotta)] focus:outline-none transition-colors"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="profile-full-name" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Full Name</label>
-            <input
-              id="profile-full-name"
-              name="fullName"
-              type="text"
-              required
-              value={fullName}
-              onChange={(e) => setFullName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none transition-colors"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="profile-username" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Username Handle</label>
-            <input
-              id="profile-username"
-              name="username"
-              type="text"
-              required
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none transition-colors"
-            />
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="profile-status-message" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} />
-              Status Indicator
-            </label>
-            <input
-              id="profile-status-message"
-              name="statusMessage"
-              type="text"
-              value={statusMessage}
-              onChange={(e) => setStatusMessage(e.target.value)}
-              placeholder="e.g. In Deep Flow Mode"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none transition-colors"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="profile-micro-goal" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1.5">
-              <Target className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} />
-              Daily Micro-Goal
-            </label>
-            <input
-              id="profile-micro-goal"
-              name="microGoal"
-              type="text"
-              value={microGoal}
-              onChange={(e) => setMicroGoal(e.target.value)}
-              placeholder="e.g. Complete 3 pomodoros before 2 PM"
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none transition-colors"
-            />
-          </div>
-        </div>
-
-        <div>
-          <label htmlFor="profile-bio" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Bio</label>
-          <textarea
-            id="profile-bio"
-            name="bio"
-            rows={2}
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="A short note about your focus routine..."
-            className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none transition-colors resize-none"
-          />
-        </div>
-      </div>
-
-      {/* Routine & Soundscapes Card */}
-      <div className="rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-6 space-y-4 transition-colors duration-300">
-        <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border-subtle)]">
-          <div className="p-2 rounded-lg bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[var(--accent-terracotta)]">
-            <Clock className="w-4 h-4" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-[var(--text-primary)]">Routine & Audio Preferences</h3>
-            <p className="text-xs text-[var(--text-secondary)]">Configure your working hours and preferred ambient soundscape.</p>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="profile-timezone" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Timezone</label>
-            <select
-              id="profile-timezone"
-              name="timezone"
-              value={timezone}
-              onChange={(e) => setTimezone(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none"
-            >
-              {TIMEZONE_OPTIONS.map((tz) => (
-                <option key={tz} value={tz}>
-                  {tz}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div>
-            <label htmlFor="profile-soundscape" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5 flex items-center gap-1.5">
-              <Volume2 className="w-3.5 h-3.5 text-[var(--accent-terracotta)]" strokeWidth={1.5} />
-              Favorite Soundscape
-            </label>
-            <select
-              id="profile-soundscape"
-              name="favoriteSoundscape"
-              value={favoriteSoundscape}
-              onChange={(e) => setFavoriteSoundscape(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none"
-            >
-              {SOUNDSCAPE_OPTIONS.map((snd) => (
-                <option key={snd} value={snd}>
-                  {snd}
-                </option>
-              ))}
-            </select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-          <div>
-            <label htmlFor="profile-work-hours-start" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Work Hours Start</label>
-            <input
-              id="profile-work-hours-start"
-              name="workHoursStart"
-              type="time"
-              value={workHoursStart}
-              onChange={(e) => setWorkHoursStart(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none"
-            />
-          </div>
-
-          <div>
-            <label htmlFor="profile-work-hours-end" className="text-xs font-medium text-[var(--text-secondary)] block mb-1.5">Work Hours End</label>
-            <input
-              id="profile-work-hours-end"
-              name="workHoursEnd"
-              type="time"
-              value={workHoursEnd}
-              onChange={(e) => setWorkHoursEnd(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-sm focus:border-[var(--accent-terracotta)] focus:outline-none"
-            />
-          </div>
-        </div>
-      </div>
-
-      {/* Privacy & Social Controls */}
-      <div className="rounded-2xl bg-[var(--card-surface)] border border-[var(--border-subtle)] p-6 space-y-4 transition-colors duration-300">
-        <div className="flex items-center gap-2.5 pb-4 border-b border-[var(--border-subtle)]">
-          <div className="p-2 rounded-lg bg-[var(--accent-terracotta)]/15 border border-[var(--accent-terracotta)]/30 text-[var(--accent-terracotta)]">
-            <Shield className="w-4 h-4" strokeWidth={1.5} />
-          </div>
-          <div>
-            <h3 className="text-base font-semibold text-[var(--text-primary)]">Privacy & Visibility Controls</h3>
-            <p className="text-xs text-[var(--text-secondary)]">Manage what statistics are shared publicly with your Circles.</p>
-          </div>
-        </div>
-
-        <div className="divide-y divide-[var(--border-subtle)]">
-          {[
-            {
-              key: 'isIncognito',
-              label: 'Incognito / Stealth Mode',
-              desc: 'Appear offline to Circle partners and hide live focus presence and active badges.',
-            },
-            {
-              key: 'showFocusHours',
-              label: 'Display Total Deep Focus Hours',
-              desc: 'Share your total focused hours on your public profile banner.',
-            },
-            {
-              key: 'showMicroGoal',
-              label: 'Display Daily Micro-Goal',
-              desc: 'Show your current micro-goal badge on your header banner.',
-            },
-            {
-              key: 'showStreak',
-              label: 'Display Streak Badges',
-              desc: 'Broadcast active day streaks to your Circle partners.',
-            },
-            {
-              key: 'showActivityFeed',
-              label: 'Auto-Post Closed Rings',
-              desc: 'Publish a feed update whenever all daily focus rings are closed.',
-            },
-          ].map((item) => (
-            <div key={item.key} className="flex items-center justify-between py-3.5 first:pt-1 last:pb-0">
-              <div className="pr-4">
-                <div className="text-sm font-medium text-[var(--text-primary)] flex items-center gap-2">
-                  <span>{item.label}</span>
-                  {item.key === 'isIncognito' && (
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
-                      Privacy
-                    </span>
-                  )}
+                <img
+                  src={avatarUrl}
+                  alt="Avatar Preview"
+                  className="w-12 h-12 rounded-xl object-cover border border-[var(--border-subtle)] shadow-2xs group-hover:brightness-95 transition"
+                />
+                <div className="absolute inset-0 rounded-xl bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center text-white transition duration-200">
+                  <Camera className="w-3.5 h-3.5" />
                 </div>
-                <div className="text-xs text-[var(--text-secondary)] mt-0.5">{item.desc}</div>
               </div>
-              <ToggleSwitch
-                checked={Boolean((privacySettings as any)[item.key])}
-                onChange={(checked) =>
-                  setPrivacySettings((prev) => ({
-                    ...prev,
-                    [item.key]: checked,
-                  }))
-                }
+
+              <div className="flex items-center gap-2 flex-wrap">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[var(--card-hover)] hover:bg-[var(--border-subtle)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-xs font-semibold cursor-pointer transition-all"
+                >
+                  <Upload className="w-3 h-3 text-[var(--accent-terracotta)]" />
+                  <span>Upload</span>
+                </button>
+
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+
+                <div className="flex items-center gap-1">
+                  {AVATAR_PRESETS.map((preset, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setAvatarUrl(preset)}
+                      className={`w-7 h-7 rounded-lg overflow-hidden border transition-all cursor-pointer ${
+                        avatarUrl === preset
+                          ? 'border-[var(--accent-terracotta)] ring-1 ring-[var(--accent-terracotta)]'
+                          : 'border-[var(--border-subtle)] opacity-50 hover:opacity-100'
+                      }`}
+                      title={`Preset ${idx + 1}`}
+                    >
+                      <img src={preset} alt={`Preset ${idx + 1}`} className="w-full h-full object-cover" />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Basic Info Fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label htmlFor="profile-full-name" className="text-xs font-medium text-[var(--text-secondary)] block mb-1">
+                  Full Name
+                </label>
+                <input
+                  id="profile-full-name"
+                  type="text"
+                  required
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-xs sm:text-sm focus:border-[var(--accent-terracotta)] focus:outline-none transition-colors"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="profile-username" className="text-xs font-medium text-[var(--text-secondary)] block mb-1">
+                  Username Handle
+                </label>
+                <input
+                  id="profile-username"
+                  type="text"
+                  required
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-xs sm:text-sm focus:border-[var(--accent-terracotta)] focus:outline-none transition-colors font-mono"
+                />
+              </div>
+            </div>
+
+
+
+            {/* Bio */}
+            <div>
+              <label htmlFor="profile-bio" className="text-xs font-medium text-[var(--text-secondary)] block mb-1">
+                Bio
+              </label>
+              <textarea
+                id="profile-bio"
+                rows={2}
+                value={bio}
+                onChange={(e) => setBio(e.target.value)}
+                placeholder="A short note about your focus routine..."
+                className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-xs sm:text-sm focus:border-[var(--accent-terracotta)] focus:outline-none transition-colors resize-none leading-relaxed"
               />
             </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Save Button */}
-      <div className="flex items-center justify-end gap-3 pt-2">
-        {savedSuccess && (
-          <div className="flex items-center gap-2 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3.5 py-2 rounded-xl animate-in fade-in">
-            <Check className="w-4 h-4" />
-            Changes saved successfully
           </div>
         )}
 
-        <button
-          type="submit"
-          className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[var(--accent-terracotta)] hover:opacity-90 text-white font-medium text-sm transition-all shadow-xs active:scale-95 cursor-pointer"
-        >
-          <Save className="w-4 h-4" />
-          Save Changes
-        </button>
+        {/* Section 2: Routine & Work Window */}
+        {section === 'routine' && (
+          <div className="space-y-4 animate-in fade-in duration-200">
+            <div>
+              <label htmlFor="profile-timezone" className="text-xs font-medium text-[var(--text-secondary)] block mb-1 flex items-center gap-1.5">
+                <Globe className="w-3 h-3 text-[var(--accent-terracotta)]" strokeWidth={1.5} />
+                Timezone
+              </label>
+              <select
+                id="profile-timezone"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-xs sm:text-sm focus:border-[var(--accent-terracotta)] focus:outline-none cursor-pointer"
+              >
+                {TIMEZONE_OPTIONS.map((tz) => (
+                  <option key={tz} value={tz}>
+                    {tz}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+              <div>
+                <label htmlFor="profile-work-hours-start" className="text-xs font-medium text-[var(--text-secondary)] block mb-1">
+                  Focus Window Starts
+                </label>
+                <input
+                  id="profile-work-hours-start"
+                  type="time"
+                  value={workHoursStart}
+                  onChange={(e) => setWorkHoursStart(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-xs sm:text-sm focus:border-[var(--accent-terracotta)] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label htmlFor="profile-work-hours-end" className="text-xs font-medium text-[var(--text-secondary)] block mb-1">
+                  Focus Window Ends
+                </label>
+                <input
+                  id="profile-work-hours-end"
+                  type="time"
+                  value={workHoursEnd}
+                  onChange={(e) => setWorkHoursEnd(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] text-[var(--text-primary)] text-xs sm:text-sm focus:border-[var(--accent-terracotta)] focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Section 3: Privacy & Visibility Controls */}
+        {section === 'privacy' && (
+          <div className="space-y-3 animate-in fade-in duration-200">
+            <div className="divide-y divide-[var(--border-subtle)]/70">
+              {[
+                {
+                  key: 'isIncognito',
+                  label: 'Incognito Mode',
+                  desc: 'Hide presence and appear offline in circles.',
+                  badge: 'Stealth',
+                },
+                {
+                  key: 'showFocusHours',
+                  label: 'Show Deep Focus Hours',
+                  desc: 'Display accumulated hours on your profile.',
+                },
+                {
+                  key: 'showStreak',
+                  label: 'Show Streak Milestones',
+                  desc: 'Display streak days to partners.',
+                },
+                {
+                  key: 'showActivityFeed',
+                  label: 'Auto-Post Closed Rings',
+                  desc: 'Share ring completions to circle feed.',
+                },
+              ].map((item) => (
+                <div key={item.key} className="flex items-center justify-between py-2.5 first:pt-0 last:pb-0">
+                  <div className="pr-4">
+                    <div className="text-xs sm:text-sm font-medium text-[var(--text-primary)] flex items-center gap-2">
+                      <span>{item.label}</span>
+                      {item.badge && (
+                        <span className="text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-600 dark:text-amber-400 border border-amber-500/30">
+                          {item.badge}
+                        </span>
+                      )}
+                    </div>
+                    <div className="text-[11px] text-[var(--text-secondary)] mt-0.5">{item.desc}</div>
+                  </div>
+                  <ToggleSwitch
+                    checked={Boolean((privacySettings as any)[item.key])}
+                    onChange={(checked) =>
+                      setPrivacySettings((prev) => ({
+                        ...prev,
+                        [item.key]: checked,
+                      }))
+                    }
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* Footer Save Row */}
+        <div className="flex items-center justify-between gap-3 pt-4 mt-4 border-t border-[var(--border-subtle)]">
+          <div>
+            {savedSuccess && (
+              <span className="flex items-center gap-1.5 text-xs font-medium text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 border border-emerald-500/20 px-3 py-1.5 rounded-xl animate-in fade-in">
+                <Check className="w-3.5 h-3.5" />
+                Saved
+              </span>
+            )}
+          </div>
+
+          <button
+            type="submit"
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[var(--accent-terracotta)] hover:opacity-90 text-white font-medium text-xs sm:text-sm transition-all shadow-xs active:scale-95 cursor-pointer ml-auto"
+          >
+            <Save className="w-3.5 h-3.5" />
+            <span>Save Preferences</span>
+          </button>
+        </div>
       </div>
     </form>
   );
