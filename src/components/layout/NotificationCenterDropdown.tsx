@@ -1,6 +1,7 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Clock, Repeat, Flame, Users, Sparkles, CheckCheck, Trash2, X, BellOff, Check, ArrowRight } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { CheckCheck, Trash2, X, Bell, BellRing, Sparkles } from 'lucide-react';
 import { InAppNotification, ActiveTab } from '../../types';
+import { NotificationItemCard } from './NotificationItemCard';
 
 interface NotificationCenterDropdownProps {
   isOpen: boolean;
@@ -26,194 +27,189 @@ export const NotificationCenterDropdown: React.FC<NotificationCenterDropdownProp
   const [filter, setFilter] = useState<'all' | 'unread'>('all');
   const dropdownRef = useRef<HTMLDivElement>(null);
 
-  // Click outside to close
+  // Close on Escape key press or click outside
   useEffect(() => {
+    if (!isOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
     const handleClickOutside = (e: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
         onClose();
       }
     };
-    if (isOpen) {
-      document.addEventListener('mousedown', handleClickOutside);
-    }
+
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('mousedown', handleClickOutside);
+
     return () => {
+      document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [isOpen, onClose]);
 
+  const unreadCount = useMemo(
+    () => notifications.filter((n) => !n.read).length,
+    [notifications]
+  );
+
+  const filtered = useMemo(() => {
+    return notifications.filter((n) => (filter === 'unread' ? !n.read : true));
+  }, [notifications, filter]);
+
   if (!isOpen) return null;
-
-  const filtered = notifications.filter((n) => (filter === 'unread' ? !n.read : true));
-  const unreadCount = notifications.filter((n) => !n.read).length;
-
-  const getIcon = (type: InAppNotification['type']) => {
-    switch (type) {
-      case 'timer':
-        return <Clock className="h-4 w-4 text-[#CFA052]" />;
-      case 'habit':
-        return <Repeat className="h-4 w-4 text-emerald-400" />;
-      case 'streak':
-        return <Flame className="h-4 w-4 text-amber-500" />;
-      case 'circle':
-        return <Users className="h-4 w-4 text-[#C87D87]" />;
-      default:
-        return <Sparkles className="h-4 w-4 text-teal-400" />;
-    }
-  };
-
-  const formatTimeAgo = (isoDate: string) => {
-    const diffMs = Date.now() - new Date(isoDate).getTime();
-    const mins = Math.floor(diffMs / 60000);
-    if (mins < 1) return 'Just now';
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    return `${Math.floor(hours / 24)}d ago`;
-  };
 
   return (
     <div
       ref={dropdownRef}
-      className="fixed sm:absolute top-14 sm:top-12 left-3 right-3 sm:left-auto sm:right-0 z-50 w-auto sm:w-96 max-w-sm sm:max-w-none mx-auto sm:mx-0 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/95 backdrop-blur-xl p-3.5 sm:p-4 shadow-2xl text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150"
+      role="region"
+      aria-label="Notification Center"
+      className="fixed sm:absolute top-14 sm:top-12 left-3 right-3 sm:left-auto sm:right-0 z-50 w-auto sm:w-[26rem] max-w-sm sm:max-w-none mx-auto sm:mx-0 rounded-2xl border border-[var(--border-subtle)] bg-[var(--card-surface)]/98 backdrop-blur-2xl p-4 shadow-2xl text-[var(--text-primary)] animate-in fade-in zoom-in-95 duration-150 flex flex-col max-h-[min(34rem,calc(100vh-5rem))]"
     >
       {/* Header */}
-      <div className="flex items-center justify-between pb-3 border-b border-[var(--border-subtle)] mb-3">
+      <div className="flex items-center justify-between pb-3.5 border-b border-[var(--border-subtle)]/80 shrink-0">
         <div className="flex items-center gap-2">
-          <h3 className="font-heading font-bold text-sm text-[var(--text-primary)]">Notification Center</h3>
-          {unreadCount > 0 && (
-            <span className="rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/30">
-              {unreadCount} New
-            </span>
-          )}
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-secondary)]">
+            {unreadCount > 0 ? (
+              <BellRing className="h-3.5 w-3.5 text-emerald-500 animate-bounce" />
+            ) : (
+              <Bell className="h-3.5 w-3.5" />
+            )}
+          </div>
+          <div>
+            <div className="flex items-center gap-1.5">
+              <h3 className="font-heading font-bold text-xs uppercase tracking-wider text-[var(--text-primary)]">
+                Notifications
+              </h3>
+              {unreadCount > 0 && (
+                <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.2 text-[10px] font-bold text-emerald-600 dark:text-emerald-400 border border-emerald-500/25">
+                  {unreadCount} new
+                </span>
+              )}
+            </div>
+          </div>
         </div>
 
+        {/* Global Header Actions */}
         <div className="flex items-center gap-1">
           {unreadCount > 0 && (
             <button
+              type="button"
               onClick={onMarkAllAsRead}
               title="Mark all as read"
-              className="rounded-lg p-1 text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)] transition"
+              aria-label="Mark all as read"
+              className="flex items-center gap-1 rounded-lg px-2 py-1 text-[11px] font-medium text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-emerald-500 transition-colors cursor-pointer"
             >
-              <CheckCheck className="h-4 w-4" />
+              <CheckCheck className="h-3.5 w-3.5" />
+              <span className="hidden sm:inline">Read all</span>
             </button>
           )}
+
           {notifications.length > 0 && (
             <button
+              type="button"
               onClick={onClearAll}
               title="Clear all notifications"
-              className="rounded-lg p-1 text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-red-500 transition"
+              aria-label="Clear all notifications"
+              className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-rose-500/10 hover:text-rose-500 transition-colors cursor-pointer"
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-3.5 w-3.5" />
             </button>
           )}
+
           <button
+            type="button"
             onClick={onClose}
-            className="rounded-lg p-1 text-[var(--text-secondary)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)] transition ml-1"
+            title="Close notifications"
+            aria-label="Close notifications"
+            className="rounded-lg p-1.5 text-[var(--text-muted)] hover:bg-[var(--card-hover)] hover:text-[var(--text-primary)] transition-colors cursor-pointer ml-0.5"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3.5 w-3.5" />
           </button>
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-1 p-1 rounded-xl bg-[var(--bg-main)] border border-[var(--border-subtle)] mb-3">
+      {/* Segmented Filter Pills */}
+      <div className="mt-3 flex items-center p-0.5 rounded-xl bg-[var(--bg-main)]/80 border border-[var(--border-subtle)] shrink-0">
         <button
+          type="button"
           onClick={() => setFilter('all')}
-          className={`flex-1 py-1 rounded-lg text-xs font-semibold transition ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
             filter === 'all'
-              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold'
-              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs border border-[var(--border-subtle)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
           }`}
         >
-          All ({notifications.length})
+          <span>All</span>
+          <span
+            className={`text-[10px] px-1.5 py-0.2 rounded-full font-bold ${
+              filter === 'all'
+                ? 'bg-[var(--bg-main)] text-[var(--text-secondary)]'
+                : 'text-[var(--text-muted)]'
+            }`}
+          >
+            {notifications.length}
+          </span>
         </button>
+
         <button
+          type="button"
           onClick={() => setFilter('unread')}
-          className={`flex-1 py-1 rounded-lg text-xs font-semibold transition ${
+          className={`flex-1 flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs font-semibold transition-all cursor-pointer ${
             filter === 'unread'
-              ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 font-bold'
-              : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'
+              ? 'bg-[var(--card-surface)] text-[var(--text-primary)] shadow-xs border border-[var(--border-subtle)]'
+              : 'text-[var(--text-muted)] hover:text-[var(--text-secondary)]'
           }`}
         >
-          Unread ({unreadCount})
+          <span>Unread</span>
+          {unreadCount > 0 ? (
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold bg-emerald-500/20 text-emerald-600 dark:text-emerald-400">
+              {unreadCount}
+            </span>
+          ) : (
+            <span className="text-[10px] px-1.5 py-0.2 rounded-full font-bold text-[var(--text-muted)]">
+              0
+            </span>
+          )}
         </button>
       </div>
 
-      {/* Notifications List */}
-      <div className="max-h-80 overflow-y-auto space-y-2 pr-1">
+      {/* Notifications List with scrollable container */}
+      <div className="mt-3 overflow-y-auto space-y-2 pr-1 overscroll-contain flex-1">
         {filtered.length === 0 ? (
-          <div className="py-8 text-center text-xs text-[var(--text-muted)] flex flex-col items-center gap-2">
-            <BellOff className="h-6 w-6 text-[var(--text-muted)]" />
-            <span>No notifications found</span>
+          <div className="py-12 px-4 text-center flex flex-col items-center justify-center gap-3">
+            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[var(--card-hover)] border border-[var(--border-subtle)] text-[var(--text-muted)]">
+              {filter === 'unread' ? (
+                <Sparkles className="h-5 w-5 text-emerald-500" />
+              ) : (
+                <Bell className="h-5 w-5 opacity-40" />
+              )}
+            </div>
+            <div className="space-y-1">
+              <p className="text-xs font-semibold text-[var(--text-primary)]">
+                {filter === 'unread' ? 'All caught up' : 'No notifications'}
+              </p>
+              <p className="text-[11px] text-[var(--text-muted)] max-w-xs mx-auto">
+                {filter === 'unread'
+                  ? 'You have addressed all pending alerts and invites.'
+                  : 'Activity updates, streaks, and circle alerts will appear here.'}
+              </p>
+            </div>
           </div>
         ) : (
           filtered.map((item) => (
-            <div
+            <NotificationItemCard
               key={item.id}
-              onClick={() => {
-                onMarkAsRead(item.id);
-                if (item.actionTab && onSelectTab) {
-                  onSelectTab(item.actionTab);
-                  onClose();
-                }
-              }}
-              className={`group flex items-start gap-3 rounded-xl border p-3 text-left transition cursor-pointer ${
-                item.read
-                  ? 'border-[var(--border-subtle)] bg-[var(--bg-main)]/50 opacity-75 hover:opacity-100 hover:bg-[var(--card-hover)]'
-                  : 'border-emerald-500/30 bg-emerald-500/10 hover:bg-emerald-500/15'
-              }`}
-            >
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[var(--card-surface)] border border-[var(--border-subtle)] mt-0.5">
-                {getIcon(item.type)}
-              </div>
-
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center justify-between gap-1">
-                  <h4 className="text-xs font-semibold text-[var(--text-primary)] group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition">
-                    {item.title}
-                  </h4>
-                  <span className="text-[10px] text-[var(--text-muted)] shrink-0">{formatTimeAgo(item.createdAt)}</span>
-                </div>
-                <p className="mt-0.5 text-xs text-[var(--text-secondary)] leading-relaxed break-words">{item.message}</p>
-
-                {/* Inline Action Buttons for Circle Partner Invitations */}
-                {item.inviteToken && /^[a-zA-Z0-9_-]{10,64}$/.test(item.inviteToken) && onAcceptCircleInvite && (
-                  <div className="mt-2.5 flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        onMarkAsRead(item.id);
-                        await onAcceptCircleInvite(item.inviteToken!);
-                        onClose();
-                      }}
-                      className="flex items-center gap-1.5 px-2.5 py-1 rounded-lg bg-gradient-to-r from-[#C06C4C] via-[#C87D87] to-[#CFA052] hover:brightness-110 text-white font-bold text-[11px] shadow-xs transition cursor-pointer"
-                    >
-                      <Check className="h-3 w-3" />
-                      <span>Accept & Join</span>
-                    </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          onMarkAsRead(item.id);
-                          if (onSelectTab) {
-                            onSelectTab('partners');
-                          }
-                          onClose();
-                        }}
-                        className="flex items-center gap-1 px-2.5 py-1 rounded-lg border border-[var(--border-subtle)] hover:bg-[var(--card-hover)] text-[11px] font-semibold text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition cursor-pointer"
-                      >
-                        <span>View in Partners</span>
-                        <ArrowRight className="h-3 w-3" />
-                      </button>
-                  </div>
-                )}
-              </div>
-
-              {!item.read && (
-                <span className="h-2 w-2 rounded-full bg-emerald-500 shrink-0 mt-1.5 animate-pulse" />
-              )}
-            </div>
+              notification={item}
+              onMarkAsRead={onMarkAsRead}
+              onSelectTab={onSelectTab}
+              onAcceptCircleInvite={onAcceptCircleInvite}
+              onCloseDropdown={onClose}
+            />
           ))
         )}
       </div>

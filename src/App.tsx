@@ -705,6 +705,7 @@ function MainLayout() {
                       onToggleHabit={handleToggleHabitWithNotification}
                       setActiveTab={setActiveTab}
                       onOpenSummary={() => setIsSummaryOpen(true)}
+                      onQuickAddTask={handleQuickAddTask}
                     />
                   )}
 
