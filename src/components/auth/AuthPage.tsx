@@ -21,6 +21,7 @@ import {
   ShieldCheck,
 } from 'lucide-react';
 import { TakticLogo } from '../common/TakticLogo';
+import { LegalModal, LegalTab } from '../common/LegalModal';
 
 interface AuthPageProps {
   onBackToHome?: () => void;
@@ -69,6 +70,9 @@ export const AuthPage: React.FC<AuthPageProps> = ({
   const [confirmNewPassword, setConfirmNewPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmNewPassword, setShowConfirmNewPassword] = useState(false);
+  const [agreedToLegal, setAgreedToLegal] = useState(false);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>('privacy');
 
   const resetFormFields = () => {
     // Keep invited email if available
@@ -89,6 +93,7 @@ export const AuthPage: React.FC<AuthPageProps> = ({
     setFullName('');
     setNewPassword('');
     setConfirmNewPassword('');
+    setAgreedToLegal(false);
     setErrorMsg(null);
     setSuccessMsg(null);
   };
@@ -281,6 +286,11 @@ export const AuthPage: React.FC<AuthPageProps> = ({
 
     if (!email.trim() || !password || (isSignUp && (!fullName.trim() || !confirmPassword))) {
       setErrorMsg('Please fill in all required fields.');
+      return;
+    }
+
+    if (isSignUp && !agreedToLegal) {
+      setErrorMsg('Please accept the Privacy Policy and Terms of Service to create your account.');
       return;
     }
 
@@ -831,6 +841,56 @@ export const AuthPage: React.FC<AuthPageProps> = ({
                     </button>
                   </div>
                 )}
+
+                {/* Consent & Privacy Agreement Checkbox on Sign Up */}
+                {isSignUp && !isResetPassword && !isRecoveryMode && (
+                  <div className="pt-1.5 pb-0.5">
+                    <div className="flex items-start gap-2 text-left">
+                      <button
+                        type="button"
+                        onClick={() => setAgreedToLegal(!agreedToLegal)}
+                        className="mt-0.5 text-[#C06C4C] focus:outline-hidden cursor-pointer"
+                        aria-label="Agree to terms and privacy policy"
+                      >
+                        {agreedToLegal ? (
+                          <CheckSquare className="w-4 h-4 fill-[#C06C4C] text-white" />
+                        ) : (
+                          <Square className="w-4 h-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)]" />
+                        )}
+                      </button>
+                      <label
+                        className="text-[11px] sm:text-xs text-[var(--text-secondary)] select-none leading-relaxed cursor-pointer"
+                        onClick={() => setAgreedToLegal(!agreedToLegal)}
+                      >
+                        I agree to Taktic's{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLegalModalTab('terms');
+                            setLegalModalOpen(true);
+                          }}
+                          className="font-bold text-[#C06C4C] underline hover:text-[#C87D87] cursor-pointer"
+                        >
+                          Terms of Service
+                        </button>{' '}
+                        and acknowledge the{' '}
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setLegalModalTab('privacy');
+                            setLegalModalOpen(true);
+                          }}
+                          className="font-bold text-[#C06C4C] underline hover:text-[#C87D87] cursor-pointer"
+                        >
+                          Privacy Policy
+                        </button>
+                        .
+                      </label>
+                    </div>
+                  </div>
+                )}
               </>
             )}
 
@@ -977,12 +1037,45 @@ export const AuthPage: React.FC<AuthPageProps> = ({
           )}
         </div>
 
-        {/* Footer general security info */}
-        <div className="pt-3 text-center text-[11px] text-[var(--text-muted)] flex items-center justify-center gap-1.5">
-          <Lock className="w-3 h-3 text-[var(--text-muted)]" />
-          <span>Secure & encrypted connection</span>
+        {/* Footer general security info & Legal Links */}
+        <div className="pt-3 pb-1 text-center text-[11px] text-[var(--text-muted)] space-y-1">
+          <div className="flex items-center justify-center gap-1.5">
+            <Lock className="w-3 h-3 text-[var(--text-muted)]" />
+            <span>Secure & encrypted connection</span>
+          </div>
+          <div className="flex items-center justify-center gap-2 pt-0.5">
+            <button
+              type="button"
+              onClick={() => {
+                setLegalModalTab('privacy');
+                setLegalModalOpen(true);
+              }}
+              className="hover:underline hover:text-[var(--text-primary)] cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+            <span>•</span>
+            <button
+              type="button"
+              onClick={() => {
+                setLegalModalTab('terms');
+                setLegalModalOpen(true);
+              }}
+              className="hover:underline hover:text-[var(--text-primary)] cursor-pointer"
+            >
+              Terms of Service
+            </button>
+          </div>
         </div>
       </div>
+
+      <LegalModal
+        isOpen={legalModalOpen}
+        onClose={() => setLegalModalOpen(false)}
+        initialTab={legalModalTab}
+        onAccept={() => setAgreedToLegal(true)}
+        showAcceptButton={isSignUp && !agreedToLegal}
+      />
     </div>
   );
 };

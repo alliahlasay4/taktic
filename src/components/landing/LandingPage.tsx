@@ -30,6 +30,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { TakticLogo } from '../common/TakticLogo';
+import { LegalModal, LegalTab } from '../common/LegalModal';
 
 interface LandingPageProps {
   onOpenAuth: (defaultSignUp?: boolean) => void;
@@ -44,6 +45,8 @@ const SOUNDSCAPES = [
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
   const { loginAsDemo } = useAuth();
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>('privacy');
 
   // Dark/Light Mode
   const [darkMode, setDarkMode] = useState<boolean>(() => {
@@ -1033,9 +1036,35 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onOpenAuth }) => {
             >
               How It Works
             </a>
+            <button
+              type="button"
+              onClick={() => {
+                setLegalModalTab('privacy');
+                setLegalModalOpen(true);
+              }}
+              className="hover:text-[var(--text-primary)] transition cursor-pointer"
+            >
+              Privacy Policy
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setLegalModalTab('terms');
+                setLegalModalOpen(true);
+              }}
+              className="hover:text-[var(--text-primary)] transition cursor-pointer"
+            >
+              Terms
+            </button>
           </div>
         </div>
       </footer>
+
+      <LegalModal
+        isOpen={legalModalOpen}
+        onClose={() => setLegalModalOpen(false)}
+        initialTab={legalModalTab}
+      />
     </div>
   );
 };

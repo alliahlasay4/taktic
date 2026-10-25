@@ -7,10 +7,13 @@ import {
   Shield, 
   Save, 
   Check, 
-  Upload, 
+  Upload,
   Camera, 
-  Globe
+  Globe,
+  FileText,
+  Lock,
 } from 'lucide-react';
+import { LegalModal, LegalTab } from '../common/LegalModal';
 
 interface ProfileSettingsProps {
   profile: UserProfile;
@@ -48,6 +51,8 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
   const [workHoursEnd, setWorkHoursEnd] = useState(profile.workHoursEnd || '17:00');
   const [privacySettings, setPrivacySettings] = useState(profile.privacySettings);
   const [savedSuccess, setSavedSuccess] = useState(false);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>('privacy');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -381,8 +386,58 @@ export const ProfileSettings: React.FC<ProfileSettingsProps> = ({ profile, onSav
                 </div>
               ))}
             </div>
+
+            {/* Legal Agreement & Data Rights Card */}
+            <div className="mt-4 p-3.5 rounded-2xl bg-[var(--card-hover)] border border-[var(--border-subtle)] space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="p-1 rounded-md bg-[#C06C4C]/10 text-[#C06C4C]">
+                    <Shield className="w-3.5 h-3.5" />
+                  </div>
+                  <div>
+                    <h4 className="text-xs font-bold text-[var(--text-primary)]">
+                      Data Privacy & Agreements
+                    </h4>
+                    <p className="text-[11px] text-[var(--text-secondary)]">
+                      Review how your rhythm, habits, and circle presence are safeguarded.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 border-t border-[var(--border-subtle)]/70">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLegalModalTab('privacy');
+                    setLegalModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-[var(--bg-main)] hover:bg-[var(--card-surface)] border border-[var(--border-subtle)] text-[11px] font-semibold text-[var(--text-primary)] flex items-center gap-1.5 cursor-pointer transition"
+                >
+                  <Lock className="w-3 h-3 text-[#C06C4C]" />
+                  <span>Privacy Policy</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLegalModalTab('terms');
+                    setLegalModalOpen(true);
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-[var(--bg-main)] hover:bg-[var(--card-surface)] border border-[var(--border-subtle)] text-[11px] font-semibold text-[var(--text-primary)] flex items-center gap-1.5 cursor-pointer transition"
+                >
+                  <FileText className="w-3 h-3 text-[#C06C4C]" />
+                  <span>Terms of Service</span>
+                </button>
+              </div>
+            </div>
           </div>
         )}
+
+        <LegalModal
+          isOpen={legalModalOpen}
+          onClose={() => setLegalModalOpen(false)}
+          initialTab={legalModalTab}
+        />
 
         {/* Footer Save Row */}
         <div className="flex items-center justify-between gap-3 pt-4 mt-4 border-t border-[var(--border-subtle)]">

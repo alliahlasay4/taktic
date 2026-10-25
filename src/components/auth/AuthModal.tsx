@@ -13,8 +13,11 @@ import {
   KeyRound,
   ArrowRight,
   X,
+  CheckSquare,
+  Square,
 } from 'lucide-react';
 import { TakticLogo } from '../common/TakticLogo';
+import { LegalModal, LegalTab } from '../common/LegalModal';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -35,11 +38,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [agreedToLegal, setAgreedToLegal] = useState(false);
+  const [legalModalOpen, setLegalModalOpen] = useState(false);
+  const [legalModalTab, setLegalModalTab] = useState<LegalTab>('privacy');
 
   const resetFormFields = () => {
     setEmail('');
     setPassword('');
     setFullName('');
+    setAgreedToLegal(false);
     setErrorMsg(null);
     setSuccessMsg(null);
   };
@@ -82,6 +89,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
 
     if (!email.trim() || !password || (isSignUp && !fullName.trim())) {
       setErrorMsg('Please fill in all required fields.');
+      return;
+    }
+
+    if (isSignUp && !agreedToLegal) {
+      setErrorMsg('Please accept the Privacy Policy and Terms of Service to create your account.');
       return;
     }
 
@@ -321,6 +333,56 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
               </div>
             )}
 
+            {/* Consent & Privacy Agreement Checkbox on Sign Up */}
+            {isSignUp && !isResetPassword && (
+              <div className="pt-1">
+                <div className="flex items-start gap-2 text-left">
+                  <button
+                    type="button"
+                    onClick={() => setAgreedToLegal(!agreedToLegal)}
+                    className="mt-0.5 text-[#C06C4C] focus:outline-hidden cursor-pointer"
+                    aria-label="Agree to terms and privacy policy"
+                  >
+                    {agreedToLegal ? (
+                      <CheckSquare className="w-4 h-4 fill-[#C06C4C] text-white" />
+                    ) : (
+                      <Square className="w-4 h-4 text-[var(--text-muted)] hover:text-[var(--text-secondary)]" />
+                    )}
+                  </button>
+                  <label
+                    className="text-[11px] text-[var(--text-secondary)] select-none leading-relaxed cursor-pointer"
+                    onClick={() => setAgreedToLegal(!agreedToLegal)}
+                  >
+                    I agree to Taktic's{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLegalModalTab('terms');
+                        setLegalModalOpen(true);
+                      }}
+                      className="font-bold text-[#C06C4C] underline hover:text-[#C87D87] cursor-pointer"
+                    >
+                      Terms
+                    </button>{' '}
+                    and acknowledge the{' '}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setLegalModalTab('privacy');
+                        setLegalModalOpen(true);
+                      }}
+                      className="font-bold text-[#C06C4C] underline hover:text-[#C87D87] cursor-pointer"
+                    >
+                      Privacy Policy
+                    </button>
+                    .
+                  </label>
+                </div>
+              </div>
+            )}
+
             {/* Submit CTA */}
             <button
               type="submit"
@@ -427,10 +489,43 @@ export const AuthModal: React.FC<AuthModalProps> = ({ isOpen, onClose, defaultSi
                   <span>Or try <strong>1-Click Interactive Demo</strong> without signing in</span>
                 </button>
               </div>
+
+              {/* Legal Acknowledgment & Links */}
+              <div className="pt-2 text-center text-[10px] text-[var(--text-muted)] flex items-center justify-center gap-2 border-t border-[var(--border-subtle)]/60">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLegalModalTab('privacy');
+                    setLegalModalOpen(true);
+                  }}
+                  className="hover:underline hover:text-[var(--text-primary)] cursor-pointer"
+                >
+                  Privacy Policy
+                </button>
+                <span>•</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setLegalModalTab('terms');
+                    setLegalModalOpen(true);
+                  }}
+                  className="hover:underline hover:text-[var(--text-primary)] cursor-pointer"
+                >
+                  Terms of Service
+                </button>
+              </div>
             </div>
           )}
         </div>
       </div>
+
+      <LegalModal
+        isOpen={legalModalOpen}
+        onClose={() => setLegalModalOpen(false)}
+        initialTab={legalModalTab}
+        onAccept={() => setAgreedToLegal(true)}
+        showAcceptButton={isSignUp && !agreedToLegal}
+      />
     </div>
   );
 };
