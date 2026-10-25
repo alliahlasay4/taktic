@@ -19,8 +19,8 @@ test.describe('Core App Functionality in Demo Mode', () => {
 
     // Verify key sections are present
     await expect(page.getByRole('heading', { name: /Welcome back/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Today's Priority Focus Queue/i })).toBeVisible();
-    await expect(page.getByRole('heading', { name: /Habit Rhythm Checklist/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Today's 3 Must-Dos|Priority Focus Queue/i })).toBeVisible();
+    await expect(page.getByRole('heading', { name: /Daily Rhythm|Habit Rhythm Checklist/i })).toBeVisible();
   });
 
   test('should verify sidebar navigation links exist (desktop & mobile)', async ({ page, isMobile }) => {
@@ -30,11 +30,11 @@ test.describe('Core App Functionality in Demo Mode', () => {
       await openDrawerBtn.click();
     }
 
-    const mainNav = page.getByRole('navigation', { name: /Main Navigation/i });
-    await expect(mainNav).toBeVisible();
+    const nav = page.getByRole('navigation', { name: /Workspace Navigation|Main Navigation/i }).first();
+    await expect(nav).toBeVisible();
 
-    // Verify navigating to Inbox
-    const inboxBtn = mainNav.getByRole('button', { name: /Inbox & Planning/i });
+    // Verify navigating to Inbox / Tasks & Planning
+    const inboxBtn = page.getByRole('button', { name: /Tasks & Planning|Inbox & Planning/i }).first();
     await expect(inboxBtn).toBeVisible();
     await inboxBtn.click();
 

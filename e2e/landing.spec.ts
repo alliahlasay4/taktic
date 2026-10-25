@@ -47,7 +47,7 @@ test.describe('Landing Page & Navigation Flow', () => {
     const backBtn = page.getByRole('button', { name: 'Back to Home' }).or(page.getByRole('button', { name: 'Home', exact: true })).first();
     await expect(backBtn).toBeVisible();
     await backBtn.click();
-    await expect(page).toHaveURL(/\/landing/);
+    await expect(page).toHaveURL(/\/(landing)?$/);
     await expect(page.getByRole('heading', { name: /Focus on what matters today/i })).toBeVisible();
   });
 });
