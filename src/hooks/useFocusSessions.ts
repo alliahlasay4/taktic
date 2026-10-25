@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_FOCUS_SESSIONS } from '../lib/mockData';
 import { getLocalDateString } from '../lib/streak';
 import { createScopedStorage } from '../lib/storage';
+import { syncQueue } from '../lib/syncQueue';
 
 export function useFocusSessions() {
   const { user, isDemo } = useAuth();
@@ -108,6 +109,28 @@ export function useFocusSessions() {
     setFocusSessions((prev) => [newSession, ...prev]);
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+      if (isOffline) {
+        syncQueue.enqueue(
+          {
+            type: 'focus_session_add',
+            table: 'focus_sessions',
+            payload: {
+              duration_minutes: durationMinutes,
+              task_title: taskTitle || null,
+              mode,
+              soundscape: soundscape || null,
+              focus_quality: focusQuality || null,
+              completed_at: nowIso,
+            },
+          },
+          user.id,
+          isDemo
+        );
+        return newSession;
+      }
+
       try {
         const { data, error } = await supabase
           .from('focus_sessions')
@@ -130,8 +153,23 @@ export function useFocusSessions() {
           );
         }
       } catch (err: any) {
-        console.error('Error logging focus session to Supabase:', err);
-        setError(err.message || 'Failed to save focus session to cloud.');
+        console.warn('Network error logging focus session, enqueuing for sync:', err);
+        syncQueue.enqueue(
+          {
+            type: 'focus_session_add',
+            table: 'focus_sessions',
+            payload: {
+              duration_minutes: durationMinutes,
+              task_title: taskTitle || null,
+              mode,
+              soundscape: soundscape || null,
+              focus_quality: focusQuality || null,
+              completed_at: nowIso,
+            },
+          },
+          user.id,
+          isDemo
+        );
       }
     }
 

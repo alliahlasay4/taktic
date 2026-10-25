@@ -38,8 +38,13 @@ import { TacticalDrawer, TacticalDrawerMode } from './components/common/Tactical
 import { QuickNotesFloatingTrigger } from './components/notes/QuickNotesFloatingTrigger';
 import { CalendarFloatingTrigger } from './components/inbox/CalendarFloatingTrigger';
 import { TimerProvider } from './context/TimerContext';
+import { OfflineBanner } from './components/common/OfflineBanner';
+import { useOfflineSync } from './hooks/useOfflineSync';
 
 function MainLayout() {
+  // Offline sync queue management
+  const { pendingCount, isSyncing } = useOfflineSync();
+
   // Dark mode state
   const [darkMode, setDarkMode] = useState<boolean>(() => {
     return localStorage.getItem('taktic_dark_mode') === 'true';
@@ -629,6 +634,9 @@ function MainLayout() {
             onAcceptCircleInvite={handleAcceptCircleInvite}
           />
         )}
+
+        {/* Global Offline Network Status Banner */}
+        <OfflineBanner pendingSyncCount={pendingCount} isSyncing={isSyncing} />
 
         {/* Database Error Banner */}
         {habitsError && (

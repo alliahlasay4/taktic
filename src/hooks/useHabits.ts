@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_HABITS } from '../lib/mockData';
 import { calculateConsecutiveStreak, getLocalDateString } from '../lib/streak';
 import { createScopedStorage } from '../lib/storage';
+import { syncQueue } from '../lib/syncQueue';
 
 export function useHabits() {
   const { user, isDemo } = useAuth();
@@ -155,8 +156,23 @@ export function useHabits() {
       prev.map((h) => (h.id === id ? { ...h, completedDates: newDates, streak: newStreak } : h))
     );
 
-    // 2. Supabase DB Persistence
+    // 2. Supabase DB Persistence or Offline Sync Queue
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+      if (isOffline) {
+        syncQueue.enqueue(
+          {
+            type: 'habit_toggle',
+            table: 'habit_logs',
+            payload: { habitId: id, date: today, isDone: !isDone, streak: newStreak },
+          },
+          user.id,
+          isDemo
+        );
+        return;
+      }
+
       try {
         if (isDone) {
           // Remove completion log
@@ -180,14 +196,16 @@ export function useHabits() {
           .eq('id', id)
           .eq('user_id', user.id);
       } catch (err: any) {
-        console.error('Error persisting habit toggle:', err);
-        // Revert on error
-        setHabits((prev) =>
-          prev.map((h) =>
-            h.id === id
-              ? { ...h, completedDates: habitToToggle.completedDates, streak: habitToToggle.streak }
-              : h
-          )
+        console.warn('Network error persisting habit toggle, enqueuing for sync:', err);
+        // Enqueue mutation for later sync instead of immediately reverting
+        syncQueue.enqueue(
+          {
+            type: 'habit_toggle',
+            table: 'habit_logs',
+            payload: { habitId: id, date: today, isDone: !isDone, streak: newStreak },
+          },
+          user.id,
+          isDemo
         );
       }
     }

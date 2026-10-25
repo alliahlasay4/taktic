@@ -5,6 +5,7 @@ import { supabase, isSupabaseConfigured } from '../lib/supabase';
 import { INITIAL_TASKS } from '../lib/mockData';
 import { getLocalDateString, getDateWithOffset } from '../lib/streak';
 import { createScopedStorage } from '../lib/storage';
+import { syncQueue } from '../lib/syncQueue';
 
 export function useTasks() {
   const { user, isDemo } = useAuth();
@@ -163,6 +164,25 @@ export function useTasks() {
     );
 
     if (!isDemo && isSupabaseConfigured && user && user.id !== 'demo-user-123') {
+      const isOffline = typeof navigator !== 'undefined' && !navigator.onLine;
+
+      if (isOffline) {
+        syncQueue.enqueue(
+          {
+            type: 'task_upsert',
+            table: 'tasks',
+            payload: {
+              id,
+              completed: nextCompleted,
+              completed_at: completedAtIso || null,
+            },
+          },
+          user.id,
+          isDemo
+        );
+        return;
+      }
+
       try {
         const { error } = await supabase
           .from('tasks')
@@ -175,12 +195,19 @@ export function useTasks() {
 
         if (error) throw error;
       } catch (err: any) {
-        console.error('Error updating task completion in Supabase:', err);
-        // Revert on error
-        setTasks((prev) =>
-          prev.map((t) =>
-            t.id === id ? { ...t, completed: taskToToggle.completed, completedAt: taskToToggle.completedAt } : t
-          )
+        console.warn('Network error updating task completion, enqueuing for sync:', err);
+        syncQueue.enqueue(
+          {
+            type: 'task_upsert',
+            table: 'tasks',
+            payload: {
+              id,
+              completed: nextCompleted,
+              completed_at: completedAtIso || null,
+            },
+          },
+          user.id,
+          isDemo
         );
       }
     }
